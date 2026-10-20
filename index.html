@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lemonade Lane — Neighborhood & Upgrades</title>
+<style>
+:root{--ink:#223c32;--muted:#677a69;--green:#326848;--lime:#e4efb3;--cream:#fff9e9;--yellow:#ffcf55;--orange:#f4a96c;--pink:#efb4a3;--line:#e5e4d2;--shadow:0 8px 26px #24432d13}*{box-sizing:border-box}body{margin:0;background:#f1f3e9;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",Verdana,sans-serif;font-size:14px}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.46;cursor:not-allowed}.wrap{max-width:1370px;margin:0 auto;padding:23px 22px 40px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:12px}.lemon{height:48px;width:48px;border-radius:16px;background:var(--yellow);display:grid;place-items:center;font-size:26px;transform:rotate(-7deg);box-shadow:inset -5px -5px 0 #e7af38}.brand h1{font-size:24px;margin:0;font-weight:950;letter-spacing:-1.1px;line-height:1}.brand small{display:block;font-size:10px;letter-spacing:3px;font-weight:800;margin-top:7px;color:#67836e}.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.pill{padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:800;white-space:nowrap}.pill strong{color:#2a6847}.subtle-btn{background:#fff;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-weight:800;color:var(--ink)}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(330px,.85fr);gap:17px;align-items:start}.left,.right{min-width:0}.stack{display:grid;gap:16px}.panel{background:#fffef7;border:1px solid #e2e6d5;box-shadow:var(--shadow);border-radius:19px;padding:18px}.panel h2{font-size:17px;letter-spacing:-.4px;margin:0;font-weight:900}.kicker{color:var(--muted);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:1.5px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:13px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#66846e;font-weight:900}.skyline{position:relative;min-height:300px;overflow:hidden;border-radius:17px;background:linear-gradient(180deg,#abdbd4 0%,#dbefe2 69%,#bbdaa9 69%,#9ec08f 79%,#d2bd8c 79%,#e0cda2 100%);border:2px solid #e0e3ce}.skyline:before{content:"";position:absolute;left:-40px;top:23px;width:230px;height:55px;border-radius:50%;background:#fff9;filter:blur(20px)}.sun{position:absolute;top:25px;right:53px;width:68px;height:68px;background:#ffda62;border-radius:100%;box-shadow:0 0 0 14px #ffda6228}.cloud{position:absolute;width:112px;height:34px;border-radius:50px;background:#fff9;top:42px;left:38px}.cloud:before{content:"";position:absolute;width:55px;height:55px;top:-22px;left:20px;border-radius:50%;background:#fff9}.cloud.two{left:46%;top:88px;transform:scale(.7)}.tree{position:absolute;bottom:61px;height:145px;width:17px;background:#91694c;border-radius:6px}.tree:before{content:"";position:absolute;bottom:65px;left:-42px;width:101px;height:106px;border-radius:50%;background:#6fa66e;box-shadow:inset -16px -10px 0 #5c975d}.tree.t1{left:12%}.tree.t2{right:12%;transform:scale(.8);transform-origin:bottom}.path{position:absolute;bottom:0;height:42px;width:100%;background:repeating-linear-gradient(90deg,#d9bd8d 0 75px,#ceb183 76px 79px)}.stand{position:absolute;width:212px;height:190px;bottom:27px;left:50%;transform:translateX(-50%);z-index:4;filter:drop-shadow(0 9px 6px #415d4525)}.awning{position:absolute;top:0;left:-15px;width:242px;height:49px;background:repeating-linear-gradient(90deg,#fff8e8 0 29px,#e38d6d 29px 57px);border:5px solid #9c5e42;border-radius:12px 12px 17px 17px;box-shadow:0 7px 0 #c6785b;z-index:3}.stand-post{position:absolute;top:47px;bottom:16px;width:9px;background:#805a3e}.stand-post.a{left:6px}.stand-post.b{right:6px}.stand-top{position:absolute;top:103px;height:15px;left:-4px;right:-4px;background:#dca36b;border:3px solid #946241;border-radius:7px;z-index:4}.stand-front{position:absolute;left:4px;right:4px;top:118px;height:62px;border:5px solid #926344;border-radius:0 0 8px 8px;background:repeating-linear-gradient(90deg,#e7b67b 0 22px,#edc28e 22px 44px);z-index:4;display:grid;place-items:center}.logo-sign{font-weight:1000;background:#fff6d1;transform:rotate(-3deg);border:2px solid #865f42;border-radius:8px;padding:5px 14px;text-align:center;font-size:17px;line-height:1;box-shadow:2px 3px 0 #8b704b33}.logo-sign span{display:block;font-size:10px;margin-top:5px}.jar{position:absolute;top:69px;left:44px;width:42px;height:40px;border:3px solid #fff9;outline:2px solid #a2aba3;border-radius:4px 4px 11px 11px;background:linear-gradient(180deg,#e5f7ee 10%,#f8d66c 11% 90%,#e9b95a 90%);z-index:3}.jar:after{content:"";position:absolute;left:11px;top:-6px;width:10px;height:37px;transform:rotate(13deg);border-left:4px solid #ea7c71}.cups{position:absolute;top:81px;right:41px;display:flex;gap:4px;z-index:3}.cups i{height:26px;width:19px;background:linear-gradient(#fff8eb 0 25%,#f7d35d 26%);clip-path:polygon(0 0,100% 0,85% 100%,15% 100%);border-radius:3px}.customer{position:absolute;bottom:47px;left:-60px;width:31px;height:83px;z-index:5;animation:walk 3s linear forwards;pointer-events:none}.customer .head{position:absolute;width:25px;height:25px;left:4px;top:2px;border-radius:50%;background:var(--skin,#d69b6b);border:2px solid #725142}.customer .body{position:absolute;top:27px;width:30px;height:36px;border-radius:11px 11px 4px 4px;background:var(--shirt,#468e87)}.customer .leg{position:absolute;top:61px;width:9px;height:23px;background:#596d6a;border-radius:5px}.customer .leg.one{left:5px}.customer .leg.two{right:5px;transform:rotate(-10deg)}@keyframes walk{0%{left:-55px}40%{left:39%}70%{left:47%}100%{left:105%}}.skyline.rain{background:linear-gradient(180deg,#899eae 0%,#c2d4ce 69%,#93ac80 69%,#89a17d 79%,#beb296 79%,#c1b39b 100%)}.skyline.rain:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(110deg,transparent 0 14px,#d8ecff70 15px 17px,transparent 18px 33px);animation:rain .7s linear infinite;pointer-events:none}@keyframes rain{to{background-position:-33px 40px}}.skyline.rain .sun{opacity:.2}.selling-bubble{position:absolute;left:54%;top:79px;z-index:7;background:#fff;border:2px solid #326848;border-radius:13px;padding:8px 11px;font-weight:950;box-shadow:2px 4px 0 #32684830;animation:pop .95s ease-out forwards}@keyframes pop{0%{opacity:0;transform:translateY(12px)}20%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(-25px)}}.scene-bar{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:8px;justify-content:space-between;z-index:9}.scene-label{background:#fffc;backdrop-filter:blur(4px);border-radius:999px;padding:8px 12px;font-weight:900;font-size:12px}.scene-caption{padding:15px 3px 0;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.scene-caption h2{font-size:21px;margin:0 0 6px;font-weight:1000}.scene-caption p{margin:0;color:var(--muted);line-height:1.5}.scene-caption .location-fee{white-space:nowrap;border-radius:11px;padding:10px;background:#f6f2dc;font-weight:900}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{background:#f7f9f0;border:1px solid #e7ebdc;border-radius:14px;padding:13px 10px}.stat b{display:block;font-size:23px;letter-spacing:-1px}.stat span{font-size:11px;color:var(--muted);font-weight:800}.stat .profit{color:#267449}.stats .negative{color:#b35844}.history{display:flex;gap:6px;align-items:flex-end;height:75px}.barwrap{flex:1;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:4px;height:100%;font-size:10px;color:var(--muted);font-weight:850}.bar{background:#91bd7e;width:80%;min-height:4px;border-radius:5px 5px 1px 1px}.bar.loss{background:#e5aa88}.empty{font-size:12px;color:var(--muted);line-height:1.4}.muted{color:var(--muted)}.step{background:#eff2e6;padding:4px 9px;border-radius:999px;color:#547450;font-size:10px;font-weight:900}.location-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.location{border:2px solid var(--line);border-radius:12px;background:#fff;padding:12px 5px;text-align:center;color:var(--ink);min-height:84px}.location.active{border-color:#32704d;background:#f0f7df;box-shadow:inset 0 0 0 1px #32704d}.location .emoji{display:block;font-size:23px;margin-bottom:5px}.location strong{display:block;font-size:12px}.location small{font-size:10px;color:#6d7a6c;font-weight:700}.adjust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.adjust{padding:11px 10px;border:1px solid var(--line);border-radius:13px;background:#fff;min-width:0}.adjust .adjust-title{font-size:11px;color:#718276;font-weight:850;display:block;margin-bottom:7px}.counter{display:flex;align-items:center;justify-content:space-between;gap:3px}.counter button{width:27px;height:27px;border:0;border-radius:8px;background:#eff3e5;color:#355c42;font-size:18px;font-weight:900;flex-shrink:0}.counter strong{font-size:17px}.hint{margin-top:10px;font-size:11px;color:#607464;line-height:1.5}.price-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 0;border-top:1px dashed var(--line)}.price-row:first-of-type{border-top:0}.price-row label{font-weight:900}.price-row small{display:block;color:var(--muted);font-size:11px;font-weight:700;margin-top:3px}.price-row .counter{gap:10px}.price-row .counter button{width:33px;height:33px}.price-row .counter strong{min-width:50px;text-align:center}.shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.supply{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:9px;background:#fff;min-width:0}.supply .supply-icon{height:39px;width:39px;border-radius:11px;background:#f6f4db;display:grid;place-items:center;font-size:21px;flex-shrink:0}.supply .supply-details{flex:1;min-width:0}.supply strong{font-size:12px;display:block;white-space:nowrap}.supply small{display:block;font-size:10px;color:var(--muted);margin-top:3px}.supply button{background:#e6f1da;border:1px solid #cee1c5;border-radius:9px;font-weight:900;font-size:11px;padding:7px 9px;color:#2e6640}.summary{background:#263f33;border-radius:15px;color:white;padding:15px}.summary .kicker{color:#bedbc3}.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:12px}.summary-grid b{display:block;font-size:19px}.summary-grid span{font-size:10px;color:#c6d9cb}.summary .warning{color:#ffd48e}.start{width:100%;border:0;background:var(--yellow);color:#263d2d;border-radius:13px;padding:16px;font-size:16px;font-weight:1000;box-shadow:0 4px 0 #cfa848;transition:transform .15s;margin-top:10px}.start:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 #cfa848}.small-link{background:transparent;border:0;color:#3a8053;font-size:12px;font-weight:900;text-decoration:underline;text-underline-offset:2px;padding:5px 0}.running .setup{opacity:.65;pointer-events:none}.live{display:none;background:#e4f0d9;border:1px solid #cee1c5;color:#295d3d;padding:13px;border-radius:12px;font-weight:850;line-height:1.4;margin-top:10px}.running .live{display:block}.progress{width:100%;height:9px;background:#cae0c2;border-radius:40px;margin-top:10px;overflow:hidden}.progress div{height:100%;background:#4f9970;width:0;transition:width .15s}.notice{background:#fff1d1;border:1px solid #eadba9;color:#74572a;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.5;margin-top:10px}.modal-scrim{position:fixed;inset:0;background:#1b2d269c;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}.modal-scrim.show{display:flex}.modal{position:relative;background:#fffdf1;border:1px solid #d5dfcb;box-shadow:0 30px 90px #152b2580;border-radius:22px;padding:23px;width:min(520px,100%);max-height:90vh;overflow-y:auto}.modal h2{font-size:26px;letter-spacing:-1px;margin:4px 0 8px}.modal p{line-height:1.55;color:#69796b}.modal .close{position:absolute;right:17px;top:16px;background:#e9eddf;color:#2c4c39;border:0;border-radius:9px;padding:6px 10px;font-weight:900}.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:17px 0}.report-cell{background:#f1f5e9;border-radius:12px;padding:12px}.report-cell small{display:block;color:#72846f;font-weight:800;font-size:10px}.report-cell strong{display:block;font-size:23px;margin-top:4px}.income-table{width:100%;border-collapse:collapse;margin-top:11px}.income-table td{padding:10px 2px;border-bottom:1px solid #e5e9dd;font-size:13px}.income-table td:last-child{text-align:right;font-weight:900}.income-table tr:last-child td{font-size:17px;border-top:2px solid #47684b;border-bottom:0}.win{color:#23784a}.lose{color:#c26947}.primary{display:block;width:100%;border:0;border-radius:12px;background:var(--yellow);color:#213b2c;padding:14px;font-weight:1000;font-size:15px;margin-top:16px}.ledger-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding:11px 0}.ledger-row strong{font-size:12px}.ledger-row span{color:#79907e;font-size:10px}.ledger-row b{white-space:nowrap}.fine{font-size:11px;line-height:1.5;color:#6d7c6f}.footer{text-align:center;margin-top:18px;color:#7b887b;font-size:11px}.meter{height:8px;border-radius:999px;background:#e4e5d5;overflow:hidden}.meter>div{background:#78a96b;height:100%;width:50%}input[type=range]{accent-color:#3a8053;width:100%}@media(max-width:1050px){.layout{grid-template-columns:1fr}.left .stack{display:grid;grid-template-columns:1fr 1fr}.left .stack .visual,.left .stack .money{grid-column:1/-1}}@media(max-width:660px){.wrap{padding:13px 10px 25px}.top{align-items:flex-start}.brand h1{font-size:19px}.brand small{letter-spacing:1px;font-size:9px}.lemon{height:40px;width:40px}.header-right{max-width:190px;gap:5px}.pill{padding:7px 8px;font-size:11px}.subtle-btn{padding:8px}.panel{padding:13px}.left .stack{display:grid;grid-template-columns:1fr}.left .stack .visual,.left .stack .money{grid-column:auto}.skyline{min-height:245px}.stand{transform:translateX(-50%) scale(.87);transform-origin:bottom}.stats{grid-template-columns:repeat(2,1fr)}.stat b{font-size:20px}.layout{gap:12px}.supply{padding:8px 5px;gap:5px}.supply .supply-icon{height:29px;width:29px;font-size:16px}.supply button{padding:6px;font-size:10px}.location small{font-size:9px}}
+
+
+/* The tabbed edition: inspired by the lively green arcade layout of early mobile tycoon games. */
+:root{--ink:#104326;--muted:#497351;--green:#006e30;--lime:#a2e336;--cream:#f0ffe4;--yellow:#ffe178;--line:#72c047;--shadow:0 5px 0 #005622,0 12px 28px #003e202e}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;color:#16452b;background:repeating-linear-gradient(35deg,#18a449 0 12px,#12a043 12px 26px);min-height:100vh}
+button{touch-action:manipulation}
+button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
+.wrap{max-width:1270px;padding:18px 18px 34px;margin:auto}
+.hud{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#005d29;border:3px solid #003f1b;border-radius:13px;color:#f6ffd8;padding:12px 17px;box-shadow:0 5px 0 #054c20}
+.mini-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mini-brand .brand-icon{font-size:35px;line-height:1}
+.mini-brand h1{margin:0;letter-spacing:-1px;font-size:24px;white-space:nowrap;color:#fffce6}
+.mini-brand small{color:#b6eb75;font-weight:900;letter-spacing:1.2px;font-size:10px}
+.hud-resources{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.res-item{display:flex;align-items:center;gap:4px;background:#137737;border:1px solid #2b9548;border-radius:8px;padding:8px 10px;font-size:14px;color:#fff;font-weight:900;white-space:nowrap}
+.res-item .ico{font-size:20px}
+.res-item.cash{background:#d9f683;border-color:#eaff9a;color:#124926;font-size:19px;padding:7px 13px}
+.res-item.day{background:#095d2e;border-color:#5bad50;color:#e9ffb6}
+.utility{background:#dbef9c;color:#124d27;border:2px solid #9dca4e;border-radius:8px;padding:8px 11px;font-size:14px;font-weight:900}
+.game-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 1px 12px;color:#f9ffe5}
+.game-title h2{font-size:20px;letter-spacing:-.4px;margin:0;font-weight:900}
+.game-title span{font-size:12px;background:#00692f;border:1px solid #7cc95a;padding:6px 10px;border-radius:7px;font-weight:800}
+.game-tabs{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.game-tab{flex:1 1 100px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-height:78px;background:#8ed62b;color:#11502a;border:3px solid #197c20;border-bottom-width:5px;border-radius:10px 10px 7px 7px;box-shadow:inset 0 2px 0 #d8fb6a;font-weight:1000;font-size:15px}
+.game-tab .tab-icon{font-size:27px;line-height:1.2;filter:drop-shadow(1px 2px #397d2940)}
+.game-tab:hover{background:#a9e74d}
+.game-tab.active{background:#f1ffbf;position:relative;border-color:#dbf690;box-shadow:0 3px 0 #fff7;transform:translateY(3px)}
+.game-tab.active::after{content:'';position:absolute;bottom:-10px;width:75%;height:7px;background:#eaf9cd;border-radius:0 0 4px 4px}
+.game-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"controls scene" "bottom bottom";gap:12px;background:#007f36;border:4px solid #005528;border-radius:13px;padding:13px;box-shadow:0 7px 0 #005120,0 16px 28px #003a222c}
+.control-window,.world-window{background:#eaf9cc;border:3px solid #075e2c;border-radius:11px;overflow:hidden;min-width:0}
+.control-window{grid-area:controls;min-height:460px}
+.world-window{grid-area:scene;display:flex;flex-direction:column}
+.control-top{background:#0b8f3c;color:#fff9dd;padding:15px 20px;border-bottom:3px solid #075e2c;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.control-top h2{margin:0;font-size:23px;font-weight:900}
+.control-top .micro-tag{font-size:10px;letter-spacing:1.4px;font-weight:900;color:#dcffb0}
+.tab-pane{padding:19px 21px}
+.tab-pane h3{font-size:19px;margin:0 0 8px;font-weight:900}
+.tab-pane .lead{color:#416943;font-size:14px;line-height:1.45;margin:0 0 20px}
+.location-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.location{background:#fffdeb;border:3px solid #bdd995;min-height:125px;border-radius:12px;padding:11px 4px;box-shadow:0 4px 0 #b4ce8c}
+.location .emoji{font-size:31px;margin-bottom:9px}
+.location strong{font-size:14px}
+.location small{font-size:11px;display:block;margin-top:4px}
+.location.active{background:#dbfaa8;border-color:#19883b;box-shadow:0 4px 0 #19883b}
+.location-tip{margin-top:22px;background:#d9f3b7;border-left:5px solid #168643;padding:12px 14px;border-radius:6px;color:#24552e;line-height:1.45;font-size:14px}
+.adjust-grid{grid-template-columns:1fr;gap:10px}
+.adjust{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fffef1;border:2px solid #d5e6b9;padding:10px 14px;border-radius:12px;min-height:65px}
+.adjust .adjust-title{margin:0;font-size:16px;color:#265f33}
+.counter{justify-content:flex-end;gap:10px}
+.counter button{width:42px;height:42px;border:2px solid #75ad31;border-bottom:4px solid #4b941d;border-radius:9px;background:#a6e342;font-size:25px;color:#15522a}
+.counter strong{font-size:23px;min-width:34px;text-align:center;color:#0d5d30}
+.taste{margin-top:15px;background:#dff7bf;border:2px solid #bedb9e;border-radius:9px;padding:12px;font-size:14px;color:#295f38;line-height:1.4;font-weight:800}
+.price-row{background:#fffef1;border:2px solid #d5e6b9;margin:12px 0;border-radius:12px;padding:18px 13px;grid-template-columns:minmax(0,1fr) auto}
+.price-row label{font-size:17px}
+.price-row small{font-size:12px;line-height:1.45}
+.price-row .counter{gap:6px}
+.price-row .counter button{width:40px;height:40px}
+.price-row .counter strong{min-width:55px;font-size:19px}
+.price-forecast{background:#dff6b9;border:2px solid #b5dc8c;padding:14px;border-radius:11px;display:flex;justify-content:space-between;gap:15px;align-items:center;margin-top:18px}
+.price-forecast span{font-size:13px;color:#3e7147}
+.price-forecast strong{font-size:22px;color:#09552a;white-space:nowrap}
+.shelf{grid-template-columns:1fr;gap:9px}
+.supply{background:#fffef1;border:2px solid #d2e5b4;padding:10px 11px;gap:11px;min-height:68px}
+.supply .supply-icon{background:#e6f4c5;font-size:29px;width:47px;height:47px}
+.supply strong{font-size:14px}
+.supply small{font-size:12px}
+.supply button{background:#a7e341;border:2px solid #83b933;border-bottom:4px solid #5a9627;border-radius:9px;color:#205124;font-size:12px;padding:8px 14px;min-width:85px}
+.hint{font-size:13px;line-height:1.5}
+.world-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0a8f3b;color:#fff8cf;padding:11px 15px;font-size:13px;font-weight:900}
+#phaseLabel{font-size:10px;background:#c7f082;color:#17502a;padding:6px 9px;border-radius:6px;white-space:nowrap}
+.skyline{border:0;border-radius:0;min-height:310px;flex:1;max-height:365px}
+.skyline[data-location='square']{background:linear-gradient(180deg,#b6dce3 0 60%,#b8d1ae 60% 79%,#b8b3a7 79% 100%)}
+.skyline[data-location='beach']{background:linear-gradient(180deg,#9ad8f0 0 56%,#69bcd5 56% 68%,#ede1ac 68% 100%)}
+.skyline[data-location='square']::before{content:"";position:absolute;top:53px;left:10px;width:118px;height:200px;background:repeating-linear-gradient(90deg,#91a8a3 0 18px,#c5d6bc 18px 23px);clip-path:polygon(0 12%,32% 12%,32% 0,68% 0,68% 24%,100% 24%,100% 100%,0 100%);border-radius:0;filter:none;opacity:.45}
+.skyline[data-location='beach'] .tree:before{background:#95cb5d}
+.scene-bar{top:10px;left:10px;right:10px;flex-wrap:wrap}
+.scene-label{background:#f7ffe4e8;color:#19512c;padding:8px 9px;font-size:12px;border:1px solid #dbeaa8}
+.scene-caption{display:block;background:#e9f8c9;padding:14px 17px;border-top:3px solid #9dcc6e}
+.scene-caption h2{font-size:20px;margin-bottom:4px;color:#0f592e}
+.scene-caption p{font-size:13px;line-height:1.45;margin:0}
+.place-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px}
+#feeBadge{background:#d4eea4;color:#225d31;padding:7px 9px;border-radius:6px;font-size:12px;font-weight:900;white-space:nowrap}
+.world-bottom{margin-top:auto;background:#effbdc;border-top:2px solid #b1d987;padding:12px 17px}
+#sceneTitle{font-size:13px;font-weight:900;color:#376640;margin:0 0 3px}
+#sceneDescription{margin:0;font-size:12px;color:#577d5b}
+.live{background:#e9f9cb;border:2px solid #aed982;border-radius:9px;margin:9px 0 0;font-size:13px}
+.bottom-strip{grid-area:bottom;background:#005f29;border:2px solid #003f20;border-radius:10px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:18px;padding:14px 17px;color:#f6ffdb}
+.bottom-plan{display:flex;align-items:center;gap:19px;flex-wrap:wrap}
+.plan-detail b{font-size:21px;display:block;color:#fff9a8}
+.plan-detail span{display:block;font-size:11px;color:#bce79f;font-weight:900}
+.break-even{font-size:13px;color:#d8f8ab;font-weight:800}
+.start{width:auto;min-width:190px;white-space:nowrap;background:#ffe06b;border:2px solid #dbaa27;border-bottom:5px solid #b57e18;margin:0;border-radius:11px;padding:14px 22px;color:#18492b;font-size:19px;box-shadow:0 2px 0 #553b1a}
+.start:not(:disabled):hover{background:#ffef91}
+.start:disabled{opacity:.6}
+#validation{grid-column:1/-1;margin:-4px 0 0;font-size:12px}
+#runningNote{grid-column:1/-1;margin:0;background:#d8f3ba;color:#20522c}
+.result-summary{font-size:16px;font-weight:900;background:#dff5bd;padding:12px;border-radius:9px;color:#165b2c;margin-bottom:11px}
+.stats{grid-template-columns:repeat(2,1fr);gap:9px}
+.stat{background:#fffdee;border:2px solid #c8e2a8}
+.stat b{font-size:22px}
+.stat span{font-size:12px}
+.result-history{margin-top:19px;background:#fffce8;border-radius:10px;padding:13px 15px}
+.result-history h3{font-size:14px;margin:0 0 9px}
+.result-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px}
+.next{background:#a3e33d;color:#164b29;padding:10px 14px;border:2px solid #6dad29;border-radius:8px;font-weight:900;font-size:14px}
+.education{margin-top:14px;padding:12px;background:#dbf6bc;border-left:4px solid #53aa2c;border-radius:7px;color:#386342;font-size:12px;line-height:1.5}
+.education strong{display:block;font-size:13px;color:#195931;margin-bottom:3px}
+.footer{color:#e7ffba;font-size:11px;font-weight:800}
+.modal-scrim{z-index:1000}.modal{background:#fbffe7;border:4px solid #147b3c;border-radius:14px}.primary{background:#a9e948}.modal h2{color:#15582e}
+.running [data-loc],.running [data-buy],.running [data-recipe],.running [data-adjust]{pointer-events:none;opacity:.55}
+.running .setup{opacity:1;pointer-events:auto}
+@media(max-width:980px){.game-board{grid-template-columns:1fr;grid-template-areas:"controls" "scene" "bottom"}.control-window{min-height:390px}.skyline{min-height:290px;max-height:330px}.hud{flex-wrap:wrap}.hud-resources{flex:1}.bottom-strip{grid-template-columns:1fr auto}}
+@media(max-width:620px){.wrap{padding:9px 8px 28px}.hud{padding:10px;gap:9px}.mini-brand h1{font-size:19px}.mini-brand small{font-size:8px}.mini-brand .brand-icon{font-size:28px}.hud-resources{justify-content:space-between;gap:5px}.res-item{padding:6px;font-size:12px}.res-item.cash{font-size:16px}.res-item .ico{font-size:15px}.res-item.day{font-size:12px}.utility{font-size:12px;padding:6px 8px}.game-title{margin:13px 3px 8px}.game-title h2{font-size:16px}.game-title span{font-size:10px}.game-tabs{gap:4px}.game-tab{flex:1 1 18%;font-size:10px;min-height:62px;border-width:2px;border-bottom-width:4px}.game-tab .tab-icon{font-size:22px}.game-board{padding:7px;gap:8px;border-width:3px}.control-top{padding:12px 14px}.control-top h2{font-size:19px}.tab-pane{padding:14px 12px}.location{min-height:109px;padding:9px 3px}.location .emoji{font-size:26px}.location strong{font-size:11px}.location small{font-size:9px}.adjust{padding:9px;gap:6px}.adjust .adjust-title{font-size:14px}.counter{gap:6px}.counter button{width:35px;height:37px}.counter strong{font-size:20px}.price-row{padding:12px 8px}.price-row label{font-size:14px}.price-row small{font-size:10px}.price-row .counter{gap:3px}.price-row .counter button{width:34px;height:37px}.price-row .counter strong{font-size:17px;min-width:48px}.world-heading{padding:9px;font-size:11px}.skyline{min-height:236px;max-height:260px}.skyline .stand{transform:translateX(-50%) scale(.82)}.skyline .tree{transform:scale(.75);transform-origin:bottom}.skyline .scene-label{font-size:10px}.world-bottom{padding:9px 12px}.bottom-strip{grid-template-columns:1fr;padding:12px;gap:11px}.bottom-plan{justify-content:space-between;gap:8px}.plan-detail b{font-size:17px}.plan-detail span{font-size:10px}.break-even{font-size:11px}.start{width:100%;padding:12px;font-size:17px}.control-window{min-height:0}.hud{display:block;position:relative}.mini-brand{margin-bottom:12px;padding-right:42px}.hud-resources{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.res-item{justify-content:center}.res-item.cash{grid-column:2/4}.res-item.day{grid-column:1}.hud-resources #ledgerBtn{grid-column:4}.hud-resources #helpBtn{position:absolute;top:10px;right:10px;width:35px;padding:7px 0}.supply{padding:8px;min-height:62px}.supply button{min-width:82px;padding:7px}.location-tip{font-size:12px;margin-top:12px}.modal{padding:16px}.modal h2{font-size:21px}}
+
+/* BANKING MODULE — playful, focused second screen */
+.wrap{max-width:1435px;padding-right:168px}
+.stand-screen{position:relative}
+.bank-arrow{position:absolute;right:-150px;top:38%;height:126px;width:137px;z-index:10;background:#b6f20b;color:#184619;border:none;clip-path:polygon(0 19%,64% 19%,64% 1%,100% 50%,64% 99%,64% 81%,0 81%);filter:drop-shadow(0 5px 0 #146622);display:flex;align-items:center;justify-content:flex-start;padding-left:15px;gap:4px;font-size:22px;font-weight:1000;line-height:1;text-shadow:0 2px 0 #eaff81;transition:background .15s}
+.bank-arrow:hover{background:#d9ff45}
+.bank-arrow-icon{font-size:24px}
+.bank-arrow small{font-size:10px;display:block;margin-top:6px;text-shadow:none;color:#c43318;background:#fff7d7;border-radius:4px}
+.bank-screen{background:#e8facf;border:5px solid #005627;border-radius:16px;overflow:hidden;box-shadow:0 8px 0 #005026,0 18px 30px #03371c33;margin-top:15px}
+.bank-head{background:#00652e;color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:4px solid #154d21}
+.bank-brand{display:flex;gap:12px;align-items:center}
+.bank-brand .bank-building{font-size:43px}
+.bank-brand h2{font-size:27px;line-height:1;margin:1px 0;color:#fcffd6;letter-spacing:3px}
+.bank-brand small{color:#bffa7e;font-weight:900;letter-spacing:2px;font-size:10px}
+.back-stand{font-weight:1000;border:2px solid #86ca60;background:#d8f8a2;color:#13592e;padding:13px 15px;border-radius:10px;font-size:16px}
+.bank-day{font-weight:1000;background:#1c8240;padding:10px 15px;border-radius:9px;border:1px solid #60b858}
+.bank-balances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px;background:#0a883f}
+.balance-card{padding:20px 17px;border-radius:12px;background:#f5ffdd;border:3px solid #99c663;box-shadow:0 4px 0 #13602b;min-width:0}
+.balance-card span{display:block;color:#477143;font-size:11px;letter-spacing:.8px;font-weight:1000}
+.balance-card strong{display:block;font-size:30px;color:#0d6033;margin:9px 0;line-height:1}
+.balance-card.debt strong{color:#975726}
+.balance-card small{color:#648064;line-height:1.35;font-weight:750}
+.bank-tabs{display:flex;background:#0a883f;padding:3px 18px 0;gap:7px}
+.bank-tab{flex:1;background:#8bcf37;border:2px solid #2c852a;border-bottom:0;border-radius:11px 11px 0 0;padding:15px 10px;font-weight:1000;color:#18512c;font-size:16px}
+.bank-tab.active{background:#e8facf;border-color:#e8facf;color:#104d2a}
+#loanTabAlert{color:#bb4c22}
+.bank-content{background:#e8facf;padding:25px;min-height:375px}
+.bank-intro h3{font-size:25px;margin:0 0 6px;color:#08562b}
+.bank-intro p{margin:0 0 19px;line-height:1.5;color:#537152}
+.bank-two-col,.transfer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.bank-box{border:3px solid #c9dea8;background:#fffef1;border-radius:12px;padding:19px}
+.bank-box-label{font-size:12px;font-weight:900;color:#426f46}
+.bank-large{color:#085a2e;font-size:30px;font-weight:1000;margin:10px 0}
+.bank-box p{color:#60775d;font-size:12px;line-height:1.5;margin:0}
+.bank-subtitle{font-size:19px;margin:23px 0 11px}
+.transfer-card,.loan-card{background:#fffef1;border:2px solid #cbe1a9;border-radius:12px;padding:16px}
+.transfer-card h4{margin:0 0 7px;font-size:16px}
+.transfer-card p{font-size:12px;color:#5f795d;line-height:1.45;margin:0 0 13px}
+.amount-choices{display:flex;flex-wrap:wrap;gap:6px}
+.amount-choices button,.loan-choice button,.bank-action{background:#a5e33b;color:#165127;border:2px solid #74b52d;border-bottom:4px solid #528a21;border-radius:9px;font-weight:950;padding:9px 12px}
+.amount-choices button:disabled,.loan-choice button:disabled,.bank-action:disabled{opacity:.45}
+.bank-tip{padding:13px 15px;background:#d3f4aa;border-left:5px solid #3a9a3b;color:#2c5c36;line-height:1.5;border-radius:8px;font-size:13px;margin-top:20px}
+.bank-message{padding:14px 23px;font-size:14px;font-weight:900;background:#faffba;border-top:2px solid #95ca5a;color:#3b6528}
+.bank-message.error{background:#ffe1cb;color:#983f1e}
+.credit-strip{display:flex;align-items:center;gap:20px;border-radius:12px;background:#d0f3a9;padding:15px 20px;margin-bottom:20px;border:2px solid #b9db94;flex-wrap:wrap}
+.credit-strip>div:first-child{min-width:135px}
+.credit-strip span{font-size:11px;font-weight:900;display:block;color:#4a7046}
+.credit-strip strong{font-size:29px;color:#195f2b;display:block}
+.credit-strip small{font-size:11px;color:#537747}
+.credit-track{height:15px;border-radius:99px;background:#aad083;flex:1;min-width:105px;overflow:hidden;border:2px solid #8fbe65}
+.credit-track>div{height:100%;width:42%;background:linear-gradient(90deg,#fbc25a,#53b74c);border-radius:99px}
+.credit-stats{font-size:12px;font-weight:900;color:#416c37}
+.loan-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.loan-choice{border:3px solid #bfdb9b;border-radius:13px;background:#fffef1;padding:17px;text-align:center}
+.loan-choice.recommended{border-color:#279648;background:#f8ffe5;box-shadow:0 5px 0 #9fcd85}
+.loan-choice .loan-amount{font-size:29px;font-weight:1000;color:#0c6833}
+.loan-choice p{margin:7px 0 16px;color:#557553;font-size:12px;line-height:1.5}
+.loan-choice button{width:100%;font-size:13px}
+.loan-flag{background:#13753c;color:#eaffbf;padding:4px 9px;border-radius:99px;font-weight:900;font-size:10px;display:inline-block;margin-bottom:8px}
+.loan-rules{font-size:12px;color:#5f7658;line-height:1.6;margin:15px 0 0}
+.active-loan{background:#fffef1;border:3px solid #b8d99b;border-radius:13px;padding:19px}
+.active-loan h4{font-size:20px;color:#13582b;margin:0 0 14px}
+.loan-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.loan-fact{background:#e8f7cd;padding:13px;border-radius:9px}
+.loan-fact span{display:block;color:#5b7952;font-size:11px;font-weight:800;margin-bottom:8px}
+.loan-fact strong{font-size:22px;color:#11572c;line-height:1.2;overflow-wrap:anywhere}
+.loan-status{font-weight:900;font-size:14px;margin:15px 0 10px}
+.loan-status.due{color:#a14d1c}
+.loan-status.late{color:#b93228}
+.loan-note{font-size:12px;color:#5b7656;line-height:1.6;margin:11px 0 0}
+.invest-placeholder{background:#fffef1;border:3px solid #c7dda5;border-radius:13px;padding:35px 22px;text-align:center}
+.invest-placeholder>div:first-child{font-size:60px}
+.invest-placeholder h4{font-size:21px;color:#155a2f;margin:8px 0}
+.invest-placeholder p{font-size:14px;line-height:1.55;color:#527653;max-width:440px;margin:0 auto 18px}
+.invest-lesson{display:inline-block;background:#def4b4;padding:12px 15px;border-radius:9px;color:#38643a;font-weight:800;font-size:12px}
+@media(max-width:1100px){.wrap{padding-right:14px}.bank-arrow{position:static;right:auto;top:auto;transform:none;width:100%;height:69px;margin:4px 0 11px;clip-path:polygon(0 0,93% 0,100% 50%,93% 100%,0 100%);padding-left:22px;font-size:21px}.bank-arrow-icon{font-size:28px}}
+@media(max-width:680px){.bank-screen{margin-top:7px}.bank-head{padding:9px;gap:6px}.bank-brand{gap:5px}.bank-brand .bank-building{font-size:27px}.bank-brand h2{font-size:21px}.bank-brand small{font-size:8px;letter-spacing:1px}.back-stand{padding:10px 9px;font-size:12px}.bank-day{font-size:10px;padding:7px}.bank-balances{gap:5px;padding:9px}.balance-card{padding:10px 6px;border-width:2px}.balance-card span{font-size:8px;letter-spacing:0}.balance-card strong{font-size:19px;margin:9px 0}.balance-card small{font-size:9px}.bank-tabs{padding:3px 9px 0;gap:4px}.bank-tab{font-size:12px;padding:12px 5px}.bank-content{padding:14px 10px}.bank-intro h3{font-size:20px}.bank-two-col,.transfer-grid{grid-template-columns:1fr}.loan-choices{grid-template-columns:1fr}.loan-choice{display:grid;grid-template-columns:1fr 1fr;gap:5px;align-items:center;text-align:left}.loan-choice .loan-amount{font-size:22px}.loan-choice p{margin:4px 0;font-size:11px}.loan-choice button{grid-column:2;grid-row:1/3}.loan-choice .loan-flag{display:none}.loan-facts{grid-template-columns:1fr 1fr}.loan-fact strong{font-size:18px}.credit-strip{gap:11px}.bank-arrow{margin:0 0 8px;font-size:19px;height:61px}.bank-arrow-icon{font-size:26px}}
+
+
+/* ORIGINAL-GAME INSPIRED SUPPLY STORE */
+.cup-capacity-banner[hidden]{display:none}.cup-capacity-banner{margin:9px 0 3px;padding:12px 17px;background:#035c2a;border:3px solid #23964e;border-radius:11px;color:#f4ffe2;display:flex;align-items:center;justify-content:space-between;gap:15px;box-shadow:inset 0 2px 0 #087739}
+.cup-capacity-banner .capacity-copy{font-size:14px;line-height:1.35;font-weight:900;max-width:710px}
+.cup-capacity-banner .capacity-number{font-size:31px;min-width:75px;text-align:center;font-weight:1000;background:#008239;border:2px solid #b1ee63;border-radius:8px;padding:2px 12px;color:#fcffbf}
+.supply-store{background:#008a39;border:3px solid #03632c;border-radius:12px;overflow:hidden;box-shadow:inset 0 2px #1ba350;color:#f4ffe0}
+.supply-instructions{padding:13px 16px 10px;margin:0!important;color:#ecffcc!important;font-size:13px!important;line-height:1.4}
+.supply-categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:5px 10px 0;background:#006f31}
+.supply-category{border:3px solid #005525;border-radius:10px 10px 0 0;background:#078b3b;color:#fff9d4;min-height:63px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:1000;font-size:12px;padding:5px 2px}
+.supply-category .icon{font-size:30px;line-height:1}
+.supply-category[aria-selected='true']{background:#a2e73a;color:#154e21;border-color:#dbff81;box-shadow:inset 0 3px 0 #d6ff7d}
+.classic-supply-list{padding:13px 13px 12px;display:grid;gap:8px;min-height:254px}
+.classic-supply-row{display:grid;grid-template-columns:50px minmax(0,1fr) 42px auto 42px;gap:9px;align-items:center;background:#75c918;border:3px solid #22862b;border-bottom:5px solid #0c6a28;border-radius:8px;min-height:67px;padding:7px 9px;color:#f7ffdb;box-shadow:inset 0 2px 0 #aef35a}
+.classic-pack-icon{font-size:24px;text-align:center}
+.classic-pack-info{font-weight:1000;font-size:17px;line-height:1.2;color:#fffde9;text-shadow:0 1px 0 #408432}
+.classic-pack-info small{display:block;font-size:13px;color:#e7ffc0;text-shadow:none;margin-top:3px}
+.classic-stepper{width:42px;height:44px;display:grid;place-items:center;background:#9ce83c;border:3px solid #218234;border-bottom:5px solid #06712a;border-radius:9px;color:#0a5627;font-size:30px;font-weight:1000;line-height:1;padding:0}
+.classic-stepper:hover:not(:disabled){background:#e8ff73}
+.classic-pack-count{display:grid;place-items:center;min-width:52px;height:43px;border:3px solid #00642c;background:#028339;border-radius:6px;font-size:25px;color:#fff}
+.supply-bottom{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;background:#00652d;border-top:3px solid #004d21}
+.supply-cart-line{font-weight:900;font-size:14px;color:#faffd3;line-height:1.4}
+.supply-cart-line strong{color:#ffec85;font-size:18px}
+.supply-cart-actions{display:flex;align-items:center;gap:7px}
+.supply-clear{padding:9px 11px;background:#197944;color:#f4ffdf;border:2px solid #8bcb50;border-radius:8px;font-size:12px;font-weight:900}
+.supply-ok{padding:9px 24px;background:#d5fa55;border:2px solid #e4ff7d;border-bottom:4px solid #67a727;border-radius:8px;font-weight:1000;font-size:19px;color:#11562a}
+.supply-remaining{padding:9px 14px;background:#0c7839;color:#f6ffdd;font-weight:800;font-size:12px}
+.supply-review-table{width:100%;border-collapse:collapse;margin:14px 0 15px;font-size:13px}
+.supply-review-table th{font-size:11px;text-align:right;background:#def4bb;color:#1b5e32;padding:10px 6px;border-bottom:2px solid #aed47b}
+.supply-review-table th:first-child,.supply-review-table td:first-child{text-align:left}
+.supply-review-table td{text-align:right;border-bottom:1px solid #dae6cc;padding:9px 6px;font-weight:800}
+.supply-review-table .adding{color:#157b31}
+.supply-capacity-result{background:#d6f69b;border:3px solid #81bc45;padding:14px 16px;border-radius:12px;margin:12px 0 15px}
+.supply-capacity-result .capacity-label{font-size:12px;color:#3d6940;font-weight:900}
+.supply-capacity-result .capacity-result-numbers{display:flex;gap:10px;align-items:center;justify-content:space-around;margin-top:8px;font-weight:1000;color:#145b2d}
+.supply-capacity-result .capacity-result-numbers b{font-size:28px}
+.supply-capacity-result .capacity-result-numbers .arrow{font-size:24px;color:#368c3e}
+.supply-modal-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+.supply-modal-actions button{padding:12px 17px;border-radius:9px;font-weight:1000;border:2px solid #1d793c}
+.supply-modal-actions .confirm-buy{background:#a3e73e;color:#124b2b}
+.supply-modal-actions .cancel-buy{background:#fffef1;color:#32633f}
+@media(max-width:620px){.cup-capacity-banner{padding:9px 10px;margin-top:7px}.cup-capacity-banner .capacity-copy{font-size:11px}.cup-capacity-banner .capacity-number{font-size:25px;min-width:62px;padding:5px}.supply-category{font-size:10px;min-height:61px}.supply-category .icon{font-size:24px}.supply-store .supply-instructions{font-size:12px!important;padding:12px 9px}.classic-supply-list{padding:9px 6px;gap:7px}.classic-supply-row{grid-template-columns:28px minmax(0,1fr) 34px 36px 34px;gap:3px;min-height:62px;padding:5px 4px;border-width:2px;border-bottom-width:4px}.classic-pack-icon{font-size:17px}.classic-pack-info{font-size:13px}.classic-pack-info small{font-size:11px}.classic-stepper{width:34px;height:38px;font-size:24px;border-width:2px;border-bottom-width:4px}.classic-pack-count{height:36px;min-width:36px;font-size:18px;border-width:2px}.supply-bottom{padding:10px;gap:7px}.supply-cart-line{font-size:12px}.supply-cart-line strong{font-size:15px}.supply-ok{font-size:16px;padding:8px 17px}.supply-review-table{font-size:11px}.supply-review-table th{font-size:10px}}
+
+
+/* NEIGHBORHOOD + EQUIPMENT EXPANSION */
+.game-board{grid-template-columns:minmax(340px,.87fr) minmax(0,1.43fr)}
+.wrap{max-width:1560px}
+.neighborhood-scene{background:#8ed779!important;min-height:425px;max-height:500px;height:435px;isolation:isolate}
+.neighborhood-scene:before,.neighborhood-scene:after{display:none!important}
+.street-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.neighborhood-scene .stand{left:33%;bottom:16%;transform:translateX(-50%) scale(.87);transform-origin:center bottom;z-index:5}
+.neighborhood-scene .stand.fast .awning{background:repeating-linear-gradient(90deg,#f8f4dd 0 23px,#dff1ad 23px 46px)}
+.neighborhood-scene .stand.fancy .awning{background:repeating-linear-gradient(90deg,#fff8e4 0 23px,#d34d4d 23px 46px)}
+.neighborhood-scene .stand.castle .awning{background:repeating-linear-gradient(90deg,#f9dd81 0 24px,#edd35b 24px 48px)}
+.neighborhood-scene .scene-bar{z-index:14}
+.neighborhood-scene .selling-bubble{z-index:20}
+.district-tag{position:absolute;left:18%;bottom:10%;background:#fff7cd;border:2px solid #226f38;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:1000;z-index:6}
+.competing-stand{position:absolute;right:7%;bottom:36%;width:123px;height:100px;z-index:5;filter:drop-shadow(0 6px 3px #24382055);transform:skewY(-3deg)}
+.competing-stand[hidden]{display:none!important}
+.rival-roof{height:31px;display:grid;place-items:center;background:repeating-linear-gradient(90deg,#fcf0d8 0 21px,#da6d73 21px 41px);border:3px solid #924449;border-radius:7px 7px 0 0;font-weight:1000;font-size:10px;color:#57282a}
+.rival-front{height:56px;background:#d7ab76;border:4px solid #85543e;text-align:center;display:flex;align-items:center;justify-content:space-around;font-size:28px}.rival-front span{font-size:14px;font-weight:900;color:#693d23}
+.rival-name{position:absolute;left:-10px;right:-10px;bottom:-20px;background:#ffeab9;padding:3px 4px;border:2px solid #ab5d54;border-radius:7px;text-align:center;font-size:10px;font-weight:1000;color:#913c35}
+.queue-deck{display:flex;gap:4px;align-items:flex-end;position:absolute;left:45%;bottom:17%;z-index:9;min-height:71px}
+.queue-person{width:23px;height:59px;position:relative;filter:drop-shadow(0 3px 1px #27452855);animation:personBounce .45s ease-out}
+.queue-person::before{content:'';position:absolute;top:2px;left:4px;width:16px;height:17px;border-radius:50%;background:var(--skin,#e1aa78);border:1px solid #77513d}
+.queue-person::after{content:'';position:absolute;left:3px;top:21px;width:18px;height:22px;border:1px solid #425848;background:var(--shirt,#5982c7);border-radius:6px 6px 3px 3px;box-shadow:0 17px 0 -5px #344d5c,9px 17px 0 -5px #344d5c}
+@keyframes personBounce{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.angry-pop,.rival-pop{position:absolute;z-index:21;font-size:21px;font-weight:1000;animation:angerFloat 1.1s ease-out forwards;text-shadow:1px 2px white}
+.angry-pop{left:67%;bottom:25%;color:#ca3838}.rival-pop{right:17%;bottom:58%;color:#fff1aa}
+@keyframes angerFloat{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translate(45px,-68px)}}
+.world-live-stats{position:absolute;left:12px;bottom:9px;background:#f9ffdded;border:2px solid #25733a;border-radius:8px;padding:6px 9px;font-size:11px;font-weight:1000;color:#14572d;z-index:11}
+.neighborhood-event{position:absolute;top:65px;right:10px;max-width:230px;border-radius:9px;border:2px solid #a85d2d;background:#fff1aeeb;padding:9px 12px;font-size:12px;line-height:1.35;font-weight:900;color:#79552e;z-index:15}
+.competition-results{background:#fff3ca;border:2px solid #dfca89;padding:11px;border-radius:9px;font-weight:850;font-size:12px;line-height:1.5;color:#71512e}
+.upgrade-browser{display:grid;grid-template-columns:43px minmax(0,1fr) 43px;gap:5px;align-items:center;margin-top:13px}
+.upgrade-next{border:3px solid #277f36;border-bottom-width:5px;border-radius:9px;background:#a9ea3f;height:53px;font-size:24px;color:#174f23;font-weight:1000}
+.upgrade-showcase{padding:12px 13px 10px;border:4px solid #278133;border-bottom:8px solid #16702f;border-radius:12px;background:#0b9038;color:#f6ffdf;min-height:202px;box-shadow:inset 0 3px 0 #37bd59}
+.upgrade-heading{display:flex;gap:12px;align-items:center}.upgrade-art{font-size:46px;display:grid;place-items:center;background:#afea60;border:2px solid #eaff8f;width:72px;height:70px;border-radius:12px;flex-shrink:0}
+.upgrade-heading h3{margin:0;color:#faffd8;font-size:18px;line-height:1.1}.upgrade-showcase p{font-size:14px;line-height:1.5;color:#ecffd4;margin:12px 0}.upgrade-price{font-size:25px;text-align:right;font-weight:1000;color:#fdffb5}
+.upgrade-count{color:#33683c;text-align:center;font-size:11px;font-weight:1000;margin:8px 0}
+.upgrade-effect{padding:11px;background:#d8f4b5;color:#225c35;border:2px solid #add984;border-radius:9px;font-size:12px;line-height:1.5;font-weight:800}
+.buy-upgrade{width:100%;background:#b3ed4a;border:3px solid #5baf30;border-bottom:5px solid #27882c;border-radius:10px;color:#125328;font-size:17px;font-weight:1000;padding:12px;margin-top:13px}
+.buy-upgrade:disabled{opacity:.54}
+@media(max-width:1100px){.game-board{grid-template-columns:1fr;grid-template-areas:"controls" "scene" "bottom"}.neighborhood-scene{height:380px;min-height:360px;max-height:none}.wrap{padding-right:15px}}
+@media(max-width:620px){.game-tab{flex:1 1 29%;min-height:54px;font-size:10px}.game-tab .tab-icon{font-size:19px}.neighborhood-scene{height:277px;min-height:270px;max-height:none}.neighborhood-scene .stand{transform:translateX(-50%) scale(.6);left:32%;bottom:13%}.competing-stand{transform:skewY(-3deg) scale(.72);right:1%;bottom:35%}.queue-deck{left:42%;bottom:18%;gap:1px;transform:scale(.78);transform-origin:bottom left}.district-tag{left:6%;bottom:8%;font-size:9px}.scene-label{font-size:9px}.world-live-stats{font-size:9px}.neighborhood-event{font-size:9px;max-width:140px;top:61px}.upgrade-browser{grid-template-columns:34px minmax(0,1fr) 34px}.upgrade-next{width:34px;font-size:17px}.upgrade-showcase{padding:8px;min-height:192px}.upgrade-heading{gap:6px}.upgrade-art{width:48px;height:50px;font-size:27px}.upgrade-heading h3{font-size:14px}.upgrade-showcase p{font-size:12px}.upgrade-price{font-size:20px}}
+
+
+.walkaway-customer{position:absolute;left:60%;bottom:17%;width:30px;height:73px;z-index:22;pointer-events:none;animation:leaveHuffy 2s ease-in forwards;filter:drop-shadow(1px 4px 2px #273a3d70)}
+.walkaway-customer .wc-head{display:block;width:26px;height:27px;border:2px solid #6b4b3f;background:#e5b58c;border-radius:50%;position:absolute;left:3px;top:0;text-align:center;line-height:22px;font-size:13px;color:#863229;font-weight:1000}
+.walkaway-customer .wc-body{position:absolute;top:28px;left:2px;width:28px;height:28px;border:2px solid #345f52;border-radius:7px;background:#d77f59}
+.walkaway-customer .wc-legs{position:absolute;top:56px;left:6px;width:8px;height:17px;background:#354f69;box-shadow:12px 0 #354f69}
+.walkaway-customer .wc-mood{position:absolute;left:-10px;top:-25px;background:#fff2c5;border:2px solid #cc655b;border-radius:8px;padding:2px 5px;font-size:15px}
+.walkaway-customer.rival-walk{left:46%;bottom:28%;animation:rivalArrival 1.6s ease-out forwards}.walkaway-customer.rival-walk .wc-body{background:#96b77b}
+@keyframes leaveHuffy{0%{opacity:0;transform:translateX(0)}10%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(220px,35px)}}
+@keyframes rivalArrival{0%{opacity:0;transform:translateX(0)}15%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translate(170px,-43px)}}
+@media(max-width:620px){.walkaway-customer{transform-origin:bottom;scale:.7}@keyframes leaveHuffy{0%{opacity:0;transform:translateX(0)}10%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(125px,24px)}}@keyframes rivalArrival{0%{opacity:0;transform:translateX(0)}15%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translate(110px,-24px)}}}
+
+/* === voxel scene refresh === */
+.neighborhood-scene{position:relative;height:430px;min-height:430px;max-height:none;background:linear-gradient(180deg,#8bd4f6 0 34%,#8bcf68 34% 100%);border:3px solid #003e1b;border-radius:10px;overflow:hidden;isolation:isolate}
+.neighborhood-scene .street-art{display:none}
+.scene-bar{z-index:25}
+.scene-nav{position:absolute;left:12px;top:52px;display:flex;gap:7px;z-index:26;flex-wrap:wrap}
+.scene-chip{border:2px solid #145f2d;background:#eef9cb;color:#145f2d;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:1000;box-shadow:0 3px 0 #0e4d24}
+.scene-chip.active{background:#fffef1;color:#0f592e;transform:translateY(1px);box-shadow:0 2px 0 #0e4d24}
+.voxel-stage{position:absolute;inset:0}
+.voxel-stage[hidden]{display:none !important}
+.outside-stage{background:radial-gradient(circle at 72% 8%,#d8f0ff 0 9%,transparent 10%),linear-gradient(180deg,#8bd4f6 0 34%,#8bcf68 34% 100%)}
+.voxel-road{position:absolute;left:-6%;right:-6%;top:49%;height:104px;background:#5b6774;border-top:7px solid #d6d8d4;border-bottom:7px solid #d6d8d4;transform:skewY(-18deg);box-shadow:0 6px 0 #43505a}
+.voxel-road::after{content:"";position:absolute;left:10%;right:12%;top:47px;height:6px;background:repeating-linear-gradient(90deg,#ffd75d 0 36px,transparent 36px 72px);opacity:.95}
+.voxel-lawn{position:absolute;inset:0;background-image:radial-gradient(circle at 18% 44%,#75b85b 0 1px,transparent 2px),radial-gradient(circle at 64% 70%,#75b85b 0 1px,transparent 2px);background-size:22px 22px,26px 26px;opacity:.55}
+.voxel-strip{position:absolute;height:26px;background:#e9e7de;transform:skewY(-18deg);box-shadow:0 2px 0 #c9c6be}
+.voxel-strip.top{left:-4%;right:-3%;top:41%}
+.voxel-strip.bottom{left:-4%;right:-3%;top:66%}
+.voxel-house{position:absolute;width:145px;height:118px;z-index:8;filter:drop-shadow(0 8px 3px #21322033)}
+.voxel-house .roof{position:absolute;top:0;left:16px;width:116px;height:46px;background:#96546b;clip-path:polygon(0 58%,60% 0,100% 24%,42% 84%);box-shadow:inset -8px -10px 0 #763b4f}
+.voxel-house .front{position:absolute;left:20px;top:38px;width:82px;height:80px;background:#d7b180;clip-path:polygon(0 0,100% 28%,100% 100%,0 72%);box-shadow:inset -14px -6px 0 #c29369}
+.voxel-house .side{position:absolute;left:100px;top:28px;width:38px;height:90px;background:#c59262;clip-path:polygon(0 12%,100% 0,100% 78%,0 100%)}
+.voxel-house .window{position:absolute;background:#a6e5ef;border:4px solid #5d7480;border-radius:2px}
+.voxel-house .door{position:absolute;background:#a86c4c;border:4px solid #6d4a36;border-radius:3px}
+.voxel-house.left{left:10px;top:96px}.voxel-house.left .window{left:30px;top:58px;width:22px;height:22px}.voxel-house.left .door{left:66px;top:77px;width:18px;height:32px}
+.voxel-house.right{right:30px;top:78px;transform:scale(1.02)}.voxel-house.right .roof{background:#477d66;box-shadow:inset -8px -10px 0 #35634f}.voxel-house.right .front{background:#d7ae87}.voxel-house.right .side{background:#c09165}.voxel-house.right .window{left:88px;top:63px;width:21px;height:23px}.voxel-house.right .door{left:50px;top:82px;width:17px;height:30px}
+.voxel-tree{position:absolute;z-index:7}.voxel-tree .crown{width:72px;height:72px;border-radius:50%;background:#4f9b4c;box-shadow:inset -10px -10px 0 #3d7f3d, 42px -4px 0 -8px #539d50, 20px 18px 0 -5px #5ba559}.voxel-tree .trunk{width:16px;height:62px;background:#a06f4e;margin:0 auto;border-radius:5px;transform:translateY(-6px)}
+.voxel-tree.left{left:142px;top:95px}.voxel-tree.right{right:12px;bottom:8px;transform:scale(1.15)}
+.voxel-bench{position:absolute;left:47%;top:72px;width:84px;height:18px;background:#c78a5f;border-radius:4px;transform:translateX(-50%)}
+.voxel-bench::before,.voxel-bench::after{content:"";position:absolute;bottom:-18px;width:8px;height:18px;background:#83543c}.voxel-bench::before{left:12px}.voxel-bench::after{right:12px}
+.voxel-stand{position:absolute;left:17%;bottom:56px;width:198px;height:162px;z-index:18;border:0;background:transparent;padding:0;cursor:pointer;filter:drop-shadow(0 11px 6px #22412345)}
+.voxel-stand .voxel-awning{position:absolute;left:26px;top:0;width:130px;height:34px;background:repeating-linear-gradient(90deg,#fff4df 0 24px,#e38d6d 24px 48px);border:4px solid #9a5f43;border-bottom-width:8px;border-radius:9px 9px 12px 12px;transform:skewX(-18deg)}
+.voxel-stand .voxel-top{position:absolute;left:23px;top:44px;width:124px;height:16px;background:#d7a06d;transform:skewX(-18deg);box-shadow:0 2px 0 #956441}
+.voxel-stand .post{position:absolute;top:51px;width:9px;height:78px;background:#8b603f}.voxel-stand .post.left{left:32px}.voxel-stand .post.right{left:137px}
+.voxel-stand .counter{position:absolute;left:20px;top:62px;width:128px;height:66px;background:linear-gradient(90deg,#e7bd84 0 31px,#f1c991 31px 63px,#e7bd84 63px 95px,#f1c991 95px);border:4px solid #926444;clip-path:polygon(0 0,100% 0,94% 100%,0 100%)}
+.voxel-stand .sign{position:absolute;left:45px;top:82px;min-width:90px;background:#fff5cb;border:3px solid #7f5c3f;border-radius:8px;padding:6px 9px;font-weight:1000;line-height:1.05;text-align:center;transform:rotate(-4deg)}
+.voxel-stand .sign span{display:block;font-size:10px;margin-top:4px}
+.voxel-stand .pitcher{position:absolute;left:53px;top:48px;width:26px;height:35px;border:3px solid #f3fbff;border-radius:5px 5px 10px 10px;background:linear-gradient(180deg,#dff9ff 0 34%,#f4d35e 34% 100%);box-shadow:0 0 0 2px #92a0a2}
+.voxel-stand .pitcher::after{content:"";position:absolute;left:8px;top:-5px;width:6px;height:24px;border-left:3px solid #f07478;transform:rotate(14deg)}
+.voxel-stand .cup-group{position:absolute;left:98px;top:58px;display:flex;gap:4px}.voxel-stand .cup-group i{display:block;width:16px;height:22px;background:linear-gradient(#fff6e7 0 26%,#f5d164 27%);clip-path:polygon(0 0,100% 0,85% 100%,15% 100%)}
+.voxel-stand .stand-badges{position:absolute;right:-8px;top:46px;display:grid;gap:4px}.voxel-stand .stand-badges span{display:grid;place-items:center;width:24px;height:24px;background:#f8ffd8;border:2px solid #2a7b3c;border-radius:7px;font-size:14px;box-shadow:0 2px 0 #1a5b30}
+.voxel-stand.fancy .voxel-awning{background:repeating-linear-gradient(90deg,#fff4df 0 20px,#e86b55 20px 40px)}
+.voxel-stand.castle .voxel-awning{background:repeating-linear-gradient(90deg,#f1dd65 0 24px,#b9a642 24px 48px);border-color:#7b6b28}
+.voxel-stand.castle .counter{background:linear-gradient(90deg,#f7db72 0 31px,#e3c65f 31px 63px,#f7db72 63px 95px,#e3c65f 95px);border-color:#7d6827}
+.voxel-stand.fast::after{content:"⚡";position:absolute;left:2px;top:30px;width:24px;height:24px;border-radius:50%;background:#fff5c7;display:grid;place-items:center;border:2px solid #cc9d31;font-size:14px;box-shadow:0 2px 0 #a0781d}
+.competing-stand{position:absolute;right:88px;top:170px;width:118px;height:102px;z-index:14;border:0;background:transparent;transform:scale(.95)}
+.competing-stand .rival-roof{position:absolute;left:18px;top:0;width:78px;height:20px;background:repeating-linear-gradient(90deg,#cce8ff 0 18px,#7ba8cc 18px 36px);border:3px solid #486985;border-bottom-width:6px;border-radius:7px 7px 10px 10px;transform:skewX(-18deg);text-indent:-9999px}
+.competing-stand .rival-front{position:absolute;left:16px;top:32px;width:80px;height:43px;background:#d4ecff;border:4px solid #55789b;clip-path:polygon(0 0,100% 0,94% 100%,0 100%);font-size:22px;display:grid;place-items:center;color:#21496c}
+.competing-stand .rival-front span{display:block;font-size:10px;font-weight:1000;margin-top:3px}
+.competing-stand .rival-name{position:absolute;left:-8px;top:76px;background:#fff5cc;border:2px solid #236a36;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:1000}
+.queue-deck{position:absolute;left:37%;bottom:98px;display:flex;align-items:flex-end;gap:3px;z-index:17}
+.world-live-stats{position:absolute;left:12px;bottom:11px;z-index:27}
+.neighborhood-event{z-index:28}
+.district-tag{position:absolute;left:16px;bottom:52px;z-index:27;background:#fff6ce;border:2px solid #226f38;border-radius:9px;padding:5px 10px;font-weight:1000}
+.inside-stage{padding:94px 34px 42px;background:linear-gradient(180deg,#99d0ec 0 34%,#cad79d 34% 100%)}
+.inside-shell{position:relative;width:100%;height:100%;border-radius:16px;background:linear-gradient(180deg,#efe7cf 0 57%,#d5b381 57% 100%);border:4px solid #8d6645;box-shadow:inset 0 -18px 0 #b8895d,0 16px 0 #36513820;overflow:hidden}
+.inside-shell::before{content:"";position:absolute;left:-20px;right:-20px;top:0;height:82px;background:linear-gradient(180deg,#c6a279,#b98e62);transform:skewX(-18deg);transform-origin:top left}
+.inside-banner{position:absolute;left:32px;top:22px;background:#fff4d4;border:3px solid #7d603e;border-radius:10px;padding:8px 12px;font-weight:1000;z-index:2;max-width:240px}
+.inside-banner small{display:block;font-size:11px;color:#5e6749;margin-top:2px}
+.inside-window-view{position:absolute;right:26px;top:22px;width:190px;height:90px;border:4px solid #5e7681;border-radius:8px;background:linear-gradient(180deg,#a7e2ff 0 48%,#89cf63 48% 100%);overflow:hidden}
+.inside-window-view::before{content:"";position:absolute;left:-8px;right:-8px;top:42px;height:26px;background:#5b6774;transform:skewY(-12deg)}
+.inside-window-view::after{content:"";position:absolute;left:92px;top:18px;width:42px;height:30px;background:repeating-linear-gradient(90deg,#fff4df 0 11px,#e38d6d 11px 22px);border:3px solid #8d5f42;transform:skewX(-18deg)}
+.inside-countertop{position:absolute;left:0;right:0;bottom:78px;height:72px;background:linear-gradient(90deg,#b47d4f 0 15%,#d1a06b 15% 85%,#af774b 85% 100%);border-top:5px solid #7f5a3e}
+.inside-countertop::before{content:"";position:absolute;left:18px;top:-44px;width:116px;height:44px;background:#e7bd84;border:4px solid #926444;border-radius:7px 7px 0 0}
+.inside-equipment-title{position:absolute;left:24px;top:116px;font-weight:1000;color:#0f592e;font-size:15px}
+.interior-equipment{position:absolute;left:22px;right:22px;top:140px;display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.equip-card{background:#f8ffd7;border:2px solid #2f7b3f;border-radius:12px;padding:10px;min-height:74px;box-shadow:0 3px 0 #205f31}.equip-card strong{display:block;font-size:12px;margin-top:4px}.equip-card span{font-size:10px;color:#476048;font-weight:800;line-height:1.25;display:block;margin-top:3px}.equip-icon{font-size:22px}
+.interior-storage{position:absolute;left:24px;right:24px;bottom:16px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;z-index:2}
+.storage-card{background:#fff7d6;border:2px solid #7e633f;border-radius:10px;padding:8px 6px;text-align:center;box-shadow:0 2px 0 #b38b58}.storage-card b{display:block;font-size:16px;margin-top:2px}.storage-card span{display:block;font-size:10px;color:#5b6044;font-weight:900}.inside-helper{position:absolute;right:24px;bottom:165px;max-width:205px;background:#f9ffdd;border:2px solid #25733a;border-radius:10px;padding:8px 10px;font-size:11px;font-weight:1000;color:#14572d;z-index:2}
+.inside-helper strong{display:block;font-size:12px;margin-bottom:4px}
+.inside-exit{position:absolute;right:22px;top:124px;border:2px solid #145f2d;background:#eef9cb;color:#145f2d;border-radius:999px;padding:6px 11px;font-size:11px;font-weight:1000;box-shadow:0 3px 0 #0e4d24;z-index:2}
+.neighborhood-scene[data-view="inside"] .queue-deck,.neighborhood-scene[data-view="inside"] .district-tag,.neighborhood-scene[data-view="inside"] .competing-stand{display:none !important}
+@media(max-width:620px){.neighborhood-scene{height:320px;min-height:320px}.scene-nav{top:48px}.scene-chip{font-size:9px;padding:5px 8px}.voxel-stand{left:9%;bottom:46px;transform:scale(.78);transform-origin:bottom left}.competing-stand{right:6px;top:144px;transform:scale(.72)}.queue-deck{left:35%;bottom:80px;transform:scale(.8);transform-origin:bottom left}.voxel-house.left{left:-10px;top:108px;transform:scale(.84)}.voxel-house.right{right:-10px;top:96px;transform:scale(.86)}.voxel-tree.left{left:110px;top:104px;transform:scale(.9)}.inside-stage{padding:86px 10px 34px}.inside-banner{left:12px;right:12px;max-width:none;font-size:12px}.inside-window-view{display:none}.inside-equipment-title{left:12px;top:108px}.interior-equipment{left:10px;right:10px;top:130px;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.equip-card{padding:7px;min-height:64px}.equip-card strong{font-size:11px}.equip-card span{font-size:9px}.inside-helper{right:10px;bottom:154px;max-width:150px;font-size:10px;padding:7px 8px}.interior-storage{left:10px;right:10px;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.storage-card{padding:6px 3px}.storage-card b{font-size:13px}.storage-card span{font-size:8px}.inside-exit{right:10px;top:100px;font-size:9px;padding:5px 8px}}
+
+</style><style>#outsideStage,#insideStage,#queueDeck{display:none!important}</style><link rel="stylesheet" href="/src/scene.css"></head>
+<body><div class="wrap" id="ll-app">
+<header class="hud">
+ <div class="mini-brand"><div class="brand-icon">🍋</div><div><h1>LEMONADE LANE</h1><small>BUILD YOUR BUSINESS!</small></div></div>
+ <div class="hud-resources" aria-label="Inventory and money">
+  <span class="res-item" title="Lemons">🍋 <b id="stockLemons">0</b></span>
+  <span class="res-item" title="Sugar">🍬 <b id="stockSugar">0</b></span>
+  <span class="res-item" title="Ice">🧊 <b id="stockIce">0</b></span>
+  <span class="res-item" title="Paper cups">🥤 <b id="stockCups">0</b></span>
+  <span class="res-item day" id="dayPill">DAY 1</span>
+  <span class="res-item cash">💵 <strong id="cashHead">$0.00</strong></span>
+  <button type="button" class="utility" id="ledgerBtn" title="View your business records">📒 Books</button>
+  <button type="button" class="utility" id="helpBtn" title="How to play">?</button>
+ </div>
+</header>
+<div class="cup-capacity-banner" id="cupCapacityBanner" role="status" aria-live="polite"><div class="capacity-copy">Total number of cups you're able to make with this inventory</div><div class="capacity-number" id="cupCapacity">0</div></div>
+<main id="standScreen" class="stand-screen">
+<div class="game-title"><h2>🍹 Your lemonade stand</h2><span>MODULE 1 · RUN A BUSINESS</span></div>
+ <button class="bank-arrow" id="visitBank" type="button" aria-label="Go to Lemonade Lane Bank"><span class="bank-arrow-icon">🏦</span><span>Bank <small id="bankAlert"></small></span></button>
+ <nav class="game-tabs" role="tablist" aria-label="Game menus">
+ <button type="button" class="game-tab active" data-tab="location" role="tab" aria-selected="true" aria-controls="pane-location"><span class="tab-icon">📍</span>Location</button>
+ <button type="button" class="game-tab" data-tab="recipe" role="tab" aria-selected="false" aria-controls="pane-recipe"><span class="tab-icon">🍋</span>Recipe</button>
+ <button type="button" class="game-tab" data-tab="price" role="tab" aria-selected="false" aria-controls="pane-price"><span class="tab-icon">💰</span>Price</button>
+ <button type="button" class="game-tab" data-tab="supplies" role="tab" aria-selected="false" aria-controls="pane-supplies"><span class="tab-icon">📦</span>Supplies</button>
+ <button type="button" class="game-tab" data-tab="upgrades" role="tab" aria-selected="false" aria-controls="pane-upgrades"><span class="tab-icon">⚙️</span>Upgrades</button>
+ <button type="button" class="game-tab" data-tab="results" role="tab" aria-selected="false" aria-controls="pane-results"><span class="tab-icon">📊</span>Results</button>
+</nav>
+<div class="game-board">
+ <section class="control-window" aria-label="Business controls">
+  <div class="control-top"><h2 id="panelTitle">Choose a spot</h2><span class="micro-tag">MY STAND</span></div>
+  <div class="setup" id="setup">
+   <section class="tab-pane" id="pane-location" data-pane="location" role="tabpanel">
+    <p class="lead">Where should you sell lemonade today?</p>
+    <div class="location-grid" id="locations">
+     <button type="button" class="location active" data-loc="neighborhood"><span class="emoji">🏡</span><strong>Neighborhood</strong><small>$4 per day</small></button>
+     <button type="button" class="location" data-loc="park"><span class="emoji">🌳</span><strong>Park</strong><small>$6 per day</small></button>
+     <button type="button" class="location" data-loc="square"><span class="emoji">🏙️</span><strong>Downtown</strong><small>$9 per day</small></button>
+     <button type="button" class="location" data-loc="beach"><span class="emoji">🏖️</span><strong>Waterfront</strong><small>$17 per day</small></button>
+    </div>
+    <div class="location-tip">💡 <span id="locationHint">Lower permit fee and steady family foot traffic.</span></div>
+   </section>
+   <section class="tab-pane" id="pane-recipe" data-pane="recipe" role="tabpanel" hidden>
+    <p class="lead">Make your own lemonade! Amounts are for one pitcher (10 cups).</p>
+    <div class="adjust-grid">
+     <div class="adjust"><span class="adjust-title">🍋 Lemons</span><div class="counter"><button data-recipe="lemons" data-change="-1" aria-label="Use fewer lemons">−</button><input id="recipeLemons" data-recipe-input="lemons" type="number" min="0" max="10" step="0.1" value="0.0" aria-label="Lemons per pitcher"><button data-recipe="lemons" data-change="1" aria-label="Use more lemons">+</button></div></div>
+     <div class="adjust"><span class="adjust-title">🍬 Sugar</span><div class="counter"><button data-recipe="sugar" data-change="-1" aria-label="Use less sugar">−</button><input id="recipeSugar" data-recipe-input="sugar" type="number" min="0" max="10" step="0.1" value="0.0" aria-label="Sugar per pitcher"><button data-recipe="sugar" data-change="1" aria-label="Use more sugar">+</button></div></div>
+     <div class="adjust"><span class="adjust-title">🧊 Ice</span><div class="counter"><button data-recipe="ice" data-change="-1" aria-label="Use less ice">−</button><input id="recipeIce" data-recipe-input="ice" type="number" min="0" max="12" step="0.1" value="0.0" aria-label="Ice per pitcher"><button data-recipe="ice" data-change="1" aria-label="Use more ice">+</button></div></div>
+    </div>
+    <div id="recipeBooks" class="notice"></div><div class="taste" id="tasteHint">⭐ Delicious!</div>
+   </section>
+   <section class="tab-pane" id="pane-price" data-pane="price" role="tabpanel" hidden>
+    <p class="lead">Choose what to charge and how much to make.</p>
+    <div class="price-row"><div><label>💵 Price per cup</label><small>Higher prices may mean fewer buyers.</small></div><div class="counter"><button data-adjust="price" data-change="-1" aria-label="Lower price">−</button><strong id="priceValue">$2.25</strong><button data-adjust="price" data-change="1" aria-label="Raise price">+</button></div></div>
+    <div class="price-row"><div><label>🥤 Pitchers to make</label><small>10 cups in each pitcher. Leftovers spoil.</small></div><div class="counter"><button data-adjust="pitchers" data-change="-1" aria-label="Fewer pitchers">−</button><strong id="pitcherValue">2</strong><button data-adjust="pitchers" data-change="1" aria-label="More pitchers">+</button></div></div>
+    <div class="price-forecast"><span>Best possible profit<br><small>If every cup sells</small></span><strong id="planMax">$31.60</strong></div>
+   </section>
+   <section class="tab-pane" id="pane-supplies" data-pane="supplies" role="tabpanel" hidden>
+    <div class="supply-store">
+     <p class="supply-instructions">Choose a supply, then use + and − to select how many packages to buy. Press OK to review before spending any money.</p>
+     <div class="supply-categories" id="supplyCategories" role="tablist" aria-label="Choose supplies to buy"></div>
+     <div class="classic-supply-list" id="inventory" aria-label="Supply pack choices"></div>
+     <div class="supply-bottom"><div class="supply-cart-line"><span id="supplyCartCount">0 packages</span><br><strong id="supplyCartTotal">$0.00</strong> total</div><div class="supply-cart-actions"><button type="button" class="supply-clear" id="clearSupplyCart">Clear</button><button type="button" class="supply-ok" id="reviewSupplies" disabled>OK →</button></div></div>
+     <div class="supply-remaining" id="supplyAvailable">Stand cash: $0.00</div>
+    </div>
+    <p class="hint">💡 Supply selections aren't purchased until you confirm the order.</p>
+   </section>
+  </div>
+  <section class="tab-pane" id="pane-upgrades" data-pane="upgrades" role="tabpanel" hidden>
+   <p class="lead">Improve your business to serve more customers and protect your supplies!</p>
+   <div class="upgrade-browser">
+    <button type="button" class="upgrade-next" id="upgradePrev" aria-label="Previous upgrade">◀</button>
+    <div class="upgrade-showcase" id="upgradeCard"></div>
+    <button type="button" class="upgrade-next" id="upgradeNext" aria-label="Next upgrade">▶</button>
+   </div>
+   <div class="upgrade-count" id="upgradeCount">Upgrade 1 of 13</div>
+   <div class="upgrade-effect" id="upgradeBenefit"></div>
+   <button type="button" id="buyUpgrade" class="buy-upgrade">BUY UPGRADE</button>
+   <p class="hint">💡 Equipment is a business asset. You can save your earnings or borrow from the bank to expand.</p>
+  </section>
+  <section class="tab-pane" id="pane-results" data-pane="results" role="tabpanel" hidden>
+   <p class="lead">How did your lemonade stand do?</p>
+   <div class="result-summary" id="latestResult">Finish your first day to see your results.</div>
+   <div class="stats"><div class="stat"><b id="scoreVisitors">—</b><span>People passing by</span></div><div class="stat"><b id="scoreSold">—</b><span>Cups sold</span></div><div class="stat"><b id="scoreRevenue">—</b><span>Money earned</span></div><div class="stat"><b id="scoreProfit">—</b><span>Profit / loss</span></div></div>
+   <div class="competition-results" id="competitionResults">Watch how lines and nearby businesses affect your sales.</div><div class="result-history"><h3>Daily income & expenses · last 7 days</h3><div id="historyBars" class="history"><span class="empty">Your results will show up here.</span></div></div>
+   <div class="education"><strong>💡 Money lesson</strong><span id="lesson">Sales money isn't all profit. You must also pay for ingredients and your location.</span></div>
+   <div class="result-actions"><button type="button" class="next" id="resultNext" hidden>Plan next day →</button><button type="button" class="small-link" id="booksLink">📒 See your money records →</button></div>
+  </section>
+ </section>
+ <section class="world-window" aria-label="Lemonade stand and weather">
+  <div class="world-heading"><span id="areaHeading">THE NEIGHBORHOOD</span><div class="heading-forecast"><div class="scene-label" id="weatherLabel"></div><div class="scene-label" id="crowdLabel"></div></div><span id="phaseLabel">READY TO OPEN</span></div>
+  <div class="skyline neighborhood-scene" id="scene" data-location="park" data-view="outside">
+
+   <div id="world3d" tabindex="0" aria-label="Interactive 3D neighborhood. Click the lemonade stand to inspect it. Drag or use arrow keys to rotate. Escape returns."></div><div id="scene3dError" hidden role="alert"></div><div class="scene-nav" aria-label="Neighborhood view choices"><button type="button" class="scene-chip active" data-scene-view="outside" aria-pressed="true">Neighborhood</button><button type="button" class="scene-chip" data-scene-view="exterior" aria-pressed="false">My stand</button><button type="button" class="scene-chip" data-scene-view="inside" aria-pressed="false">Inside stand</button></div>
+   <button type="button" id="sceneBack" hidden>← Back to neighborhood</button><div id="sceneInventory" class="scene-inventory" aria-live="polite"></div><div class="voxel-stage outside-stage" id="outsideStage" hidden inert>
+    <div class="voxel-lawn"></div>
+    <div class="voxel-road"></div>
+    <div class="voxel-strip top"></div>
+    <div class="voxel-strip bottom"></div>
+    <div class="voxel-house left"><span class="roof"></span><span class="front"></span><span class="side"></span><span class="window"></span><span class="door"></span></div>
+    <div class="voxel-house right"><span class="roof"></span><span class="front"></span><span class="side"></span><span class="window"></span><span class="door"></span></div>
+    <div class="voxel-tree left"><div class="crown"></div><div class="trunk"></div></div>
+    <div class="voxel-tree right"><div class="crown"></div><div class="trunk"></div></div>
+    <div class="voxel-bench"></div>
+    <div class="district-tag" id="districtTag">🍋 YOUR STREET</div>
+    <button class="stand voxel-stand" id="playerStand" type="button" aria-label="See your stand from the inside"><span class="voxel-awning"></span><span class="voxel-top"></span><span class="post left"></span><span class="post right"></span><span class="pitcher"></span><span class="cup-group"><i></i><i></i><i></i></span><span class="counter"></span><span class="sign">🍋 FRESH!<span id="standPrice">$2.25 / CUP</span></span><span class="stand-badges" id="standBadges"></span></button>
+    <div class="competing-stand" id="competitorStand" hidden><div class="rival-roof">COOL CUP</div><div class="rival-front">🥤<span id="rivalPrice">$2.00</span></div><div class="rival-name">⚔ COMPETITOR</div></div>
+   </div>
+   <div class="voxel-stage inside-stage" id="insideStage" hidden>
+    <div class="inside-shell" id="insideShell">
+      <div class="inside-banner"><strong id="interiorCaption">Inside your stand</strong><small>Click back outside whenever you want to return to the street.</small></div>
+      <div class="inside-window-view" aria-hidden="true"></div>
+      <button type="button" class="inside-exit" id="exitStandView">← Back outside</button>
+      <div class="inside-equipment-title">Your workspace & upgrades</div>
+      <div class="interior-equipment" id="interiorEquipment"></div>
+      <div class="inside-helper" id="insideHelper"><strong>Production snapshot</strong><span id="insideStatus">You can currently make 0 cups.</span></div>
+      <div class="inside-countertop"></div>
+      <div class="interior-storage" id="interiorStorage"></div>
+    </div>
+   </div>
+   <div class="queue-deck" id="queueDeck" aria-label="Customers waiting in line"></div>
+   <div class="world-live-stats" id="worldLiveStats">👥 Queue: 0 &nbsp; 🚶 Left upset: 0</div>
+   <div class="neighborhood-event" id="neighborhoodEvent" hidden></div>
+  </div>
+  <div class="scene-caption"><div class="place-head"><h2 id="placeName">Park</h2><span id="feeBadge">$4 permit</span></div><p id="sceneTitle">Your lemonade stand</p><p id="sceneDescription">Make your choices, then start selling!</p><div class="live" id="liveDisplay">☀️ Customers are coming!<div class="progress"><div id="runProgress"></div></div></div></div>
+ </section>
+ <div class="bottom-strip">
+  <div class="bottom-plan"><div class="plan-detail"><b id="planCups">20</b><span>CUPS TO MAKE</span></div><div class="plan-detail"><b id="planCost">$9.40</b><span>RECIPE COST</span></div><div class="break-even" id="breakEven">Sell 6 cups to break even</div></div>
+  <button type="button" class="start" id="startBtn">▶ START DAY</button>
+  <div class="notice" id="validation" style="display:none"></div>
+  <div class="live" id="runningNote">Your stand is open! Watch the customers walk by.</div>
+ </div>
+</div>
+
+</main>
+<section id="bankScreen" class="bank-screen" hidden aria-label="Lemonade Lane Bank">
+ <header class="bank-head">
+  <button type="button" id="returnToStand" class="back-stand">← Stand</button>
+  <div class="bank-brand"><span class="bank-building">🏦</span><div><small>LEMONADE LANE</small><h2>BANK</h2></div></div>
+  <div class="bank-day" id="bankDay">DAY 1</div>
+ </header>
+ <div class="bank-balances" aria-label="Bank account balances">
+  <div class="balance-card"><span>💳 CHECKING ACCOUNT</span><strong id="bankChecking">$0.00</strong><small>Money available in your bank</small></div>
+  <div class="balance-card debt"><span>🧾 LOAN BALANCE</span><strong id="bankDebt">$0.00</strong><small>Amount you still owe</small></div>
+  <div class="balance-card"><span>📈 INVESTMENTS</span><strong id="bankInvestments">$0.00</strong><small>Value of your investments</small></div>
+ </div>
+ <nav class="bank-tabs" role="tablist" aria-label="Bank menus">
+  <button class="bank-tab active" data-bank-tab="overview" aria-selected="true" role="tab" type="button">🏠 Account</button>
+  <button class="bank-tab" data-bank-tab="loans" aria-selected="false" role="tab" type="button">💵 Loans <span id="loanTabAlert"></span></button>
+  <button class="bank-tab" data-bank-tab="investments" aria-selected="false" role="tab" type="button">📈 Investments</button>
+ </nav>
+ <div class="bank-content">
+  <section class="bank-pane" data-bank-pane="overview" role="tabpanel">
+   <div class="bank-intro"><h3>My money</h3><p>The stand and the bank keep money in different places. Move funds between them whenever you need to.</p></div>
+   <div class="bank-two-col">
+    <div class="bank-box"><div class="bank-box-label">🍋 CASH AT YOUR STAND</div><div class="bank-large" id="bankStandCash">$0.00</div><p>Used to buy ingredients and pay stand permits.</p></div>
+    <div class="bank-box"><div class="bank-box-label">🏦 CHECKING AT THE BANK</div><div class="bank-large" id="bankAccountCash">$0.00</div><p>Where loan money arrives and loan payments are made.</p></div>
+   </div>
+   <h4 class="bank-subtitle">Move money</h4>
+   <div class="transfer-grid">
+    <div class="transfer-card"><h4>🏦 → 🍋 Take cash to stand</h4><p>Withdraw checking money for supplies.</p><div class="amount-choices"><button type="button" data-transfer="withdraw" data-amount="10">$10</button><button type="button" data-transfer="withdraw" data-amount="25">$25</button><button type="button" data-transfer="withdraw" data-amount="50">$50</button><button type="button" data-transfer="withdraw" data-amount="all">All</button></div></div>
+    <div class="transfer-card"><h4>🍋 → 🏦 Deposit stand cash</h4><p>Save sales money or prepare for a loan payment.</p><div class="amount-choices"><button type="button" data-transfer="deposit" data-amount="10">$10</button><button type="button" data-transfer="deposit" data-amount="25">$25</button><button type="button" data-transfer="deposit" data-amount="50">$50</button><button type="button" data-transfer="deposit" data-amount="all">All</button></div></div>
+   </div>
+   <div class="bank-tip">💡 <strong>Bank lesson:</strong> Moving $10 from checking to your stand doesn't make you $10 richer. It's the same money, in a different place.</div>
+  </section>
+  <section class="bank-pane" data-bank-pane="loans" role="tabpanel" hidden>
+   <div class="bank-intro"><h3>Borrow money</h3><p>A loan gives you money now, but you must repay it—with interest.</p></div>
+   <div class="credit-strip"><div><span>GAME CREDIT SCORE</span><strong id="creditScore">—</strong><small id="creditCaption">No borrowing history</small></div><div class="credit-track"><div id="creditFill"></div></div><div id="creditStats" class="credit-stats">0 on time · 0 missed</div></div>
+   <div id="loanArea"></div>
+   <div class="bank-tip">💡 <strong>Credit lesson:</strong> Pay on or before the due date to improve your game credit score. Missed payments hurt your score, making future loans harder to qualify for.</div>
+  </section>
+  <section class="bank-pane" data-bank-pane="investments" role="tabpanel" hidden>
+   <div id="investApp" aria-label="Fund investing and portfolio"></div>
+  </section>
+ </div>
+ <div id="bankMessage" class="bank-message" role="status" aria-live="polite" hidden></div>
+</section>
+
+<p class="footer">LEMONADE LANE · MODULE 1 · Your business saves automatically on this device.</p>
+<div class="modal-scrim" id="modal" role="dialog" aria-modal="true" aria-label="Game report or information"><div class="modal"><button class="close" id="modalClose" type="button">✕</button><div id="modalBody"></div></div></div>
+</div><script>
+(function(){
+  function failed(){var el=document.getElementById('scene3dError');if(el&&el.hidden&&!document.querySelector('#world3d[data-ready="true"]')){el.hidden=false;el.textContent='The 3D scene could not start. Open the bundled lemonade-lane.html file, or run this project with npm run dev. Your business controls and save data are separate from the graphics.';}}
+  window.addEventListener('error',failed);window.addEventListener('unhandledrejection',failed);
+  window.setTimeout(failed,12000);
+})();
+</script><script type="module" src="/src/game.js"></script></body></html>

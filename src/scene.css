@@ -1,0 +1,111 @@
+/* Scoped to the original neighborhood window; business UI is unchanged. */
+#ll-app .location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#ll-app .neighborhood-scene{height:520px;min-height:430px;max-height:none;isolation:isolate;background:#264b51;perspective:none}
+#ll-app .neighborhood-scene:before,#ll-app .neighborhood-scene:after{display:none!important}
+#ll-app #outsideStage,#ll-app #insideStage,#ll-app #queueDeck{display:none!important}
+#world3d{position:absolute;inset:0;touch-action:none;cursor:grab;z-index:1}
+#world3d:active{cursor:grabbing}#world3d canvas{display:block;width:100%;height:100%}
+#world3d:focus-visible{outline:3px solid #f7d25b;outline-offset:-4px}
+#world3d:not([data-ready=true]):after{content:'Building your 3D neighborhood…';position:absolute;inset:45% 10% auto;text-align:center;color:#fff6cf;font-size:14px}
+#ll-app .scene-bar{z-index:3;pointer-events:none;top:12px}
+#ll-app .scene-label{font-size:11px;background:#fffde8ed;box-shadow:0 2px 7px #23392215}
+#ll-app .scene-nav{top:54px;left:12px;z-index:3;display:flex;gap:5px}
+#ll-app .scene-chip{font-size:10px;padding:7px 10px;border-width:1px;border-radius:7px;background:#fffdebe8;box-shadow:0 2px 6px #26432813}
+#ll-app .scene-chip.active{background:#285e3a;color:#ffffdd;border-color:#d5e39c}
+#sceneBack{position:absolute;top:95px;left:12px;z-index:3;background:#fffce9e8;border:1px solid #e6ebba;border-radius:6px;color:#2a5834;font-size:10px;padding:7px 10px;font-weight:bold}
+.scene-orbit{position:absolute;bottom:14px;right:12px;z-index:3;display:flex;align-items:center;background:#fffce9eb;border:1px solid #e9eec8;border-radius:6px;gap:7px;padding:3px;box-shadow:0 2px 6px #26432813}
+.scene-orbit button{width:28px;height:28px;background:transparent;border:0;font-size:20px;color:#315b38}.scene-orbit span{font-size:7px;letter-spacing:1px;color:#647557}
+#ll-app .world-live-stats{z-index:3;font-size:10px;left:12px;bottom:14px;max-width:58%;border:1px solid #e9eec8;border-radius:6px;background:#fffce9e8;padding:8px 10px}
+#ll-app .neighborhood-event{z-index:3;top:94px;right:12px;max-width:220px;font-size:10px;pointer-events:none}
+.scene-inventory{position:absolute;left:12px;right:12px;bottom:58px;z-index:3;background:#fffce9ed;border:1px solid #e9eec8;border-radius:6px;padding:9px 11px;display:none;font-size:10px;line-height:1.6;color:#345536;pointer-events:none}
+#scene[data-view=inside] .scene-inventory{display:block}#scene[data-view=inside] .neighborhood-event{display:none}
+#scene3dError{position:absolute;inset:30% 10% auto;z-index:4;padding:20px;background:#fff8d9;border-radius:10px;color:#475e3f;line-height:1.7}
+@media(max-width:620px){#ll-app .neighborhood-scene{height:400px;min-height:400px}#ll-app .scene-nav{gap:4px}#ll-app .scene-chip{font-size:9px;padding:7px 8px}.scene-orbit span{display:none}#ll-app .world-live-stats{font-size:8px;max-width:72%;padding:8px 7px}.scene-inventory{font-size:9px}#ll-app .neighborhood-event{max-width:135px;font-size:8px}}
+/* Walking controls live in the scene; they do not change the business interface. */
+#ll-app [hidden].avatar-controls,#ll-app .avatar-controls [hidden],#ll-app .scene-chip[hidden]{display:none!important}
+.avatar-controls{position:absolute;z-index:4;left:12px;bottom:62px;right:12px;pointer-events:none;display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.avatar-help{background:#fffce9ed;border-radius:6px;padding:8px 10px;font-size:10px;color:#2a5836}
+#ll-app .avatar-interact{pointer-events:auto;background:#f5df69;color:#214e36;border:2px solid #315c37;border-radius:7px;padding:9px 12px;font-size:11px;font-weight:bold}
+.avatar-pad{display:grid;grid-template-columns:repeat(3,36px);gap:3px;pointer-events:auto}
+#ll-app .avatar-pad button{height:36px;border:1px solid #315c37;border-radius:7px;background:#fffce9ed;color:#214e36;font-size:20px;touch-action:none;user-select:none}
+.avatar-pad button:first-child{grid-column:2}.avatar-pad button:nth-child(2){grid-column:1;grid-row:2}.avatar-pad button:nth-child(3){grid-column:2;grid-row:2}.avatar-pad button:nth-child(4){grid-column:3;grid-row:2}
+@media(hover:hover) and (pointer:fine){.avatar-pad{display:none}}
+@media(max-width:620px){#ll-app .scene-nav{flex-wrap:wrap;right:8px}.avatar-help{display:none}.avatar-controls{bottom:58px;gap:6px}#ll-app .avatar-interact{font-size:10px;padding:8px}.avatar-pad{grid-template-columns:repeat(3,32px)}#ll-app .avatar-pad button{height:32px}}
+/* Investments: a calm, readable workspace inside the existing bank. */
+#investApp{color:#284e3a;font-size:13px;line-height:1.5;min-width:0}
+#investApp [hidden]{display:none!important}#investApp *{box-sizing:border-box}
+#investApp h3,#investApp h4,#investApp h5,#investApp p{margin:0}
+#investApp button{font-family:inherit;cursor:pointer}#investApp button:disabled{opacity:.45;cursor:not-allowed}
+#investApp button:focus-visible,#investApp input:focus-visible,#investApp select:focus-visible,#investApp svg:focus-visible{outline:3px solid #daaf32;outline-offset:3px}
+#investApp .invest-intro{display:flex;justify-content:space-between;gap:20px;margin-bottom:22px;align-items:center}
+#investApp .invest-eyebrow{font-size:9px;font-weight:900;letter-spacing:1.7px;color:#69805a;margin-bottom:8px}
+#investApp h3{font-size:27px;letter-spacing:-.8px;line-height:1.2;color:#185a36;margin-bottom:7px}
+#investApp .invest-intro p{font-size:12px;color:#648067}
+#investApp .invest-price-status{text-align:right;flex-shrink:0;font-size:11px;display:grid;gap:3px}
+#investApp .invest-price-status span{color:#6c8067}#investApp #refreshMarket{justify-self:end;border:0;background:transparent;color:#256044;font-size:11px;padding:3px 0;text-decoration:underline;text-underline-offset:3px}
+#investApp .invest-feed-note{background:#fff3ce;border:1px solid #d9c485;padding:12px 15px;border-radius:9px;margin-bottom:17px;font-size:12px}
+#investApp .invest-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:22px}
+#investApp .invest-summary>div{background:#f8fff0;border:1px solid #c4d8ad;border-radius:11px;padding:16px 18px;min-width:0}
+#investApp .invest-summary span{display:block;letter-spacing:.8px;font-size:9px;color:#66805f;font-weight:bold;margin-bottom:6px}
+#investApp .invest-summary strong{font-size:24px;line-height:1.15;letter-spacing:-.7px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#investApp .positive{color:#247b50}#investApp .negative{color:#b04d39}
+#investApp .invest-chart-card{background:#fffef7;border:1px solid #bfd2aa;border-radius:13px;overflow:hidden;box-shadow:0 3px 0 #b8ce9e33;margin-bottom:25px}
+#investApp .invest-chart-tabs{display:flex;border-bottom:1px solid #e0e8d6;padding:0 22px;gap:24px;background:#f6faec}
+#investApp .invest-chart-tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:14px 0 11px;color:#74826a;font-weight:bold;font-size:12px}
+#investApp .invest-chart-tabs button[aria-selected=true]{color:#236344;border-bottom-color:#318458}
+#investApp .invest-chart-heading{display:flex;gap:15px;justify-content:space-between;align-items:center;padding:22px 24px 14px}
+#investApp h4{font-size:17px;letter-spacing:-.3px;color:#264e37}#investApp .invest-chart-heading p{font-size:10px;color:#77866e;margin-top:3px}
+#investApp .invest-ranges{display:flex;gap:3px;flex-shrink:0}
+#investApp .invest-ranges button{border:0;background:transparent;color:#6b7e63;font-size:10px;padding:6px 9px;border-radius:6px;font-weight:bold}
+#investApp .invest-ranges button[aria-pressed=true]{background:#e4f2cf;color:#285d3b}
+#investApp .invest-series-select{display:flex;gap:14px;flex-wrap:wrap;padding:0 24px 8px}
+#investApp .invest-series-select label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--fund-color)}
+#investApp input[type=checkbox]{width:13px;height:13px;accent-color:var(--fund-color);margin:0}
+#investApp .invest-chart{position:relative;padding:0 12px;min-height:230px}
+#investApp .invest-chart svg{width:100%;height:auto;display:block;min-height:220px;touch-action:pan-y}
+#investApp .chart-axis{font-family:system-ui,sans-serif;font-size:10px;fill:#809080}
+#investApp .chart-tooltip{position:absolute;top:10px;right:30px;display:grid;gap:3px;background:#fffef4f2;border:1px solid #cfdbc5;border-radius:7px;padding:9px 12px;font-size:10px;pointer-events:none;box-shadow:0 3px 15px #284e3a13}
+#investApp .invest-chart-empty{min-height:230px;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#84907a;font-size:12px;background:repeating-linear-gradient(0deg,transparent,transparent 49px,#eef2e9 50px)}
+#investApp .invest-chart-note{font-size:10px;color:#7a8872;border-top:1px solid #edf0e6;padding:10px 24px}
+#investApp .invest-lower-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(265px,1fr);gap:22px;align-items:start}
+#investApp .invest-section-heading{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
+#investApp .invest-section-heading>span{font-size:8px;color:#708263;letter-spacing:.8px;font-weight:bold}
+#investApp .invest-fund-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#investApp .invest-fund-card{display:block;text-align:left;background:#fffef4;border:1px solid #c9d8b5;border-top:3px solid var(--fund-color);border-radius:9px;padding:14px 13px;color:#37543b;min-width:0;transition:background .15s}
+#investApp .invest-fund-card:hover,#investApp .invest-fund-card.chosen{background:#f8ffe7;border-color:#7eab67;border-top-color:var(--fund-color)}
+#investApp .fund-card-top{display:flex;justify-content:space-between;gap:5px;align-items:center;margin-bottom:10px}
+#investApp .fund-card-top>span{font-size:9px;letter-spacing:1.2px;font-weight:bold;color:var(--fund-color)}#investApp .fund-card-top small{font-size:9px}
+#investApp .invest-fund-card>strong{font-size:13px;display:block}#investApp .invest-fund-card>p{font-size:10px;color:#7a876d;min-height:31px;line-height:1.4;margin:4px 0 12px}
+#investApp .fund-card-price{font-size:22px;font-weight:bold;letter-spacing:-.5px;line-height:1.3}#investApp .fund-card-price small{font-size:9px;font-weight:normal;color:#8b947e;letter-spacing:0}
+#investApp .fund-risk{display:block;font-size:8px;line-height:1.4;color:#819072;margin-top:8px}
+#investApp .invest-trade-card{background:#fffef3;border:1px solid #bed1a8;border-radius:11px;padding:21px}
+#investApp .invest-trade-sub{font-size:10px;color:#7a886c;margin:3px 0 14px}
+#investApp .invest-side-picker{display:flex;gap:4px;padding:3px;background:#edf4e0;border-radius:7px;margin:14px 0}
+#investApp .invest-side-picker button{flex:1;border:0;border-radius:5px;background:transparent;color:#6c8062;padding:7px;font-size:11px;font-weight:bold}
+#investApp .invest-side-picker button[aria-pressed=true]{background:#fffef4;color:#2a6440;box-shadow:0 1px 4px #2340201a}
+#investApp #tradeForm label{font-size:10px;font-weight:bold;color:#657a5b;display:block;margin-bottom:5px}
+#investApp #tradeForm select,#investApp #tradeForm input{width:100%;border:1px solid #c9d6b9;background:#fffef7;border-radius:6px;padding:9px 10px;color:#37543b;font-family:inherit;font-size:12px;min-width:0;line-height:1.4}
+#investApp .invest-form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+#investApp .invest-estimate{background:#f3f8e9;border-radius:7px;padding:12px;margin-top:16px;color:#62775a;font-size:10px;line-height:1.65;min-height:65px}
+#investApp .invest-estimate>div{display:flex;justify-content:space-between;gap:5px}#investApp .invest-estimate .estimate-total{border-top:1px solid #d9e4ca;padding-top:7px;margin-top:7px;color:#2a5e3b;font-size:11px}#investApp .invest-estimate small{font-size:9px;display:block;margin-top:7px}
+#investApp .invest-fee-note{font-size:9px;line-height:1.5;color:#849075;margin:10px 0 14px}
+#investApp .invest-review{width:100%;background:#236c43;color:#fffdeb;border:0;border-radius:7px;padding:11px 12px;font-weight:bold;font-size:12px}
+#investApp .invest-form-note{font-size:10px;color:#987448;margin-top:8px}
+#investApp .invest-confirmation{margin-top:15px;border:1px solid #94b37d;background:#f2f8dc;border-radius:8px;padding:14px}
+#investApp .invest-confirmation h5{font-size:14px;margin-bottom:8px}#investApp .invest-confirmation p{font-size:11px;margin-bottom:10px}#investApp .invest-confirmation>div{display:flex;gap:7px}
+#investApp .invest-confirmation button{border:1px solid #9db48d;border-radius:6px;background:#fffef4;padding:8px;font-size:11px;color:#376043}#investApp #confirmTrade{background:#266d44;border-color:#266d44;color:#fffdeb;flex:1}
+#investApp .invest-notice{font-size:11px;background:#edf7d8;border:1px solid #b7d09f;border-radius:7px;padding:11px;margin-top:12px}#investApp .invest-notice.error{background:#fff0db;border-color:#d3ac81;color:#9b5331}
+#investApp .invest-holdings{margin-top:28px}#investApp .invest-table-wrap{overflow-x:auto;border:1px solid #c5d6ae;border-radius:9px;background:#fffef5}
+#investApp table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap;background:transparent}
+#investApp th{text-align:left;padding:11px 13px;font-size:9px;color:#7a8a6d;background:#f2f7e8;border-bottom:1px solid #dce6cd}#investApp td{padding:12px 13px;border-bottom:1px solid #e7eddf}
+#investApp td small{display:block;font-size:9px;color:#7d8b73}#investApp td button{border:1px solid #c5d5b2;background:#edf4de;color:#3d6d48;border-radius:5px;font-size:10px;padding:5px 9px}
+#investApp .invest-empty-holdings{border:1px dashed #bdcfa7;border-radius:10px;background:#f5fbe9;padding:26px;text-align:center;font-size:14px;color:#617b53}#investApp .invest-empty-holdings span{display:block;font-size:11px;color:#8a967e;margin-top:4px}
+#investApp .invest-performance-detail,#investApp .invest-small-note{font-size:10px;color:#718469;margin-top:9px}
+#investApp .invest-activity{margin-top:22px;font-size:12px}#investApp .invest-activity summary{cursor:pointer;font-weight:bold;padding:10px 0}#investApp .invest-activity>p{color:#7d8b73;font-size:11px}
+#investApp .invest-bottom-note{font-size:10px;line-height:1.65;color:#7a8c6d;margin-top:24px;padding-top:15px;border-top:1px solid #c8dcb0}
+@media(max-width:1000px){#investApp .invest-lower-grid{grid-template-columns:minmax(0,1.3fr) minmax(255px,1fr)}#investApp .invest-fund-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#investApp .invest-chart-heading{align-items:flex-start;flex-direction:column}#investApp .invest-summary>div{padding:13px 12px}#investApp .invest-summary strong{font-size:21px}}
+@media(max-width:650px){#investApp .invest-intro{align-items:flex-start;flex-direction:column;gap:14px}#investApp h3{font-size:23px}#investApp .invest-price-status{text-align:left}#investApp #refreshMarket{justify-self:start}#investApp .invest-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#investApp .invest-lower-grid{grid-template-columns:1fr;gap:22px}#investApp .invest-series-select{gap:9px 12px;padding:0 14px 10px}#investApp .invest-series-select label{font-size:10px}#investApp .invest-chart-heading{padding:17px 14px 12px;gap:10px}#investApp .invest-chart-tabs{padding:0 14px}#investApp .invest-chart-note{padding:10px 14px;font-size:9px}#investApp .invest-chart{padding:0;min-height:190px}#investApp .invest-chart svg{min-height:190px}#investApp .chart-tooltip{right:10px;top:0;max-width:90%}#investApp .invest-section-heading>span{font-size:7px}#investApp .invest-trade-card{padding:17px}#investApp .invest-performance-detail{line-height:1.8}}
+
+#ll-app .world-heading{flex-wrap:wrap;gap:8px}#ll-app .heading-forecast{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}#ll-app .heading-forecast .scene-label{position:static;font-size:11px;padding:7px 9px}#ll-app .scene-nav{top:12px}#ll-app #sceneBack{top:55px}#ll-app #neighborhoodEvent{pointer-events:auto;top:55px}#ll-app #neighborhoodEvent button{margin-left:8px;background:#fffbd8;color:#15552c;border:1px solid #588346;border-radius:5px;padding:4px 8px;font-weight:bold}#ll-app .daily-chart{width:100%;display:block;min-height:190px}#ll-app .daily-chart-scroll{overflow-x:auto}#ll-app .daily-chart g[role=button]{cursor:pointer}#ll-app .daily-chart g:focus{outline:2px solid #357a4e}#ll-app .projection-toggle{display:flex;justify-content:flex-end;gap:6px;font-size:12px;margin:8px 0}#ll-app .resale-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #cddaa9}#ll-app .resale-row input{width:90px}#ll-app .resale-row button,#ll-app .active-loan button{padding:8px;border-radius:6px;border:1px solid #79a35e;background:#e0efa9;color:#144c32;margin:4px 0}#ll-app .closing-results{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);gap:18px}#ll-app .modal:has(.closing-results){width:min(1100px,96vw)}#ll-app:has(#phaseLabel[data-closed=true]) .setup{pointer-events:none}#ll-app .result-history{min-width:0}#ll-app #recipeBooks{font-size:12px;line-height:1.65}#ll-app #recipeBooks button{font-size:12px}#ll-app .world-heading #phaseLabel{font-size:10px}@media(max-width:620px){#ll-app .closing-results{grid-template-columns:1fr}#ll-app .heading-forecast{margin-left:0}#ll-app .heading-forecast .scene-label{font-size:9px;padding:5px}#ll-app .world-heading{gap:5px}#ll-app #neighborhoodEvent{max-width:180px;font-size:10px}}
+
+#ll-app .counter input[data-recipe-input]{width:74px;min-width:0;text-align:center;font-weight:900;font-size:22px;border:1px solid #98b572;border-radius:6px;background:#fffbe4;color:#145332;padding:6px 1px}#ll-app .result-history{position:relative;margin-bottom:18px}#ll-app .daily-chart g[role=button] circle{pointer-events:none}
