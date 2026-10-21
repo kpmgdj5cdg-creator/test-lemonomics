@@ -30,7 +30,9 @@ test('Save and Back to Game keep playing, while female avatar movement and posit
  for(const [button,location] of [['neighborhood','neighborhood'],['park','park'],['square','downtown'],['beach','waterfront']]){
   await page.locator(`[data-loc=${button}]`).click();await expect(page.locator('#world3d')).toHaveAttribute('data-location',location);await expect(page.locator('#world3d')).toHaveAttribute('data-avatar-type','female');await page.getByRole('button',{name:'Walk around',exact:true}).click();
   const world=page.locator('#world3d'),start=await world.getAttribute('data-avatar-position');await world.focus();await page.keyboard.down('KeyS');await expect(world).not.toHaveAttribute('data-avatar-position',start);await page.keyboard.up('KeyS');const position=await world.getAttribute('data-avatar-position');
-  await quit(page);await page.locator('[data-load-slot="0"]').click();await expect(world).toHaveAttribute('data-location',location);await expect(world).toHaveAttribute('data-walking','true');await expect(world).toHaveAttribute('data-avatar-position',position);await page.getByRole('button',{name:'Overview',exact:true}).click();
+  await quit(page);await page.locator('[data-load-slot="0"]').click();await expect(world).toHaveAttribute('data-location',location);await expect(world).toHaveAttribute('data-walking','true');await expect(world).toHaveAttribute('data-avatar-position',position);await expect(world).toBeFocused();
+  if(location==='neighborhood'){await page.locator('#saveMenuBtn').click();await page.locator('#backToGame').click();await expect(world).toBeFocused();await page.locator('#saveMenuBtn').click();await page.locator('#saveOnly').click();await expect(page.locator('#modal')).not.toHaveClass(/show/);await expect(world).toBeFocused();}
+  await page.getByRole('button',{name:'Overview',exact:true}).click();
  }
 });
 

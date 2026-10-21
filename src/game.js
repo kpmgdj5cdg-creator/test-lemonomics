@@ -285,7 +285,8 @@ function nextDay(){state.financialMarks??={};state.financialMarks[state.day]=por
 function exportLedger(){let rows=[['Day','Description','Category','Stand cash change','Checking change','Loan change','Investment change','Trading fee','Market close date'],...state.ledger.map(x=>[x.day,x.desc,x.category,x.cash||0,x.bankChange||0,x.loanChange||0,x.investmentChange||0,x.fee||0,x.priceDate||''])];let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');let link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));link.download='lemonade-lane-ledger.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)}
 function showHelp(){modalKind='help';$('modalBody').innerHTML=`<div class="kicker">HOW TO PLAY</div><h2>🍋 Your first business</h2><p>You're the owner of a lemonade stand. Your goal: grow your business without running out of money.</p><div style="line-height:1.75"><p><strong>1. Choose a location.</strong> Expensive locations have more customers—but higher daily costs.</p><p><strong>2. Perfect your lemonade.</strong> More lemons, sugar, and ice affect flavor and ingredient costs.</p><p><strong>3. Choose a price and batch size.</strong> Low prices attract more people. Unsold lemonade spoils overnight.</p><p><strong>4. Visit the Bank.</strong> Borrow startup funds on the Loans tab, withdraw money from checking, then buy supplies. Future expansion loans require good repayment history and credit scores.</p><p><strong>5. Open your stand!</strong> Watch the street, then study the end-of-day financial results.</p></div><div class="notice">You start with $0 and no supplies. Use the big Bank arrow to apply for your first loan.</div><button class="small-link" id="resetBtn">Start over / reset business</button>`;openModal()}
 function openModal(){world.avatarController?.keys.clear();world.avatarController?.touch.clear();$('modal').classList.add('show')}
-function closeModal(){if(modalKind==='report'||saveBusy)return;if(modalKind==='save'){sessionPaused=false;world.paused=false;}$('modal').classList.remove('show');$('modalClose').hidden=false;modalKind=''}
+function focusGame(){(world.avatarController?.enabled&&currentScreen==='stand'&&!state.closed?$('world3d'):$('saveMenuBtn')).focus({preventScroll:true})}
+function closeModal(){if(modalKind==='report'||saveBusy)return;const wasSave=modalKind==='save';if(wasSave){sessionPaused=false;world.paused=false;}$('modal').classList.remove('show');$('modalClose').hidden=false;modalKind='';if(wasSave)focusGame()}
 function stopGameSession(){
  clearInterval(interval);clearTimeout(openingTimeout);clearTimeout(closingTimeout);interval=null;openingTimeout=null;closingTimeout=null;
  clearTimeout(statusTimeout);$('saveStatus').hidden=true;
@@ -319,7 +320,7 @@ function loadProfile(slot,isNew=false){
  }
  save();
  if(isNew){modalKind='welcome';$('modalBody').innerHTML='<h2>Welcome to Lemonomics!</h2><p>You need money to purchase supplies! Head to the bank and apply for a loan!</p><button type="button" class="primary" id="welcomeBank">Head to the bank</button><button type="button" class="small-link" id="welcomeBack">Explore the neighborhood</button>';openModal();$('welcomeBank').focus();refreshProfileMarket(state,activeProfile.id);}
- else $('saveMenuBtn').focus();
+ else focusGame();
  window.scrollTo({top:0,behavior:'instant'});
 }
 async function refreshProfileMarket(game,id){
@@ -347,12 +348,12 @@ async function manualSave(quit){
  closeModal();
  if(quit){
   stopGameSession();world.avatarController?.setEnabled(false);activeProfile=null;state=initial();world.paused=true;root.hidden=true;document.body.classList.add('profile-home-visible');profileScreen.show();window.scrollTo({top:0,behavior:'instant'});
- }else{render();$('saveMenuBtn').focus();notifySave((profileStore.temporary?'Saved for this preview.':'Game saved.')+priceNote)}
+ }else{render();focusGame();notifySave((profileStore.temporary?'Saved for this preview.':'Game saved.')+priceNote)}
 }
 function handleProfileClick(button){
  if(button.id==='saveMenuBtn'||button.id==='reportSaveMenu'){openSaveMenu();return true;}
  if(button.id==='saveOnly'||button.id==='saveAndQuit'){manualSave(button.id==='saveAndQuit');return true;}
- if(button.id==='backToGame'){closeModal();$('saveMenuBtn').focus();return true;}
+ if(button.id==='backToGame'){closeModal();return true;}
  if(button.id==='welcomeBank'||button.id==='welcomeBack'){closeModal();if(button.id==='welcomeBank')showScreen('bank','loans');return true;}
  return false;
 }
