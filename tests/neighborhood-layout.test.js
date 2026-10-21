@@ -8,6 +8,18 @@ import {blocked,WALKING_AREAS} from '../src/player-movement.js';
 import {planArrivals,pointOnRoute} from '../src/traffic.js';
 
 function layout(){const root=new THREE.Group();buildNeighborhoodHomes(root);root.updateMatrixWorld(true);return root}
+test('yards distribute seating, round trees, tree-and-table patios and gardens without duplicate seating',()=>{
+ const root=layout(),counts={};
+ for(const plot of root.children.filter(o=>o.userData.kind==='residential-lot')){const style=plot.userData.yardStyle;counts[style]=(counts[style]||0)+1;
+  const kinds=[];plot.traverse(o=>{if(o.userData.kind)kinds.push(o.userData.kind)});
+  assert.equal(kinds.includes('garden-seat'),style==='seating');assert.equal(kinds.includes('round-yard-tree'),style==='round-tree'||style==='tree-and-table');assert.equal(kinds.includes('circular-patio'),style==='tree-and-table');
+  if(style==='tree-and-table'){
+   const table=plot.children.find(o=>o.userData.kind==='circular-patio'),tree=plot.children.find(o=>o.userData.kind==='round-yard-tree');
+   assert.ok(table.position.z>-6&&table.position.z<-3);assert.equal(new THREE.Box3().setFromObject(table).intersectsBox(new THREE.Box3().setFromObject(tree)),false);
+  }
+ }
+ assert.deepEqual(counts,{seating:6,'round-tree':6,'tree-and-table':6,garden:5});
+});
 test('residential lots including roofs, fences, patios and trees have separate footprints',()=>{
   const root=layout(),plots=root.children.filter(c=>c.userData.kind==='residential-lot');
   const boxes=plots.map(p=>new THREE.Box3().setFromObject(p));

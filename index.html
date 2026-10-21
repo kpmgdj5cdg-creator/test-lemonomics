@@ -363,9 +363,9 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
 @media(max-width:620px){.neighborhood-scene{height:320px;min-height:320px}.scene-nav{top:48px}.scene-chip{font-size:9px;padding:5px 8px}.voxel-stand{left:9%;bottom:46px;transform:scale(.78);transform-origin:bottom left}.competing-stand{right:6px;top:144px;transform:scale(.72)}.queue-deck{left:35%;bottom:80px;transform:scale(.8);transform-origin:bottom left}.voxel-house.left{left:-10px;top:108px;transform:scale(.84)}.voxel-house.right{right:-10px;top:96px;transform:scale(.86)}.voxel-tree.left{left:110px;top:104px;transform:scale(.9)}.inside-stage{padding:86px 10px 34px}.inside-banner{left:12px;right:12px;max-width:none;font-size:12px}.inside-window-view{display:none}.inside-equipment-title{left:12px;top:108px}.interior-equipment{left:10px;right:10px;top:130px;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.equip-card{padding:7px;min-height:64px}.equip-card strong{font-size:11px}.equip-card span{font-size:9px}.inside-helper{right:10px;bottom:154px;max-width:150px;font-size:10px;padding:7px 8px}.interior-storage{left:10px;right:10px;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.storage-card{padding:6px 3px}.storage-card b{font-size:13px}.storage-card span{font-size:8px}.inside-exit{right:10px;top:100px;font-size:9px;padding:5px 8px}}
 
 </style><style>#outsideStage,#insideStage,#queueDeck{display:none!important}</style><link rel="stylesheet" href="/src/scene.css"></head>
-<body><div class="wrap" id="ll-app">
+<body class="profile-home-visible"><section id="profileScreen" aria-label="Lemonomics main menu"></section><div class="wrap" id="ll-app" hidden>
 <header class="hud">
- <div class="mini-brand"><div class="brand-icon">🍋</div><div><h1>LEMONADE LANE</h1><small>BUILD YOUR BUSINESS!</small></div></div>
+ <div class="mini-brand"><div class="brand-icon">🍋</div><div><h1>LEMONOMICS</h1><small id="profilePlayerLabel">BUILD YOUR BUSINESS!</small></div></div>
  <div class="hud-resources" aria-label="Inventory and money">
   <span class="res-item" title="Lemons">🍋 <b id="stockLemons">0</b></span>
   <span class="res-item" title="Sugar">🍬 <b id="stockSugar">0</b></span>
@@ -375,6 +375,7 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
   <span class="res-item cash">💵 <strong id="cashHead">$0.00</strong></span>
   <button type="button" class="utility" id="ledgerBtn" title="View your business records">📒 Books</button>
   <button type="button" class="utility" id="helpBtn" title="How to play">?</button>
+  <button type="button" class="utility save-menu-button" id="saveMenuBtn" title="Save or quit" aria-label="Save or quit"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10 4H4v16h6M14 7l5 5-5 5M8 12h11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>
  </div>
 </header>
 <div class="cup-capacity-banner" id="cupCapacityBanner" role="status" aria-live="polite"><div class="capacity-copy">Total number of cups you're able to make with this inventory</div><div class="capacity-number" id="cupCapacity">0</div></div>
@@ -539,7 +540,7 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
  <div id="bankMessage" class="bank-message" role="status" aria-live="polite" hidden></div>
 </section>
 
-<p class="footer">LEMONADE LANE · MODULE 1 · Your business saves automatically on this device.</p>
+<p class="footer">LEMONOMICS · Your profile saves automatically on this device. Use the exit button to save and quit.</p><div id="saveStatus" class="save-status" role="status" aria-live="polite" hidden></div>
 <div class="modal-scrim" id="modal" role="dialog" aria-modal="true" aria-label="Game report or information"><div class="modal"><button class="close" id="modalClose" type="button">✕</button><div id="modalBody"></div></div></div>
 </div><script>
 (function(){

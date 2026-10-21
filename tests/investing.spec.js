@@ -1,3 +1,4 @@
+import {enterGame} from './fixtures/profile-ui.js';
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {marketFixture,gameWithChecking} from './fixtures/market.js';
@@ -6,7 +7,7 @@ const key='lemonadeLane_bank_v3';
 async function open(page,{state=gameWithChecking(),market=marketFixture(),failure=false}={}){
   await page.addInitScript(({key,state})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(state))},{key,state});
   await page.route('**/api/market',route=>route.fulfill({status:failure?503:200,contentType:'application/json',body:JSON.stringify(failure?{data:null,status:'unavailable'}:{data:market,status:'current'})}));
-  await page.goto('/');await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');
+  await page.goto('/');await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(page);
   await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();
   if(!failure){await expect(page.locator('.invest-price-status')).toContainText('Latest prior trading day');await expect(page.locator('#investApp')).toContainText('TEST FIXTURE');}else await expect(page.locator('.invest-feed-note')).toBeVisible();
   return market;
@@ -34,7 +35,7 @@ test('checking buys fractional shares, fees and portfolio survive reload, and sa
   let state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);expect(state.cash).toBe(40);expect(state.bank.portfolio.trades).toHaveLength(2);expect(state.bank.portfolio.positions.SPY.units).toBeGreaterThan(0);expect(state.bank.portfolio.snapshots).toHaveLength(1);
   await expect(page.locator('[data-chart-series="Portfolio net gain / loss"]')).toBeVisible();
   await page.locator('#investApp').screenshot({path:'artifacts/investments-portfolio.png'});
-  await page.reload();await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();await expect(page.locator('#investApp')).toContainText('TEST FIXTURE');await expect(page.locator('[data-sell-fund=SPY]')).toBeVisible();
+  await page.reload();await enterGame(page);await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();await expect(page.locator('#investApp')).toContainText('TEST FIXTURE');await expect(page.locator('[data-sell-fund=SPY]')).toBeVisible();
   await page.locator('[data-sell-fund=SPY]').click();await page.locator('#reviewTrade').click();await page.locator('#confirmTrade').click();
   await expect(page.locator('[data-sell-fund=SPY]')).toHaveCount(0);await expect(page.locator('#bankChecking')).toHaveText('$989.69');
   state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);expect(state.bank.portfolio.trades).toHaveLength(3);expect(state.ledger.filter(x=>x.category.startsWith('investment '))).toHaveLength(3);expect(state.bank.portfolio.trades.at(-1).feeCents).toBe(13);expect(state.cash).toBe(40);
@@ -65,7 +66,7 @@ test('single HTML can explore saved market history and trade without network req
   // Seed the standalone's browser storage through a local page, then block all requests.
   await page.goto('/');await page.evaluate(({key,state,market})=>{localStorage.setItem(key,JSON.stringify(state));localStorage.setItem('lemonadeLane_market_v1',JSON.stringify(market))},{key,state,market});
   const html=await readFile('dist/lemonade-lane.html','utf8');await page.route('**/*',r=>r.abort());
-  await page.setContent(html);await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();
+  await page.setContent(html);await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(page);await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();
   await expect(page.locator('#investChart svg')).toBeVisible();await buy(page,'DIA','10');await expect(page.locator('#bankChecking')).toHaveText('$989.95');
 });
 
@@ -76,7 +77,7 @@ test('embedded preview can review, confirm and sell without native form permissi
   await page.route('**/*',r=>r.abort());
   await page.setContent('<iframe title="Embedded investment game" sandbox="allow-scripts" style="width:100%;height:900px;border:0"></iframe>');
   await page.locator('iframe').evaluate((el,html)=>el.srcdoc=html,await readFile('dist/lemonade-lane.html','utf8'));
-  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');
+  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(game);
   await game.locator('#visitBank').click();await game.locator('[data-bank-tab=loans]').click();await game.locator('[data-loan-apply="100"]').click();
   await game.locator('[data-bank-tab=investments]').click();await game.locator('#tradeAmount').fill('10');
   await game.locator('#reviewTrade').click();await expect(game.locator('.invest-confirmation')).toBeVisible();await expect(game.locator('#confirmTrade')).toBeFocused();

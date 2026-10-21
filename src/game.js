@@ -2,9 +2,12 @@ import { Neighborhood } from './world.js';
 import { availableCups } from './capacity.js';
 import {RECIPES,recipeBonus,securedLimit,originate,repay,emergencyEligible,emergencyTopup} from './business.js';
 import {statements,downloadStatements} from './reports.js';
-import {portfolioTotals} from './investments.js';
+import {portfolioTotals,applyMarket} from './investments.js';
 import {settleCollateral} from './secured-investments.js';
 import { InvestmentDesk } from './investment-ui.js';
+import {LocalProfileStore,LEGACY_KEYS} from './profiles.js';
+import {ProfileScreen,trapFocus} from './profile-screen.js';
+import {appearanceFor} from './avatar.js';
 (function(){'use strict';
 const root=document.getElementById('ll-app'); const $=id=>root.querySelector('#'+id);
 const locs={neighborhood:{name:'Neighborhood',fee:4,foot:47,willing:2.15,sensitivity:1.15,desc:'A familiar street, friendly neighbors, and your original lemonade stand.'},park:{name:'Park',fee:6,foot:47,willing:2.15,sensitivity:1.15,desc:'Lower permit fee and steady family foot traffic. A forgiving place to start.'},square:{name:'Downtown',fee:9,foot:76,willing:2.7,sensitivity:1.1,desc:'More people and higher spending power—but a pricier daily permit.'},beach:{name:'Waterfront',fee:17,foot:98,willing:3.05,sensitivity:1.25,desc:'Huge crowds on hot days, but rainy days can be brutal.'}};
@@ -17,7 +20,8 @@ const weatherPattern=[{icon:'☀️',name:'Sunny',temp:82,mult:1.12},{icon:'⛅'
 const money=v=>(v<0?'−':'')+'$'+Math.abs(v).toFixed(2), round=v=>Math.round(v*100)/100, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const bankInitial=()=>({checking:0,investments:0,loans:[],creditScore:650,creditEstablished:false,onTime:0,missed:0,loanSequence:1});
 const initial=()=>({version:5,upgrades:[],lemonLots:[],daySpoilage:{day:0,lemons:0,cost:0},day:1,cash:0,inventory:{lemons:0,sugar:0,ice:0,cups:0},recipe:{lemons:0,sugar:0,ice:0},purchasedRecipes:[],equipmentCosts:{},price:2.25,pitchers:2,location:'neighborhood',history:[],ledger:[],bank:bankInitial()});
-let state;try{let saved=JSON.parse(localStorage.getItem('lemonadeLane_bank_v3')||localStorage.getItem('lemonadeLane_zero_v2'));state=saved&&saved.inventory&&saved.ledger?saved:initial(); if(!state.bank)state.bank=bankInitial();if((state.version||0)<5&&state.location==='park')state.location='neighborhood';state.version=5;if(!Array.isArray(state.upgrades))state.upgrades=[];if(!Array.isArray(state.lemonLots))state.lemonLots=[{day:state.day,qty:state.inventory.lemons||0}].filter(x=>x.qty>0);if(!state.daySpoilage)state.daySpoilage={day:0,lemons:0,cost:0}}catch(_){state=initial()}
+function normalizeState(saved){const s=saved&&saved.inventory&&saved.ledger?saved:initial();if(!s.bank)s.bank=bankInitial();if((s.version||0)<5&&s.location==='park')s.location='neighborhood';s.version=5;if(!Array.isArray(s.upgrades))s.upgrades=[];if(!Array.isArray(s.lemonLots))s.lemonLots=[{day:s.day,qty:s.inventory.lemons||0}].filter(x=>x.qty>0);if(!s.daySpoilage)s.daySpoilage={day:0,lemons:0,cost:0};return s;}
+let state=initial(),activeProfile=null,profileStore=null,profileScreen=null,sessionPaused=false,saveBusy=false,runConfig=null,statusTimeout=null;
 let upgradeIndex=0;let running=false,dayRun=null,interval=null,openingTimeout=null,closingTimeout=null,modalKind='',activeTab='location',activeBankTab='overview',currentScreen='stand',bankFeedback='',sceneView='outside';
 const upgradeItems=[
  {id:'juicer',name:'High Output Citrus Juicer',price:49.99,icon:'🧃',desc:'Squeeze lemons much faster!',effect:'Cuts serving time by one step. Shorter lines mean fewer unhappy customers.'},
@@ -62,7 +66,18 @@ function syncLots(){let qty=round(state.lemonLots.reduce((a,b)=>a+b.qty,0));let 
 function spendLemons(count){syncLots();let left=round(count);state.lemonLots.sort((a,b)=>a.day-b.day);for(const batch of state.lemonLots){const use=Math.min(left,batch.qty);batch.qty=round(batch.qty-use);left=round(left-use);if(left<=0)break}state.lemonLots=state.lemonLots.filter(x=>x.qty>.001);state.inventory.lemons=round(Math.max(0,state.inventory.lemons-count))}
 function expireOldLemons(){if(owns('fridge')){state.daySpoilage={day:state.day,lemons:0,cost:0};return}syncLots();let spoiled=0;for(const b of state.lemonLots){if(state.day-b.day>=2){spoiled=round(spoiled+b.qty);b.qty=0}}state.lemonLots=state.lemonLots.filter(b=>b.qty>.001);spoiled=Math.min(spoiled,state.inventory.lemons);state.inventory.lemons=round(Math.max(0,state.inventory.lemons-spoiled));state.daySpoilage={day:state.day,lemons:spoiled,cost:round(spoiled*supplies.lemons.unit)};if(spoiled)state.ledger.push({day:state.day,desc:spoiled+' lemons expired (inventory write-off)',cash:0,category:'spoilage',expense:state.daySpoilage.cost})}
 
-function save(){try{localStorage.setItem('lemonadeLane_bank_v3',JSON.stringify(state))}catch(_){}}
+function save(){
+ if(!activeProfile)return false;
+ if(running&&dayRun&&runConfig)state.session={dayRun, ...runConfig};else delete state.session;
+ state.playerView=world.avatarController?.snapshot(sceneView);
+ try{
+  activeProfile=profileStore.save(activeProfile.id,state,investmentDesk.market.data?.asOf);
+  // A compatibility mirror supports older releases; all new loads use slots.
+  try{localStorage.setItem(LEGACY_KEYS[0],JSON.stringify(state))}catch{}
+  return true;
+ }catch(error){notifySave('Could not save. Keep this game open and allow browser storage, then try again.');return false;}
+}
+function notifySave(text){const el=$('saveStatus');clearTimeout(statusTimeout);el.textContent=text;el.hidden=false;statusTimeout=setTimeout(()=>{el.hidden=true},8000);}
 function activeLoan(){return state.bank.loans.find(loan=>loan.balance>0.001)}
 function scoreLabel(){return !state.bank.creditEstablished?'Not established':state.bank.creditScore>=720?'Excellent':state.bank.creditScore>=670?'Good':state.bank.creditScore>=620?'Fair':'Needs improvement'}
 function dueSoon(){return state.bank.loans.some(loan=>loan.balance>0&&state.day>=loan.nextDue-2)}
@@ -210,13 +225,25 @@ function openStand(){
  $('scoreVisitors').textContent='0';$('scoreSold').textContent='0';$('scoreRevenue').textContent=money(0);$('scoreProfit').textContent='…';
  root.classList.add('running');$('startBtn').disabled=true;$('startBtn').textContent='Stand is open…';$('phaseLabel').textContent='🟢 OPEN FOR BUSINESS';$('sceneTitle').textContent='Visitors are walking over…';$('sceneDescription').textContent='Watch the line. Customers may leave if they wait too long.';
  $('liveDisplay').style.display='block';$('runningNote').style.display='block';$('runProgress').style.width='0%';renderInventory();renderQueue();
- const chance=buyerChance(), rivalChance=competitionStrength();let tick=0;
+ runConfig={visitors,chance:buyerChance(),rivalChance:competitionStrength(),stage:'opening'};
+ startSellingSession();save();
+}
+
+function startSellingSession(){
+ const {visitors,chance,rivalChance}=runConfig,steps=dayRun.serviceSteps;let tick=dayRun.visitors;
  const arrivals=world.beginDay(visitors,.165);
+ if(tick||runConfig.stage==='serving'){
+  world.arrivalStart-=arrivals.lead+tick*.165;
+  for(let i=0;i<tick;i++)arrivals.visitors[i].spawned=true;
+  world.metrics={sales:dayRun.sold,upset:dayRun.leftUpset,rival:dayRun.lostCompetitor};
+  renderQueue();
+ }
+ if(tick>=visitors){closingTimeout=setTimeout(finishDay,800);return;}
  $('worldLiveStats').textContent='🚶 Visitors are walking in from around the area';
- openingTimeout=setTimeout(()=>{openingTimeout=null;if(!running||!dayRun)return;
- $('sceneTitle').textContent='Open for business!';
+ const beginService=()=>{openingTimeout=null;if(!running||!dayRun)return;if(sessionPaused){openingTimeout=setTimeout(beginService,100);return;}
+ runConfig.stage='serving';$('sceneTitle').textContent='Open for business!';
  interval=setInterval(()=>{
-  if(!dayRun)return;const d=dayRun;const arrivingPerson=arrivals.visitors[tick].person;tick++;d.visitors++;
+  if(!dayRun||sessionPaused)return;const d=dayRun;const arrivingPerson=arrivals.visitors[tick].person;tick++;d.visitors++;
   // Customers in line become impatient with each passing visitor.
   for(const person of d.queue)person.wait++;
   let expired=d.queue.filter(person=>person.wait>maxPatience());
@@ -232,15 +259,16 @@ function openStand(){
   renderQueue();$('scoreVisitors').textContent=d.visitors;$('scoreSold').textContent=d.sold;$('scoreRevenue').textContent=money(d.revenue);$('latestResult').textContent=d.sold+' cups sold so far · '+money(d.revenue)+' in sales';$('runProgress').style.width=(100*d.visitors/visitors)+'%';
   if(d.visitors>=visitors){clearInterval(interval);interval=null;closingTimeout=setTimeout(finishDay,800)}
  },165);
- },arrivals.lead*1000);
+ };
+ openingTimeout=setTimeout(beginService,runConfig.stage==='opening'?arrivals.lead*1000:0);
 }
 
-function finishDay(){closingTimeout=null;if(!dayRun)return;const d=dayRun;
+function finishDay(){closingTimeout=null;if(!dayRun)return;if(sessionPaused){closingTimeout=setTimeout(finishDay,100);return;}const d=dayRun;
  if(d.queue.length){d.leftUpset+=d.queue.length;d.turnedAway+=d.queue.length;for(const person of d.queue)spawnCustomer('upset',person);d.queue=[];renderQueue();}
  d.unsold=d.capacity-d.sold;updateCapacityAndStocks();d.profit=round(d.revenue-d.cost-d.permit-d.spoilCost);
  state.ledger.push({day:d.day,desc:'Lemonade sales: '+d.sold+' cups',cash:d.revenue,category:'sales'});
  state.ledger.push({day:d.day,desc:'Ingredient expense: '+d.capacity+' cups brewed',cash:0,category:'cost',expense:d.cost});
- state.history.push(d);save();running=false;dayRun=null;root.classList.remove('running');$('liveDisplay').style.display='none';$('runningNote').style.display='none';
+ state.history.push(d);running=false;dayRun=null;runConfig=null;save();root.classList.remove('running');$('liveDisplay').style.display='none';$('runningNote').style.display='none';
  $('scoreProfit').textContent=money(d.profit);$('scoreProfit').className=d.profit<0?'negative':'profit';$('sceneTitle').textContent='Closing time!';showScreen('stand');activateTab('results');$('latestResult').textContent='Day '+d.day+' · '+(d.profit>=0?'You made '+money(d.profit)+'!':'You lost '+money(-d.profit)+'.');$('resultNext').hidden=false;$('phaseLabel').textContent='DAY FINISHED';renderHistory();showReport(d)
 }
 
@@ -248,14 +276,84 @@ function showReport(d){let feedback=d.leftUpset>6?'Customers are walking away fr
  $('modalBody').innerHTML=`<div class="kicker">DAY ${d.day} · END OF DAY REPORT</div><h2>${d.profit>=0?'🎉':'📉'} ${title}</h2><p>${feedback}</p>
  <div class="report-grid"><div class="report-cell"><small>VISITORS</small><strong>${d.visitors}</strong></div><div class="report-cell"><small>CUPS SOLD</small><strong>${d.sold} / ${d.capacity}</strong></div><div class="report-cell"><small>LEFT UPSET</small><strong>${d.leftUpset}</strong></div><div class="report-cell"><small>CHOSE COMPETITOR</small><strong>${d.lostCompetitor}</strong></div><div class="report-cell"><small>UNSOLD · DISCARDED</small><strong>${d.unsold}</strong></div><div class="report-cell"><small>LEMONS SPOILED</small><strong>${d.spoiledLemons}</strong></div></div>
  <div class="kicker">INCOME STATEMENT</div><table class="income-table"><tr><td>Sales revenue</td><td class="win">+${money(d.revenue)}</td></tr><tr><td>Ingredients and cups used (all prepared)</td><td>−${money(d.cost)}</td></tr><tr><td>Location permit</td><td>−${money(d.permit)}</td></tr><tr><td>Lemons expired at start of day</td><td>−${money(d.spoilCost)}</td></tr><tr><td><strong>Operating profit</strong></td><td class="${d.profit>=0?'win':'lose'}">${money(d.profit)}</td></tr></table>
- <p class="fine">Stand cash: <strong>${money(state.cash)}</strong>. Equipment is a business asset, so upgrades are recorded as purchases in your books rather than as a day's lemonade expense. Prepared, unsold lemonade is discarded after closing.</p><button class="primary" id="nextDay">Plan Day ${d.day+1} →</button>`;openModal()}
+ <p class="fine">Stand cash: <strong>${money(state.cash)}</strong>. Equipment is a business asset, so upgrades are recorded as purchases in your books rather than as a day's lemonade expense. Prepared, unsold lemonade is discarded after closing.</p><button class="primary" id="nextDay">Plan Day ${d.day+1} →</button><button class="small-link" id="reportSaveMenu">Save or quit</button>`;openModal()}
 
 function nextDay(){state.financialMarks??={};state.financialMarks[state.day]=portfolioTotals(state.bank,investmentDesk.market.data).unrealizedCents/100;state.day++;expireOldLemons();reviewDueDate();save();modalKind='';$('modal').classList.remove('show');activateTab('location');render();$('sceneTitle').textContent='A new day, a fresh forecast';$('lesson').textContent='Fast service wins customers. Spoilage and location fees are costs. Equipment is an asset—not a sale.';if(state.daySpoilage.lemons)showEvent('🍋 '+state.daySpoilage.lemons+' lemons expired! Loss: '+money(state.daySpoilage.cost)+'. A fridge prevents this.');}
 
 function exportLedger(){let rows=[['Day','Description','Category','Stand cash change','Checking change','Loan change','Investment change','Trading fee','Market close date'],...state.ledger.map(x=>[x.day,x.desc,x.category,x.cash||0,x.bankChange||0,x.loanChange||0,x.investmentChange||0,x.fee||0,x.priceDate||''])];let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');let link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));link.download='lemonade-lane-ledger.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)}
 function showHelp(){modalKind='help';$('modalBody').innerHTML=`<div class="kicker">HOW TO PLAY</div><h2>🍋 Your first business</h2><p>You're the owner of a lemonade stand. Your goal: grow your business without running out of money.</p><div style="line-height:1.75"><p><strong>1. Choose a location.</strong> Expensive locations have more customers—but higher daily costs.</p><p><strong>2. Perfect your lemonade.</strong> More lemons, sugar, and ice affect flavor and ingredient costs.</p><p><strong>3. Choose a price and batch size.</strong> Low prices attract more people. Unsold lemonade spoils overnight.</p><p><strong>4. Visit the Bank.</strong> Borrow startup funds on the Loans tab, withdraw money from checking, then buy supplies. Future expansion loans require good repayment history and credit scores.</p><p><strong>5. Open your stand!</strong> Watch the street, then study the end-of-day financial results.</p></div><div class="notice">You start with $0 and no supplies. Use the big Bank arrow to apply for your first loan.</div><button class="small-link" id="resetBtn">Start over / reset business</button>`;openModal()}
 function openModal(){world.avatarController?.keys.clear();world.avatarController?.touch.clear();$('modal').classList.add('show')}
-function closeModal(){if(modalKind==='report')return;$('modal').classList.remove('show');modalKind=''}
+function closeModal(){if(modalKind==='report'||saveBusy)return;if(modalKind==='save'){sessionPaused=false;world.paused=false;}$('modal').classList.remove('show');$('modalClose').hidden=false;modalKind=''}
+function stopGameSession(){
+ clearInterval(interval);clearTimeout(openingTimeout);clearTimeout(closingTimeout);interval=null;openingTimeout=null;closingTimeout=null;
+ clearTimeout(statusTimeout);$('saveStatus').hidden=true;
+ running=false;dayRun=null;runConfig=null;sessionPaused=false;root.classList.remove('running');
+ $('liveDisplay').style.display='none';$('runningNote').style.display='none';world.clearTraffic();
+}
+function createProfile(slot,name,avatar){
+ const fresh={...initial(),avatarAppearance:appearanceFor(avatar)};
+ profileStore.create(slot,name,avatar,fresh);loadProfile(slot,true);
+}
+function loadProfile(slot,isNew=false){
+ const profile=profileStore.list()[slot];if(!profile)throw new Error('This profile is not available.');
+ stopGameSession();modalKind='';$('modal').classList.remove('show');$('modalClose').hidden=false;
+ world.avatarController?.setEnabled(false);activeProfile=profile;state=normalizeState(profile.state);
+ const savedView=state.playerView;
+ state.avatarAppearance??=appearanceFor(profile.avatar);world.avatarController?.avatar.setAppearance(state.avatarAppearance);
+ $('world3d').dataset.avatarType=state.avatarAppearance.type||'male';
+ investmentDesk.reset();if(investmentDesk.market.data)applyMarket(state,investmentDesk.market.data);
+ clearSupplyCart();upgradeIndex=0;bankFeedback='';activeBankTab='overview';sceneView='outside';world.angle=.55;world.zoom=1;
+ document.getElementById('profileScreen').hidden=true;root.hidden=false;document.body.classList.remove('profile-home-visible');world.paused=false;
+ $('profilePlayerLabel').textContent=profile.name+'’S BUSINESS';
+ activateTab('location');showScreen('stand');reviewDueDate();render();
+ if(savedView){setSceneView(savedView.sceneView);world.avatarController?.restore(savedView)}
+ world.resize();
+ const session=state.session;
+ if(session?.dayRun?.day===state.day&&!state.history.some(d=>d.day===state.day)&&Array.isArray(session.dayRun.queue)&&Number.isInteger(session.visitors)&&session.visitors>0&&session.dayRun.visitors>=0&&session.dayRun.visitors<=session.visitors){
+  dayRun=session.dayRun;runConfig={visitors:session.visitors,chance:session.chance,rivalChance:session.rivalChance,stage:session.stage};running=true;
+  root.classList.add('running');$('liveDisplay').style.display='block';$('runningNote').style.display='block';$('startBtn').disabled=true;$('startBtn').textContent='Stand is open…';$('phaseLabel').textContent='🟢 OPEN FOR BUSINESS';
+  $('scoreVisitors').textContent=dayRun.visitors;$('scoreSold').textContent=dayRun.sold;$('scoreRevenue').textContent=money(dayRun.revenue);$('scoreProfit').textContent='…';$('runProgress').style.width=(100*dayRun.visitors/runConfig.visitors)+'%';
+  startSellingSession();
+ }
+ save();
+ if(isNew){modalKind='welcome';$('modalBody').innerHTML='<h2>Welcome to Lemonomics!</h2><p>You need money to purchase supplies! Head to the bank and apply for a loan!</p><button type="button" class="primary" id="welcomeBank">Head to the bank</button><button type="button" class="small-link" id="welcomeBack">Explore the neighborhood</button>';openModal();$('welcomeBank').focus();refreshProfileMarket(state,activeProfile.id);}
+ else $('saveMenuBtn').focus();
+ window.scrollTo({top:0,behavior:'instant'});
+}
+async function refreshProfileMarket(game,id){
+ await investmentDesk.market.refresh(()=>{},true);
+ if(state!==game||activeProfile?.id!==id)return;
+ if(investmentDesk.market.data)applyMarket(state,investmentDesk.market.data);
+ reviewDueDate();save();renderBank();return investmentDesk.market.error;
+}
+function openSaveMenu(){
+ if(!activeProfile||saveBusy)return;
+ sessionPaused=true;world.paused=true;modalKind='save';
+ $('modalBody').innerHTML='<h2>Would you like to:</h2><p id="saveMenuNote" class="fine">'+(profileStore.temporary?'Preview mode: saves last only while this page stays open.':'Save your progress, or save and return to the main screen.')+'</p><div class="save-options"><button type="button" id="saveOnly">Save</button><button type="button" id="saveAndQuit">Save &amp; Quit</button><button type="button" id="backToGame">Back to Game</button></div><p id="saveMenuError" role="alert" hidden></p>';
+ openModal();$('saveOnly').focus();
+}
+async function manualSave(quit){
+ if(saveBusy||!activeProfile)return;saveBusy=true;
+ const controls=[...$('modal').querySelectorAll('button')];controls.forEach(b=>b.disabled=true);
+ $('saveMenuNote').textContent='Saving… Checking for updated fund prices.';
+ let complete=false;
+ try{if(save()){await refreshProfileMarket(state,activeProfile.id);complete=save()}}
+ catch(error){/* Keep the menu and the last durable save if a state update fails. */}
+ finally{saveBusy=false;controls.forEach(b=>b.disabled=false)}
+ if(!complete){$('saveMenuError').textContent='Your game could not be saved. Allow browser storage or free some space, then try again. Your previous save is still available.';$('saveMenuError').hidden=false;$('saveMenuNote').textContent='Keep this game open until your progress can be saved.';$('saveOnly').focus();return;}
+ const market=investmentDesk.market,priceNote=market.error?' Last available fund prices retained.':market.data?' Fund prices checked through '+market.data.asOf+'.':'';
+ closeModal();
+ if(quit){
+  stopGameSession();world.avatarController?.setEnabled(false);activeProfile=null;state=initial();world.paused=true;root.hidden=true;document.body.classList.add('profile-home-visible');profileScreen.show();window.scrollTo({top:0,behavior:'instant'});
+ }else{render();$('saveMenuBtn').focus();notifySave((profileStore.temporary?'Saved for this preview.':'Game saved.')+priceNote)}
+}
+function handleProfileClick(button){
+ if(button.id==='saveMenuBtn'||button.id==='reportSaveMenu'){openSaveMenu();return true;}
+ if(button.id==='saveOnly'||button.id==='saveAndQuit'){manualSave(button.id==='saveAndQuit');return true;}
+ if(button.id==='backToGame'){closeModal();$('saveMenuBtn').focus();return true;}
+ if(button.id==='welcomeBank'||button.id==='welcomeBack'){closeModal();if(button.id==='welcomeBank')showScreen('bank','loans');return true;}
+ return false;
+}
 function exhaustedAssets(){const restartCost=round(Math.min(...Object.values(locs).map(l=>l.fee))+stockKeys.reduce((sum,k)=>sum+Math.min(...supplyTiers[k])*supplies[k].unit,0));return state.cash+state.bank.checking+.00001<restartCost&&investmentDesk.value()<.01&&stockKeys.every(k=>round(state.inventory[k]*supplies[k].unit/2)<.01)&&!state.upgrades.length}
 function canClose(){return !state.closed&&exhaustedAssets()&&!emergencyEligible(state)&&(Boolean(activeLoan())||loanMax()===0)}
 function showLedger(){modalKind='books';$('modalBody').innerHTML='<div class="kicker">BUSINESS BOOKS</div><h2>Export results to Excel?</h2><p>Your workbook includes an Income Statement with daily columns and totals, an aggregate Balance Sheet, and a Cash Flow statement.</p><button type="button" class="primary" id="downloadBooks">Yes — download Excel workbook</button><button type="button" class="small-link" id="noBooks">No, close</button><br><button type="button" class="small-link" id="exportBtn">Download transaction ledger as CSV</button>';openModal()}
@@ -273,7 +371,7 @@ function dailyChart(history,{projection=false,all=false}={}){const reports=state
 function renderResults(){const holder=$('historyBars');holder.classList.remove('history');holder.innerHTML=`<label class="projection-toggle"><input type="checkbox" id="showProjection" ${state.showProjection?'checked':''}> Show projections</label>${dailyChart(state.history,{projection:state.showProjection})}<div id="dailyDetails" aria-live="polite">Select a day on the graph to see details.</div>`;const recipeNote=$('recipeBooks');if(recipeNote)recipeNote.innerHTML='<strong>Discover your recipe.</strong> Buy Good ($10), Better ($25), or Best ($50) recipes at the Downtown bookstore for 10%, 15%, or 20% more visitors. Walk to the BOOKS door. You can guess a tasty mix, but visitor bonuses require the purchased book and its exact recipe. Adjust ingredients in tenths.'+(state.purchasedRecipes?.length?'<br>Your books: '+state.purchasedRecipes.map(id=>{const r=RECIPES.find(x=>x.id===id);return r?`${r.name}: ${r.lemons} lemons / ${r.sugar} sugar / ${r.ice} ice <button type="button" data-use-recipe="${id}">Use</button>`:''}).join(' · '):'');}
 function resultDetails(day){const el=$('dailyDetails');if(!el)return;if(day==='projection'){el.textContent=`Estimate at ${locs[state.location].name}, ${weather().name}. Recipe boost ${recipeBonus(state)*100}%. Upgrades: ${state.upgrades.map(id=>upgradeItems.find(u=>u.id===id)?.name).join(', ')||'none'}.`;return}const h=state.history.find(h=>h.day===Number(day)),s=statements(state,upgradeItems,investmentDesk.market.data).profits[day];if(!s)return;el.innerHTML=`<strong>Day ${day} · ${h?locs[h.location]?.name||h.location:'Planning / bank activity'} · ${h?.weather||'No trading day'}</strong><p>Recipe visitor boost: ${Math.round((h?.recipeBonus||0)*100)}%${h?.recipe?' · Mix '+h.recipe.lemons+' / '+h.recipe.sugar+' / '+h.recipe.ice:''}</p><table class="income-table">${Object.entries({Sales:s.sales,'Investment income / loss':s.investment,'Ingredients and spoilage':-s.cost,Permits:-s.permit,'Loan interest and fees':-s.interest,'Recipe books':-s.recipes,'Resale loss':-s.loss}).map(([label,v])=>`<tr><td>${label}</td><td>${money(v)}</td></tr>`).join('')}</table><p>Equipment purchased: ${state.ledger.filter(l=>l.day===Number(day)&&l.category==='equipment').map(l=>l.desc+' ('+money(-l.cash)+')').join(', ')||'none'}.</p>`}
 function closeBusiness(){if(!canClose())return;state.closed=true;save();render();modalKind='closed';const report=statements(state,upgradeItems,investmentDesk.market.data);$('modalBody').innerHTML=`<h2>You made it to day ${state.day}!</h2><div class="closing-results"><div>${dailyChart(state.history,{all:true})}</div><div><h3>Aggregate income / loss</h3><table class="income-table">${report.income.slice(1).map(r=>`<tr><td>${r[0]}</td><td>${money(r.at(-1))}</td></tr>`).join('')}</table></div></div><p>You ran out of money and can no longer obtain a loan from the bank. Would you like to start another game?</p><button type="button" id="restartClosed" class="primary">Yes — start another game</button><button type="button" id="stayClosed" class="small-link">No — return to Books only</button>`;openModal()}
-function handleBusinessClick(b){if(b.id==='downloadBooks'){downloadStatements(state,upgradeItems,investmentDesk.market.data);closeModal();return true}if(b.id==='noBooks'||b.id==='stayClosed'){modalKind='';closeModal();return true}if(b.id==='restartClosed'){state=initial();world.clearTraffic();modalKind='';closeModal();save();showScreen('stand');activateTab('location');render();return true}if(state.closed)return false;
+function handleBusinessClick(b){if(b.id==='downloadBooks'){downloadStatements(state,upgradeItems,investmentDesk.market.data);closeModal();return true}if(b.id==='noBooks'||b.id==='stayClosed'){modalKind='';closeModal();return true}if(b.id==='restartClosed'){state={...initial(),avatarAppearance:state.avatarAppearance};world.clearTraffic();modalKind='';closeModal();save();showScreen('stand');activateTab('location');render();return true}if(state.closed)return false;
  if(b.id==='dismissEvent'){state.dismissedEvent=state.day+':'+b.dataset.eventText;state.dismissedEvents=[...(state.dismissedEvents||[]),state.dismissedEvent].slice(-20);$('neighborhoodEvent').hidden=true;save();return true}
  if(b.dataset.loanCollateral){const loan=state.bank.loans.find(l=>l.id===Number(b.dataset.loanCollateral)&&l.secured&&l.balance>0);if(loan&&!running){try{const result=settleCollateral(state,loan,investmentDesk.market.data,new Date(),{full:true,collection:state.day>loan.nextDue});if(result){save();render();bankNotify(result+(loan.balance>0?' Remaining loan: '+money(loan.balance):' Loan paid in full.'))}else bankNotify('Refresh prices on Investments before selling collateral. The latest prior trading day’s close is required.',true)}catch(e){save();render();bankNotify(e.message,true)}}return true}if(b.dataset.loanFull){makeLoanPayment(Number(b.dataset.loanFull),true);return true}if(b.id==='applySecured'){applyLoan(Number($('securedAmount').value),true);return true}
  if(b.id==='emergencyLoan'){if(exhaustedAssets()&&emergencyEligible(state)){emergencyTopup(state);save();render();bankNotify('$25 added to checking. Your existing loan increased by $27.50.')}return true}
@@ -284,9 +382,21 @@ root.addEventListener('change',e=>{if(e.target.dataset.recipeInput){const key=e.
 root.addEventListener('click',e=>{const p=e.target.closest('[data-result-day]');if(p)resultDetails(p.dataset.resultDay)});
 root.addEventListener('keydown',e=>{const p=e.target.closest('[data-result-day]');if(p&&['Enter',' '].includes(e.key)){e.preventDefault();resultDetails(p.dataset.resultDay)}});
 
-root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!root.contains(b))return;if(handleBusinessClick(b))return;if(state.closed&&!['ledgerBtn','booksLink','modalClose','downloadBooks','exportBtn'].includes(b.id))return;if(b.dataset.sceneView){setSceneView(b.dataset.sceneView);return}if(b.id==='playerStand'){setSceneView('exterior');return}if(b.id==='sceneBack'){setSceneView('outside');return}if(b.id==='sceneLeft'){world.rotate(-.25);return}if(b.id==='sceneRight'){world.rotate(.25);return}if(b.id==='exitStandView'){setSceneView('outside');return}if(b.id==='visitBank'){showScreen('bank','overview');return}if(b.id==='returnToStand'){showScreen('stand');return}if(b.dataset.bankTab){bankNav(b.dataset.bankTab);return}if(b.dataset.loanApply){applyLoan(Number(b.dataset.loanApply));return}if(b.dataset.loanPay){makeLoanPayment(Number(b.dataset.loanPay));return}if(b.dataset.transfer){transfer(b.dataset.transfer,b.dataset.amount);return}if(b.dataset.supplyCategory){supplyCategory=b.dataset.supplyCategory;renderInventory();return}if(b.dataset.supplyStep){stepSupply(Number(b.dataset.tier),Number(b.dataset.supplyStep));return}if(b.id==='upgradePrev'){upgradeIndex=(upgradeIndex+upgradeItems.length-1)%upgradeItems.length;renderUpgrade();return}if(b.id==='upgradeNext'){upgradeIndex=(upgradeIndex+1)%upgradeItems.length;renderUpgrade();return}if(b.id==='buyUpgrade'){buyUpgrade();return}if(b.id==='clearSupplyCart'){clearSupplyCart();return}if(b.id==='reviewSupplies'){reviewSupplies();return}if(b.id==='cancelSupplyPurchase'){closeModal();return}if(b.id==='confirmSupplyPurchase'){confirmSupplyPurchase();return}if(b.dataset.tab){activateTab(b.dataset.tab);return}if(b.id==='resultNext'){nextDay();return}if(b.dataset.loc&&!running){state.location=b.dataset.loc;save();render()}else if(b.dataset.recipe)setRecipe(b.dataset.recipe,Number(b.dataset.change));else if(b.dataset.adjust)setVar(b.dataset.adjust,Number(b.dataset.change));else if(b.id==='startBtn'){if(canClose())closeBusiness();else openStand();}else if(b.id==='ledgerBtn'||b.id==='booksLink')showLedger();else if(b.id==='helpBtn')showHelp();else if(b.id==='modalClose')closeModal();else if(b.id==='nextDay'){modalKind='';nextDay()}else if(b.id==='exportBtn')exportLedger();else if(b.id==='resetBtn'){if(confirm('Reset your entire lemonade business? This will erase all days and transactions.')){state=initial();clearSupplyCart();running=false;dayRun=null;if(interval)clearInterval(interval);if(openingTimeout)clearTimeout(openingTimeout);if(closingTimeout)clearTimeout(closingTimeout);openingTimeout=null;closingTimeout=null;world.clearTraffic();save();modalKind='';$('modal').classList.remove('show');activateTab('location');showScreen('stand');render()}}});
+root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!root.contains(b))return;if(handleProfileClick(b)||handleBusinessClick(b))return;if(state.closed&&!['ledgerBtn','booksLink','modalClose','downloadBooks','exportBtn'].includes(b.id))return;if(b.dataset.sceneView){setSceneView(b.dataset.sceneView);return}if(b.id==='playerStand'){setSceneView('exterior');return}if(b.id==='sceneBack'){setSceneView('outside');return}if(b.id==='sceneLeft'){world.rotate(-.25);return}if(b.id==='sceneRight'){world.rotate(.25);return}if(b.id==='exitStandView'){setSceneView('outside');return}if(b.id==='visitBank'){showScreen('bank','overview');return}if(b.id==='returnToStand'){showScreen('stand');return}if(b.dataset.bankTab){bankNav(b.dataset.bankTab);return}if(b.dataset.loanApply){applyLoan(Number(b.dataset.loanApply));return}if(b.dataset.loanPay){makeLoanPayment(Number(b.dataset.loanPay));return}if(b.dataset.transfer){transfer(b.dataset.transfer,b.dataset.amount);return}if(b.dataset.supplyCategory){supplyCategory=b.dataset.supplyCategory;renderInventory();return}if(b.dataset.supplyStep){stepSupply(Number(b.dataset.tier),Number(b.dataset.supplyStep));return}if(b.id==='upgradePrev'){upgradeIndex=(upgradeIndex+upgradeItems.length-1)%upgradeItems.length;renderUpgrade();return}if(b.id==='upgradeNext'){upgradeIndex=(upgradeIndex+1)%upgradeItems.length;renderUpgrade();return}if(b.id==='buyUpgrade'){buyUpgrade();return}if(b.id==='clearSupplyCart'){clearSupplyCart();return}if(b.id==='reviewSupplies'){reviewSupplies();return}if(b.id==='cancelSupplyPurchase'){closeModal();return}if(b.id==='confirmSupplyPurchase'){confirmSupplyPurchase();return}if(b.dataset.tab){activateTab(b.dataset.tab);return}if(b.id==='resultNext'){nextDay();return}if(b.dataset.loc&&!running){state.location=b.dataset.loc;save();render()}else if(b.dataset.recipe)setRecipe(b.dataset.recipe,Number(b.dataset.change));else if(b.dataset.adjust)setVar(b.dataset.adjust,Number(b.dataset.change));else if(b.id==='startBtn'){if(canClose())closeBusiness();else openStand();}else if(b.id==='ledgerBtn'||b.id==='booksLink')showLedger();else if(b.id==='helpBtn')showHelp();else if(b.id==='modalClose')closeModal();else if(b.id==='nextDay'){modalKind='';nextDay()}else if(b.id==='exportBtn')exportLedger();else if(b.id==='resetBtn'){if(confirm('Reset your entire lemonade business? This will erase all days and transactions.')){state={...initial(),avatarAppearance:state.avatarAppearance};clearSupplyCart();running=false;dayRun=null;if(interval)clearInterval(interval);if(openingTimeout)clearTimeout(openingTimeout);if(closingTimeout)clearTimeout(closingTimeout);openingTimeout=null;closingTimeout=null;world.clearTraffic();save();modalKind='';$('modal').classList.remove('show');activateTab('location');showScreen('stand');render()}}});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
 const world=new Neighborhood($('world3d'),{onSelect:()=>setSceneView('exterior'),onBack:()=>setSceneView('outside'),onShop:shop=>showShop(shop)});
 const investmentDesk=new InvestmentDesk($('investApp'),{getState:()=>state,commit:()=>{reviewDueDate();save();renderBank()},isRunning:()=>running||state.closed});
-const resultsPane=$('pane-results');const graph=root.querySelector('.result-history');if(resultsPane&&graph)resultsPane.prepend(graph);reviewDueDate();save();activateTab('location');render();
+const resultsPane=$('pane-results');const graph=root.querySelector('.result-history');if(resultsPane&&graph)resultsPane.prepend(graph);
+profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error('Enable browser storage to create or load a profile.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile});
+try{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy()}catch(error){
+ if(error.name==='SecurityError'){
+  // Opaque embedded previews cannot use browser storage. Keep that limitation
+  // explicit while allowing the downloaded game to be previewed and played.
+  const memory=new Map();profileStore=new LocalProfileStore({getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)});profileStore.temporary=true;
+  profileScreen.host.querySelector('.profile-local-note').textContent='Preview mode: profiles last while this page stays open. Open the downloaded HTML in your browser to keep saves.';
+ }else profileScreen.error(error.message);
+}
+world.paused=true;activateTab('location');render();profileScreen.show();
+window.addEventListener('pagehide',()=>{if(activeProfile)save()});
+$('modal').addEventListener('keydown',e=>{if(e.key==='Tab')trapFocus(e,$('modal'));if(e.key==='Escape'){e.preventDefault();closeModal()}});
 })();

@@ -78,6 +78,21 @@ export class PlayerController{
     this.avatar.group.visible=!!WALKING_AREAS[this.world.location];this.stool.visible=this.avatar.group.visible;
     this.avatar.animate(0,false,true);
   }
+  snapshot(sceneView){return {location:this.world.location,walking:this.enabled,position:this.avatar.group.position.toArray(),rotation:this.avatar.group.rotation.y,angle:this.world.angle,zoom:this.world.zoom,sceneView};}
+  restore(view){
+    if(!view||view.location!==this.world.location)return;
+    if(Number.isFinite(view.angle))this.world.angle=THREE.MathUtils.clamp(view.angle,-.9,1.25);
+    if(view.walking){
+      this.setEnabled(true);
+      const p=view.position;
+      if(Array.isArray(p)&&p.length===3&&p.every(Number.isFinite)&&!blocked(p[0],p[2],this.obstacles(),WALKING_AREAS[this.world.location].bounds)){
+        this.avatar.group.position.set(p[0],groundElevation(this.world.sceneGround,p[0],p[2]),p[2]);
+        if(Number.isFinite(view.rotation))this.avatar.group.rotation.y=view.rotation;
+      }
+    }
+    if(Number.isFinite(view.zoom))this.world.zoom=THREE.MathUtils.clamp(view.zoom,this.world.location==='neighborhood'?.4:.8,1.4);
+    this.world.updateCameraGoal();this.publish();
+  }
   syncLocation(){
     const available=!!WALKING_AREAS[this.world.location];this.toggle.hidden=!available;
     if(this.location!==this.world.location){this.location=this.world.location;this.lastShop=null;this.setEnabled(false)}
@@ -93,7 +108,7 @@ export class PlayerController{
   visitStand(){const shop=this.nearShop();if(this.enabled&&shop)this.world.onShop(shop.id);else if(this.enabled&&nearStand(this.avatar.group.position))this.world.onSelect()}
   update(dt,time,reducedMotion){
     if(!this.enabled)return;
-    const root=this.world.container.closest('#ll-app');if(root?.querySelector('#modal.show')||root?.querySelector('#phaseLabel')?.dataset.closed==='true'){this.keys.clear();this.touch.clear();return}
+    const root=this.world.container.closest('#ll-app');if(this.world.paused||root?.hidden||root?.querySelector('#modal.show')||root?.querySelector('#phaseLabel')?.dataset.closed==='true'){this.keys.clear();this.touch.clear();return}
     const input={x:0,z:0};for(const code of new Set([...this.keys,...this.touch])){input.x+=directions[code][0];input.z+=directions[code][1]}
     const p=this.avatar.group.position,obstacles=this.obstacles(),bounds=WALKING_AREAS[this.world.location].bounds;
     // Upgrades can enlarge the stand while walking. Restore a clear approach if needed.

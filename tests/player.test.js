@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {movePlayer,blocked,nearStand,WALKING_AREAS,groundElevation} from '../src/player-movement.js';
 import {PlayerAvatar} from '../src/avatar.js';
+import {appearanceFor} from '../src/avatar.js';
 import {sceneColliders,sceneGround} from '../src/player-controller.js';
 import {box} from '../src/models.js';
 
@@ -29,6 +30,12 @@ test('appearance changes rebuild the rig while retaining movement transform and 
   assert.equal(avatar.appearance.shirt,'#123abc');assert.equal(avatar.appearance.pants,'#275b85');assert.notEqual(avatar.rig,old);
   assert.equal(avatar.group.position.x,2);assert.equal(avatar.group.rotation.y,.8);assert.ok(avatar.slots.hair);assert.equal(avatar.slots.arms.length,2);
   assert.equal(avatar.slots.body.children[0].material.color.getHexString(),'123abc');avatar.dispose();
+});
+test('male and female avatars share a playable rig but have distinct persistent appearance',()=>{
+ const a=new PlayerAvatar(new THREE.Group(),appearanceFor('female'));
+ assert.equal(a.appearance.type,'female');assert.equal(a.rig.legs.length,2);assert.equal(a.rig.arms.length,2);assert.ok(a.slots.hair.children.length>1);
+ a.group.position.set(3,.16,7);a.animate(.3,true,false);assert.notEqual(a.rig.legs[0].rotation.x,0);
+ a.setAppearance(appearanceFor('male'));assert.equal(a.appearance.type,'male');assert.equal(a.slots.hair.children.length,1);assert.equal(a.group.position.z,7);a.dispose();
 });
 
 test('park pond and downtown subway entrance block walking below the solid capture height',()=>{

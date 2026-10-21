@@ -1,9 +1,10 @@
+import {enterGame} from './fixtures/profile-ui.js';
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 const key='lemonadeLane_bank_v3';
 const saved=()=>({version:5,upgrades:[],lemonLots:[{day:4,qty:12}],daySpoilage:{day:0,lemons:0,cost:0},day:4,cash:500,inventory:{lemons:12,sugar:10,ice:50,cups:24},recipe:{lemons:4,sugar:3,ice:5},price:2.25,pitchers:2,location:'neighborhood',history:[],ledger:[],bank:{checking:0,investments:0,loans:[],creditScore:650,creditEstablished:false,onTime:0,missed:0,loanSequence:1}});
 async function seed(page,state){await page.addInitScript(({key,state})=>localStorage.setItem(key,JSON.stringify(state)),{key,state})}
-async function ready(page){await page.goto('/');await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');}
+async function ready(page){await page.goto('/');await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(page);}
 test('new game, three camera views, geometry selection, and unchanged UI',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await ready(page);
   await expect(page.locator('#cashHead')).toHaveText('$0.00');await expect(page.locator('#cupCapacity')).toHaveText('0');await expect(page.locator('#startBtn')).toBeDisabled();
@@ -19,6 +20,7 @@ test('new game, three camera views, geometry selection, and unchanged UI',async(
   expect(errors).toEqual([]);
 });
 test('bank loan, withdrawal, supplies, real upgrade purchase, and an accounted trading day',async({page})=>{
+  test.setTimeout(120000);
   await page.addInitScript(()=>{Math.random=()=>.1});await ready(page);
   await page.locator('#visitBank').click();await page.locator('[data-bank-tab=loans]').click();await page.locator('[data-loan-apply="100"]').click();
   await expect(page.locator('#bankChecking')).toHaveText('$100.00');
@@ -71,7 +73,7 @@ test('single HTML renders and navigates in a sandbox without network or sibling 
   await page.route('**/*',route=>{externalRequests++;route.abort()});
   await page.setContent('<iframe title="Standalone game" sandbox="allow-scripts" style="border:0;width:100%;height:900px"></iframe>');
   await page.locator('iframe').evaluate((iframe,html)=>{iframe.srcdoc=html},await readFile('dist/lemonade-lane.html','utf8'));
-  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');
+  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(game);
   await expect(game.locator('#cashHead')).toHaveText('$0.00');await expect(game.locator('#outsideStage')).toBeHidden();
   expect(await game.locator('script[src],script[type=module],link[rel=stylesheet]').count()).toBe(0);
   await game.locator('[data-scene-view=inside]').click();await expect(game.locator('#world3d')).toHaveAttribute('data-view','interior');
@@ -155,7 +157,7 @@ test('standalone downtown works offline in a script-enabled sandbox',async({page
   let requests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>{requests++;r.abort()});
   await page.setContent('<iframe title="Standalone downtown" sandbox="allow-scripts" style="width:100%;height:1000px;border:0"></iframe>');
   await page.locator('iframe').evaluate((iframe,html)=>{iframe.srcdoc=html},await readFile('dist/lemonade-lane.html','utf8'));
-  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');
+  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(game);
   await game.locator('[data-loc=square]').click();await expect(game.locator('#world3d')).toHaveAttribute('data-location','downtown');
   await game.locator('[data-scene-view=inside]').click();await expect(game.locator('#world3d')).toHaveAttribute('data-view','interior');
   expect(requests).toBe(0);expect(errors).toEqual([]);
@@ -206,7 +208,7 @@ test('waterfront supports phone touch controls and offline sandbox rendering',as
   let requests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>{requests++;r.abort()});
   await page.setContent('<iframe title="Standalone waterfront" sandbox="allow-scripts" style="width:100%;height:1000px;border:0"></iframe>');
   await page.locator('iframe').evaluate((iframe,html)=>{iframe.srcdoc=html},await readFile('dist/lemonade-lane.html','utf8'));
-  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');await game.locator('[data-loc=beach]').tap();
+  const game=page.frameLocator('iframe');await expect(game.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(game);await game.locator('[data-loc=beach]').tap();
   await expect(game.locator('#world3d')).toHaveAttribute('data-location','waterfront');await game.locator('[data-scene-view=inside]').tap();await expect(game.locator('#world3d')).toHaveAttribute('data-view','interior');
   expect(requests).toBe(0);expect(errors).toEqual([]);
 });

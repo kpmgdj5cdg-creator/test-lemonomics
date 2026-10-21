@@ -191,6 +191,7 @@ export class Neighborhood{
   }
   frame(){
     const elapsed=this.clock.getDelta(),dt=Math.min(elapsed,.05),moveDt=Math.min(elapsed,.2);this.time=performance.now()/1000;
+    if(this.paused){if(this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
     this.avatarController.update(dt,this.time,reducedMotion());
     const ease=1-Math.exp(-dt*7);this.camera.position.lerp(this.desiredPosition,ease);this.target.lerp(this.desiredTarget,ease);this.span=THREE.MathUtils.lerp(this.span,this.desiredSpan,ease);
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);this.camera.left=-this.span*aspect/2;this.camera.right=this.span*aspect/2;this.camera.top=this.span/2;this.camera.bottom=-this.span/2;this.camera.updateProjectionMatrix();this.camera.lookAt(this.target);

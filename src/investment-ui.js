@@ -31,9 +31,11 @@ export class InvestmentDesk{
     this.chartWidth=0;this.chartObserver=new ResizeObserver(()=>{const width=this.host.clientWidth;if(width&&width!==this.chartWidth){this.chartWidth=width;this.renderChart();}});this.chartObserver.observe(host);
   }
   value(){return portfolioTotals(this.getState().bank,this.market.data).valueCents/100}
-  open(force=false){this.market.refresh(()=>{
-    const state=this.getState();if(this.market.data&&applyMarket(state,this.market.data)){this.commit();}else this.render();
+  open(force=false){const state=this.getState();return this.market.refresh(()=>{
+    if(this.getState()!==state)return;
+    if(this.market.data&&applyMarket(state,this.market.data)){this.commit();}else this.render();
   },force);}
+  reset(){this.form={symbol:'DIA',side:'buy',mode:'dollars',amount:''};this.review=null;this.notice='';this.error=false;this.chartTab='funds';this.range='1M';this.selected=new Set(['DIA','SPY']);}
   message(text,error=false){this.notice=text;this.error=error;this.render()}
   prepare(){
     // Review is a local game action, not a native form submission: embedded

@@ -1,6 +1,6 @@
-# Lemonade Lane
+# Lemonomics
 
-The supplied HTML game, with a real Three.js neighborhood replacing only the old CSS scene. The original tabs, banking screen, recipes, prices, inventories, loan and credit systems, ledger, and saved-game keys are retained.
+A browser business game with four voxel environments, playable avatars, banking and fund investments. Three local player profiles now keep separate businesses, while existing single-business saves migrate without losing progress.
 
 ## Run locally
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the address printed by Vite. Click the lemonade stand to inspect its exterior, then choose **Inside stand** for the 3D cutaway. **Back to neighborhood** returns to the map. Drag, or focus the scene and press the arrow keys to rotate. Escape returns to the neighborhood. Focus the scene before using the scroll wheel to zoom. Touch dragging and the view buttons work on tablets and phones. Reduced-motion preferences make camera transitions instant and disable walking swings.
+Open the address printed by Vite. On the Lemonomics title screen, choose one of three slots, enter a name (1–16 letters), and choose a male or female avatar. An existing save appears as **Player** in the first slot. Click a saved name to continue. In the game, click the lemonade stand to inspect its exterior, then choose **Inside stand** for the 3D cutaway. **Back to neighborhood** returns to the map. Drag, or focus the scene and press the arrow keys to rotate. Escape returns to the neighborhood. Focus the scene before using the scroll wheel to zoom. Touch dragging and the view buttons work on tablets and phones. Reduced-motion preferences make camera transitions instant and disable walking swings.
 
 For a single-file version, run `npm run build` and use **`dist/lemonade-lane.html`**. It contains all JavaScript, Three.js, styles, and geometry in one HTML document, with no CDN, module imports, or sibling files to load. Do not open the repository's source `index.html` directly: that development entry needs Vite. The single-file build also works in script-enabled sandboxed iframes; browsers that deny storage in a sandbox cannot persist saves there. WebGL must be available in the viewing environment.
 
@@ -26,7 +26,7 @@ npm run build
 npm run preview
 ```
 
-Deploy the generated `dist/` directory to a static web host. Three.js is bundled locally; the game does not load a graphics CDN or require API keys. A WebGL-capable browser is required. Keep the same web origin to keep browser-local saved games available: localStorage does not transfer automatically between domains or from a `file:` URL to a web server. The original `lemonadeLane_bank_v3` and fallback `lemonadeLane_zero_v2` storage keys remain unchanged. Do not clear existing browser storage during migration.
+Deploy the generated `dist/` directory to a static web host. Three.js is bundled locally; the game does not load a graphics CDN or require API keys. A WebGL-capable browser is required. Keep the same web origin to keep browser-local saved games available: localStorage does not transfer automatically between domains or from a `file:` URL to a web server. Profiles use the versioned `lemonomics_profiles_v1` storage document. The original `lemonadeLane_bank_v3` and fallback `lemonadeLane_zero_v2` keys are imported once; `lemonomics_legacy_backup_v1` retains an untouched copy. The original active-save key is maintained as a compatibility mirror. Do not clear existing browser storage during migration.
 
 The updated art direction uses a closer orthographic composition, vivid blue and coral buildings, extruded pixel lettering, sculpted palms, white tiled sidewalks, dark asphalt, and directional shadows. Only the neighborhood panel is restyled. The old CSS scene is permanently hidden, including when the graphics cannot initialize; startup failures show a specific message in the scene instead of silently displaying the old art.
 
@@ -103,3 +103,17 @@ The financial and shop changes are covered by unit and browser tests, including 
 The Neighborhood contains 23 street-facing homes along both sides of the main road and side street, with eight facade palettes, pitched/flat/shed roofs, porches, glazing, mailboxes and connected front walks. Each home has a separate fenced rear garden extending 8.8 world units behind its back wall, with a tree and patio furniture. The relocated western house shares Maple Market's front-door line. Property footprints, including fences and landscaping, do not overlap. Streetside trees and furniture leave the new approaches clear.
 
 The sidewalks and lane markings extend past the new blocks. Neighborhood walking bounds cover the residential streets; focus the scene and scroll out to see more of the suburb (neighborhood zoom range 0.4–1.4). The other locations retain their existing bounds and zoom limits. The new roofs support the existing snow accumulation. Source geometry is in `src/neighborhood-homes.js`; collision and door-alignment checks are in `tests/neighborhood-layout.test.js`.
+
+## Player profiles and saving
+
+The plain green title screen has yellow voxel lettering and three independent save slots. Each saved slot shows the player’s avatar, name, game day and last-save time in local `MM-DD-YYYY, HH:MM AM/PM` format. Names allow only A–Z / a–z, up to 16 characters. Avatar appearance is separate from the rig and movement state so wardrobes and additional avatars can be added later.
+
+The upper-right exit icon opens **Save**, **Save & Quit**, and **Back to Game**. Saving first checkpoints progress, requests a fresh market snapshot, applies valid new prices and portfolio events, and saves again. Unavailable or older data leaves the last known prices intact. The simulation pauses while this menu is open. A selling day saved partway through resumes with the same queue, money and inventory, without charging another permit or brewing twice. The end-of-day report also offers **Save or quit**.
+
+Automatic saves still occur after business actions and on page exit. Selecting Save explicitly checks prices; internal automatic saves do not make repeated provider requests. New profiles also check prices immediately. A downloaded `file:` copy uses its bundled or cached prices; automatic daily updates need the existing same-origin `/api/market` service (`npm run dev` or the production `npm start` server). This release does not add a public hosting service.
+
+**Storage is local for this testing release.** Use the same browser, origin, and HTML path to keep profiles available. Opaque sandbox previews show an explicit temporary-save notice and can play with in-memory profiles; opening the downloaded HTML normally enables persistent browser storage. Failed persistent writes keep the game open and retain the preceding save.
+
+`src/profiles.js` is the storage adapter boundary; profile records have stable IDs, a schema version, appearance, timestamps, market date and business state. A future online implementation can retain this record format, but needs authenticated accounts, server storage and conflict handling before progress can follow a player across PCs. Player names alone are not login credentials.
+
+Backyards now vary across 23 homes: six retain the original seating, six have round voxel tree canopies, six combine a tree with a circular table near the back door, and five have flower gardens/open lawn.
