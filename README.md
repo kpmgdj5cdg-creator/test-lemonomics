@@ -19,6 +19,10 @@ The build also writes `lemonade-lane-park.html`, `lemonade-lane-downtown.html` a
 
 A new business still starts with **$0 and no inventory**. Use Bank → Loans, borrow money, withdraw it on Account, and buy supplies before starting the day. No debug money or inventory is granted.
 
+## Private online family test
+
+The Cloudflare Worker adds password protection, a shared D1 database for three profiles, confirmed online saves, conflict detection and browser recovery checkpoints. Follow [the private playtest setup](docs/PRIVATE-PLAYTEST.md) to connect the repository in Cloudflare and obtain the HTTPS testing link. No hosting account credentials or family password belong in this repository.
+
 ## Build and deploy
 
 ```sh
@@ -110,10 +114,10 @@ The plain green title screen has yellow voxel lettering and three independent sa
 
 The upper-right exit icon opens **Save**, **Save & Quit**, and **Back to Game**. Saving first checkpoints progress, requests a fresh market snapshot, applies valid new prices and portfolio events, and saves again. Unavailable or older data leaves the last known prices intact. The simulation pauses while this menu is open. A selling day saved partway through resumes with the same queue, money and inventory, without charging another permit or brewing twice. The end-of-day report also offers **Save or quit**.
 
-Automatic saves still occur after business actions and on page exit. Selecting Save explicitly checks prices; internal automatic saves do not make repeated provider requests. New profiles also check prices immediately. A downloaded `file:` copy uses its bundled or cached prices; automatic daily updates need the existing same-origin `/api/market` service (`npm run dev` or the production `npm start` server). This release does not add a public hosting service.
+Automatic saves still occur after business actions and on page exit. Selecting Save explicitly checks prices; internal automatic saves do not make repeated provider requests. New profiles also check prices immediately. A downloaded `file:` copy uses its bundled or cached prices; automatic daily updates need the existing same-origin `/api/market` service (`npm run dev` or the production `npm start` server). The separate Cloudflare deployment described above adds authenticated online profiles and the price service.
 
-**Storage is local for this testing release.** Use the same browser, origin, and HTML path to keep profiles available. Opaque sandbox previews show an explicit temporary-save notice and can play with in-memory profiles; opening the downloaded HTML normally enables persistent browser storage. Failed persistent writes keep the game open and retain the preceding save.
+**Downloaded/static copies save locally; the Cloudflare deployment saves online.** Use the same browser, origin, and HTML path to keep profiles available. Opaque sandbox previews show an explicit temporary-save notice and can play with in-memory profiles; opening the downloaded HTML normally enables persistent browser storage. Failed persistent writes keep the game open and retain the preceding save.
 
-`src/profiles.js` is the storage adapter boundary; profile records have stable IDs, a schema version, appearance, timestamps, market date and business state. A future online implementation can retain this record format, but needs authenticated accounts, server storage and conflict handling before progress can follow a player across PCs. Player names alone are not login credentials.
+`src/profiles.js` is the storage adapter boundary; profile records have stable IDs, a schema version, appearance, timestamps, market date and business state. `src/online-profiles.js` retains this record format while the authenticated Cloudflare Worker persists it in D1 with per-profile revision checks. Player names alone are not login credentials.
 
 Backyards now vary across 23 homes: six retain the original seating, six have round voxel tree canopies, six combine a tree with a circular table near the back door, and five have flower gardens/open lawn.

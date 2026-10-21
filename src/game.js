@@ -5,6 +5,7 @@ import {statements,downloadStatements} from './reports.js';
 import {portfolioTotals,applyMarket} from './investments.js';
 import {settleCollateral} from './secured-investments.js';
 import { InvestmentDesk } from './investment-ui.js';
+import {OnlineProfileStore,onlineAvailable,CLOUD_BACKUP_KEY} from './online-profiles.js';
 import {LocalProfileStore,LEGACY_KEYS} from './profiles.js';
 import {ProfileScreen,trapFocus} from './profile-screen.js';
 import {appearanceFor} from './avatar.js';
@@ -75,7 +76,7 @@ function save(){
   // A compatibility mirror supports older releases; all new loads use slots.
   try{localStorage.setItem(LEGACY_KEYS[0],JSON.stringify(state))}catch{}
   return true;
- }catch(error){notifySave('Could not save. Keep this game open and allow browser storage, then try again.');return false;}
+ }catch(error){notifySave(profileStore.online?error.message:'Could not save. Keep this game open and allow browser storage, then try again.');return false;}
 }
 function notifySave(text){const el=$('saveStatus');clearTimeout(statusTimeout);el.textContent=text;el.hidden=false;statusTimeout=setTimeout(()=>{el.hidden=true},8000);}
 function activeLoan(){return state.bank.loans.find(loan=>loan.balance>0.001)}
@@ -293,11 +294,12 @@ function stopGameSession(){
  running=false;dayRun=null;runConfig=null;sessionPaused=false;root.classList.remove('running');
  $('liveDisplay').style.display='none';$('runningNote').style.display='none';world.clearTraffic();
 }
-function createProfile(slot,name,avatar){
+async function createProfile(slot,name,avatar){
  const fresh={...initial(),avatarAppearance:appearanceFor(avatar)};
- profileStore.create(slot,name,avatar,fresh);loadProfile(slot,true);
+ await profileStore.create(slot,name,avatar,fresh);await loadProfile(slot,true);
 }
-function loadProfile(slot,isNew=false){
+async function loadProfile(slot,isNew=false){
+ if(profileStore.online)await profileStore.refresh();
  const profile=profileStore.list()[slot];if(!profile)throw new Error('This profile is not available.');
  stopGameSession();modalKind='';$('modal').classList.remove('show');$('modalClose').hidden=false;
  world.avatarController?.setEnabled(false);activeProfile=profile;state=normalizeState(profile.state);
@@ -339,16 +341,16 @@ async function manualSave(quit){
  if(saveBusy||!activeProfile)return;saveBusy=true;
  const controls=[...$('modal').querySelectorAll('button')];controls.forEach(b=>b.disabled=true);
  $('saveMenuNote').textContent='Saving… Checking for updated fund prices.';
- let complete=false;
- try{if(save()){await refreshProfileMarket(state,activeProfile.id);complete=save()}}
- catch(error){/* Keep the menu and the last durable save if a state update fails. */}
+ let complete=false,saveError='';
+ try{if(save()){await refreshProfileMarket(state,activeProfile.id);complete=save();if(complete&&profileStore.online)await profileStore.flush()}}
+ catch(error){complete=false;saveError=error.message;}
  finally{saveBusy=false;controls.forEach(b=>b.disabled=false)}
- if(!complete){$('saveMenuError').textContent='Your game could not be saved. Allow browser storage or free some space, then try again. Your previous save is still available.';$('saveMenuError').hidden=false;$('saveMenuNote').textContent='Keep this game open until your progress can be saved.';$('saveOnly').focus();return;}
+ if(!complete){$('saveMenuError').textContent=saveError||profileStore.conflict?.message||(profileStore.online?'Your online save could not be confirmed. Your browser backup is kept. Keep the game open and try Save again.':'Your game could not be saved. Allow browser storage or free some space, then try again. Your previous save is still available.');$('saveMenuError').hidden=false;$('saveMenuNote').textContent='Keep this game open until your progress can be saved.';$('saveOnly').focus();return;}
  const market=investmentDesk.market,priceNote=market.error?' Last available fund prices retained.':market.data?' Fund prices checked through '+market.data.asOf+'.':'';
  closeModal();
  if(quit){
-  stopGameSession();world.avatarController?.setEnabled(false);activeProfile=null;state=initial();world.paused=true;root.hidden=true;document.body.classList.add('profile-home-visible');profileScreen.show();window.scrollTo({top:0,behavior:'instant'});
- }else{render();focusGame();notifySave((profileStore.temporary?'Saved for this preview.':'Game saved.')+priceNote)}
+  stopGameSession();world.avatarController?.setEnabled(false);activeProfile=null;state=initial();world.paused=true;root.hidden=true;document.body.classList.add('profile-home-visible');profileScreen.show();if(profileStore.online)profileStore.refresh().then(()=>profileScreen.render()).catch(e=>profileScreen.error(e.message));window.scrollTo({top:0,behavior:'instant'});
+ }else{render();focusGame();notifySave((profileStore.temporary?'Saved for this preview.':profileStore.online?'Game saved online.':'Game saved.')+priceNote)}
 }
 function handleProfileClick(button){
  if(button.id==='saveMenuBtn'||button.id==='reportSaveMenu'){openSaveMenu();return true;}
@@ -391,15 +393,29 @@ const world=new Neighborhood($('world3d'),{onSelect:()=>setSceneView('exterior')
 const investmentDesk=new InvestmentDesk($('investApp'),{getState:()=>state,commit:()=>{reviewDueDate();save();renderBank()},isRunning:()=>running||state.closed});
 const resultsPane=$('pane-results');const graph=root.querySelector('.result-history');if(resultsPane&&graph)resultsPane.prepend(graph);
 profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error('Enable browser storage to create or load a profile.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile});
-try{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy()}catch(error){
+async function initializeProfiles(){
+try{
+ if(await onlineAvailable()){
+  profileStore=new OnlineProfileStore(window.localStorage,fetch,message=>notifySave(message));
+  await profileStore.refresh();
+  const note=profileScreen.host.querySelector('.profile-local-note');
+  note.textContent='Family playtest · Saved online. Use Save & Quit before switching computers.';
+  const recovery=document.createElement('button');recovery.type='button';recovery.className='profile-cancel';recovery.textContent='Download browser backup';
+  recovery.onclick=()=>{const blob=new Blob([localStorage.getItem(CLOUD_BACKUP_KEY)||'{}'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Lemonomics-browser-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};note.after(recovery);
+  const logout=document.createElement('form');logout.method='post';logout.action='/logout';logout.innerHTML='<button type="submit" class="profile-cancel">Lock family playtest</button>';recovery.after(logout);
+ }else{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy();profileScreen.host.querySelector('.profile-local-note').textContent='Three players. Three businesses. Your progress is saved on this device.'}
+}catch(error){
  if(error.name==='SecurityError'){
   // Opaque embedded previews cannot use browser storage. Keep that limitation
   // explicit while allowing the downloaded game to be previewed and played.
   const memory=new Map();profileStore=new LocalProfileStore({getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)});profileStore.temporary=true;
   profileScreen.host.querySelector('.profile-local-note').textContent='Preview mode: profiles last while this page stays open. Open the downloaded HTML in your browser to keep saves.';
- }else profileScreen.error(error.message);
+ }else{profileStore=null;profileScreen.error(error.message);}
 }
 world.paused=true;activateTab('location');render();profileScreen.show();
+}
+world.paused=true;profileScreen.host.querySelector('.profile-local-note').textContent='Loading your profiles…';
+initializeProfiles().catch(error=>profileScreen.error(error.message));
 window.addEventListener('pagehide',()=>{if(activeProfile)save()});
 $('modal').addEventListener('keydown',e=>{if(e.key==='Tab')trapFocus(e,$('modal'));if(e.key==='Escape'){e.preventDefault();closeModal()}});
 })();

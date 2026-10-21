@@ -34,15 +34,15 @@ export class ProfileScreen{
     this.host=host;this.list=list;this.onCreate=onCreate;this.onLoad=onLoad;this.editing=null;this.pendingName='';
     host.innerHTML=`<div class="profile-home"><h1 aria-label="Lemonomics" class="voxel-title">${titleArt()}</h1><div id="profileSlots" class="profile-slots" aria-label="Choose a game profile"></div><p class="profile-local-note">Three players. Three businesses. Your progress is saved on this device.</p><p id="profileError" class="profile-error" role="alert" hidden></p></div><div class="profile-dialog-scrim" id="avatarPicker" hidden role="dialog" aria-modal="true" aria-labelledby="avatarTitle"><div class="profile-dialog"><h2 id="avatarTitle">Choose your avatar</h2><p id="avatarGreeting"></p><div class="avatar-choices"><button type="button" data-avatar="male">${avatarPortrait('male')}<span>Male</span></button><button type="button" data-avatar="female">${avatarPortrait('female')}<span>Female</span></button></div><button type="button" class="profile-cancel" id="cancelAvatar">Back</button></div></div>`;
     this.slots=host.querySelector('#profileSlots');this.picker=host.querySelector('#avatarPicker');
-    host.addEventListener('click',e=>{
+    host.addEventListener('click',async e=>{
       const b=e.target.closest('button');if(!b)return;
       if(b.dataset.newSlot!==undefined){this.editing=Number(b.dataset.newSlot);this.render();this.slots.querySelector('input')?.focus()}
-      else if(b.dataset.loadSlot!==undefined){try{this.onLoad(Number(b.dataset.loadSlot))}catch(error){this.error(error.message)}}
-      else if(b.dataset.avatar){try{this.onCreate(this.editing,this.pendingName,b.dataset.avatar);this.picker.hidden=true;this.editing=null}catch(error){this.picker.hidden=true;this.error(error.message);this.render()}}
+      else if(b.dataset.loadSlot!==undefined){try{b.disabled=true;await this.onLoad(Number(b.dataset.loadSlot))}catch(error){this.error(error.message)}finally{b.disabled=false}}
+      else if(b.dataset.avatar){try{this.picker.querySelectorAll('button').forEach(b=>b.disabled=true);await this.onCreate(this.editing,this.pendingName,b.dataset.avatar);this.picker.hidden=true;this.editing=null}catch(error){this.picker.hidden=true;this.error(error.message);this.render()}finally{this.picker.querySelectorAll('button').forEach(b=>b.disabled=false)}}
       else if(b.id==='cancelAvatar'){this.picker.hidden=true;this.render();this.slots.querySelector('input')?.focus()}
       else if(b.dataset.submitName!==undefined)this.chooseAvatar();
     });
-    host.addEventListener('submit',e=>{e.preventDefault();this.chooseAvatar()});
+    host.addEventListener('submit',e=>{if(e.target.getAttribute('action')==='/logout')return;e.preventDefault();this.chooseAvatar()});
     host.addEventListener('input',e=>{if(e.target.id==='profileName')e.target.value=e.target.value.replace(/[^A-Za-z]/g,'').slice(0,16)});
     host.addEventListener('keydown',e=>{
       if(e.key==='Enter'&&e.target.id==='profileName'){e.preventDefault();this.chooseAvatar();return;}

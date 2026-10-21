@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./tests',testMatch:'online.spec.js',workers:1,timeout:120000,expect:{timeout:15000},use:{baseURL:'http://localhost:8787',viewport:{width:1280,height:900},reducedMotion:'reduce',launchOptions:{executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}}});

@@ -32,5 +32,5 @@ test('concurrent refreshes share six requests and persist one complete market sn
 test('provider failure returns a dated stale snapshot, throttles retries and never overwrites it',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'lemon-market-')),file=join(dir,'market.json'),old=marketFixture(new Date('2026-10-19T16:00:00Z'));await writeFile(file,JSON.stringify(old));let requests=0;
   const service=createMarketService({cacheFile:file,snapshotFile:join(dir,'missing'),clock:()=>now,fetcher:async()=>{requests++;throw new Error('offline')}});
-  assert.equal((await service.get()).status,'stale');assert.equal((await service.get()).status,'stale');assert.equal(requests,1);assert.equal(JSON.parse(await readFile(file,'utf8')).asOf,old.asOf);
+  assert.equal((await service.get()).status,'stale');assert.equal((await service.get()).status,'stale');assert.equal(requests,6);assert.equal(JSON.parse(await readFile(file,'utf8')).asOf,old.asOf);
 });

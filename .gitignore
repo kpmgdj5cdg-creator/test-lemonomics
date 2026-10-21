@@ -6,3 +6,9 @@ playwright-report/
 .cache/
 
 artifacts/
+
+# Private hosting credentials and local database state
+.wrangler/
+.dev.vars
+.env
+.env.*
