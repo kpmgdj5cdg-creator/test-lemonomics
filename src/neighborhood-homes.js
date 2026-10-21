@@ -91,9 +91,36 @@ function path(parent,from,to,width=.95){
   }
 }
 
+// A voxel sphere keeps the round silhouette while matching the block-built homes.
+function roundTree(parent){
+  const g=group(parent,-2.35,0,-7.7);g.userData.kind='round-yard-tree';
+  box(g,0,1.1,0,.34,2.2,.34,'#997350');
+  const step=.38,radius=1.3;
+  for(let x=-3;x<=3;x++)for(let y=-3;y<=3;y++)for(let z=-3;z<=3;z++){
+    if(Math.hypot(x*step,y*step,z*step)>radius)continue;
+    // Only the shell needs geometry; buried cubes would add no visible detail.
+    if(Math.hypot(x*step,y*step,z*step)<radius-step*1.25)continue;
+    box(g,x*step,2.7+y*step,z*step,step,step,step,y>1?'#73b451':x<0?'#367b42':'#519c48');
+  }
+}
+function circularPatio(parent){
+  const g=group(parent,1.35,0,-4.35);g.userData.kind='circular-patio';
+  // The patio and furniture sit beside the back door, clear of the rear tree.
+  for(let x=-4;x<=4;x++)for(let z=-4;z<=4;z++)if(Math.hypot(x,z)<4.5)
+    box(g,x*.31,.04,z*.31,.3,.09,.3,'#d5cfb8');
+  box(g,0,.48,0,.16,.86,.16,'#536956');
+  for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++)if(Math.hypot(x,z)<3.2)
+    box(g,x*.22,.96,z*.22,.225,.13,.225,'#dbc49b');
+  for(const x of [-1.05,1.05]){
+    box(g,x,.55,0,.44,.12,.5,'#b88c5c');
+    for(const z of [-.16,.16])box(g,x,.27,z,.09,.5,.09,'#536956');
+    box(g,x+Math.sign(x)*.2,.88,0,.09,.58,.5,'#b88c5c');
+  }
+}
+
 export function buildNeighborhoodHomes(parent){
   const homes=[];
-  for(const lot of RESIDENTIAL_LOTS){
+  for(const [index,lot] of RESIDENTIAL_LOTS.entries()){
     const plot=group(parent,lot.x,0,lot.z);plot.rotation.y=lot.angle;
     plot.userData.kind='residential-lot';plot.userData.lot=lot;
     // Rear plots are over twice the depth of the old small fenced yards.
@@ -101,11 +128,22 @@ export function buildNeighborhoodHomes(parent){
     fence(plot,-4.2,-10.8,8.4);
     fence(plot,-4.2,-10.8,9.1,'z');fence(plot,4.2,-10.8,9.1,'z');
     const home=modernHome(plot,lot.style);homes.push(home);
-    const yardTree=group(plot,-2.5,-.1225,-7.7);tree(yardTree,0,0,.78,lot.style%2);yardTree.userData.kind='yard-tree';
-    box(plot,1.2,.035,-4.65,2.6,.1,2.6,'#d5cfb8');
-    const seat=group(plot,1.2,-.04,-5.05);bench(seat,0,0);seat.userData.kind='garden-seat';
-    box(plot,1.2,.48,-3.72,.8,.83,.65,'#b18c62');
-    box(plot,1.2,.93,-3.72,.93,.12,.78,'#dbc49b');
+    const yard=index%4;plot.userData.yardStyle=['seating','round-tree','tree-and-table','garden'][yard];
+    if(yard===0){
+      const yardTree=group(plot,-2.5,-.1225,-7.7);tree(yardTree,0,0,.78,lot.style%2);yardTree.userData.kind='yard-tree';
+      box(plot,1.2,.035,-4.65,2.6,.1,2.6,'#d5cfb8');
+      const seat=group(plot,1.2,-.04,-5.05);bench(seat,0,0);seat.userData.kind='garden-seat';
+      box(plot,1.2,.48,-3.72,.8,.83,.65,'#b18c62');
+      box(plot,1.2,.93,-3.72,.93,.12,.78,'#dbc49b');
+    }else if(yard===1||yard===2){
+      roundTree(plot);if(yard===2)circularPatio(plot);
+    }else{
+      const garden=group(plot,1.7,0,-8.5);garden.userData.kind='flower-garden';
+      for(const x of [-.75,.75]){
+        box(garden,x,.14,0,1.1,.28,2,'#b48f6e');box(garden,x,.3,0,.95,.06,1.85,'#76563d');
+        for(let i=0;i<4;i++){box(garden,x,.49,-.65+i*.43,.1,.32,.1,'#538247');box(garden,x,.68,-.65+i*.43,.25,.16,.25,i%2?'#efb2b9':'#f3ce73')}
+      }
+    }
     bush(plot,3.35,1.05,.65);
     // Front paths finish at the street sidewalk; the stand's house uses a clear side exit.
     if(lot.standNeighbor){
