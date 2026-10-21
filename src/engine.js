@@ -26693,11 +26693,21 @@ MADE WITH LOVE`,
           ]
         );
       }
+      nearShop() {
+        if (!this.enabled || this.world.location !== 'square') return null;
+        const p=this.avatar.group.position;
+        if (Math.hypot(p.x+10,p.z+3.45)<1.3) return 'books';
+        if (Math.hypot(p.x-1.4,p.z+12.6)<1.3) return 'market';
+        return null;
+      }
       visitStand() {
+        const shop=this.nearShop();
+        if(shop){this.world.onShop(shop);return;}
         this.enabled && Al(this.avatar.group.position) && this.world.onSelect();
       }
       update(e, t, n) {
         if (!this.enabled) return;
+        if (document.querySelector('#modal.show')) { this.keys.clear();this.touch.clear();return; }
         let r = { x: 0, z: 0 };
         for (let e of new Set([...this.keys, ...this.touch]))
           ((r.x += Pl[e][0]), (r.z += Pl[e][1]));
@@ -26710,9 +26720,13 @@ MADE WITH LOVE`,
         (c && (this.avatar.group.rotation.y = Math.atan2(s.x - i.x, s.z - i.z)),
           i.set(s.x, jl(this.world.sceneGround, s.x, s.z), s.z),
           this.avatar.animate(t, c, n),
-          (this.interact.hidden = !Al(i)),
+          (this.interact.hidden = !Al(i) && !this.nearShop()),
+          (this.interact.textContent = this.nearShop()==='books'?'Visit bookstore · E':this.nearShop()==='market'?'Visit Maple Market · E':'Visit my stand · E'),
           this.world.updateCameraGoal(),
           this.publish());
+        const shop=this.nearShop();
+        if(shop && this.lastShop!==shop){this.lastShop=shop;this.world.onShop(shop);}
+        if(!shop)this.lastShop=null;
       }
       publish() {
         let e = this.world.container,
@@ -26743,10 +26757,11 @@ MADE WITH LOVE`,
     zl = new K(11.8, 0, -0.8),
     Bl = () => matchMedia(`(prefers-reduced-motion: reduce)`).matches,
     Vl = class {
-      constructor(e, { onSelect: t = () => {}, onBack: n = () => {} } = {}) {
+      constructor(e, { onSelect: t = () => {}, onBack: n = () => {}, onShop = () => {} } = {}) {
         ((this.container = e),
           (this.onSelect = t),
           (this.onBack = n),
+          (this.onShop = onShop),
           (this.view = `neighborhood`),
           (this.angle = 0.55),
           (this.zoom = 1),
@@ -27864,6 +27879,9 @@ MADE WITH LOVE`,
       throw Error(
         `Not enough money in checking to cover the investment and fee.`,
       );
+    const pledged = window.LemonadeLoanGuard?.(e) || 0;
+    if (r === 'sell' && pledged > 0 && (pu(e,t).valueCents-d)/100 + .000001 < pledged*2)
+      throw Error('These investments secure a loan. Repay it before selling below the required collateral.');
     let m = s.positions[n];
     if (r === `sell` && (!m || u > m.units))
       throw Error(`You do not own enough shares for this sale.`);
@@ -28049,6 +28067,7 @@ MADE WITH LOVE`,
   function yu(e) {
     let t = fu(e.bank),
       n = t.legacyCents || 0;
+    if ((window.LemonadeLoanGuard?.(e.bank)||0)>0) return;
     n &&
       ((e.bank.checking = (cu(e.bank.checking) + n) / 100),
       (t.legacyCents = 0),

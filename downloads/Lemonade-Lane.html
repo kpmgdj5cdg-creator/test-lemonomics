@@ -469,6 +469,8 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
 #investApp .invest-bottom-note{font-size:10px;line-height:1.65;color:#7a8c6d;margin-top:24px;padding-top:15px;border-top:1px solid #c8dcb0}
 @media(max-width:1000px){#investApp .invest-lower-grid{grid-template-columns:minmax(0,1.3fr) minmax(255px,1fr)}#investApp .invest-fund-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#investApp .invest-chart-heading{align-items:flex-start;flex-direction:column}#investApp .invest-summary>div{padding:13px 12px}#investApp .invest-summary strong{font-size:21px}}
 @media(max-width:650px){#investApp .invest-intro{align-items:flex-start;flex-direction:column;gap:14px}#investApp h3{font-size:23px}#investApp .invest-price-status{text-align:left}#investApp #refreshMarket{justify-self:start}#investApp .invest-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#investApp .invest-lower-grid{grid-template-columns:1fr;gap:22px}#investApp .invest-series-select{gap:9px 12px;padding:0 14px 10px}#investApp .invest-series-select label{font-size:10px}#investApp .invest-chart-heading{padding:17px 14px 12px;gap:10px}#investApp .invest-chart-tabs{padding:0 14px}#investApp .invest-chart-note{padding:10px 14px;font-size:9px}#investApp .invest-chart{padding:0;min-height:190px}#investApp .invest-chart svg{min-height:190px}#investApp .chart-tooltip{right:10px;top:0;max-width:90%}#investApp .invest-section-heading>span{font-size:7px}#investApp .invest-trade-card{padding:17px}#investApp .invest-performance-detail{line-height:1.8}}
+
+.world-heading{gap:8px;flex-wrap:wrap}.world-heading .scene-label{font-size:11px;color:#184b30;padding:5px 8px}.scene-nav{top:12px!important}.scene-orbit[hidden]{display:none!important}.neighborhood-event button{margin-left:10px;border:1px solid #ad995c;border-radius:6px;padding:4px 12px}.daily-graph-scroll{overflow-x:auto;max-width:100%}.daily-graph{display:block;width:100%;font:11px sans-serif}.daily-graph [role=button]{cursor:pointer}.daily-graph [role=button]:focus{outline:3px solid #ffbd28}.graph-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.graph-heading h3{font-size:14px}.graph-heading label{font-size:12px;white-space:nowrap}.shop-row{padding:12px 0;border-bottom:1px solid #d8dfca}.shop-row button,#modalBody>button{padding:9px 14px;border-radius:8px;border:1px solid #9cb587}.closure-summary{display:flex;align-items:flex-start;gap:20px}.closure-summary>div{min-width:0;flex:1}.modal:has(.closure-summary){width:min(1100px,95vw)}#securedAmount{width:120px;padding:8px}.active-loan .bank-action{margin:5px}.active-loan{margin-bottom:12px}@media(max-width:650px){.closure-summary{display:block}.world-heading #phaseLabel{margin-left:auto}.world-heading .scene-label{font-size:9px}}
 </style></head>
 <body><div class="wrap" id="ll-app">
 <header class="hud">
@@ -18752,18 +18754,41 @@ MADE WITH LOVE`,
           }))
         ];
       }
+      nearShop() {
+        if (!this.enabled || this.world.location !== "square") return null;
+        const p2 = this.avatar.group.position;
+        if (Math.hypot(p2.x + 10, p2.z + 3.45) < 1.3) return "books";
+        if (Math.hypot(p2.x - 1.4, p2.z + 12.6) < 1.3) return "market";
+        return null;
+      }
       visitStand() {
+        const shop = this.nearShop();
+        if (shop) {
+          this.world.onShop(shop);
+          return;
+        }
         this.enabled && Al(this.avatar.group.position) && this.world.onSelect();
       }
       update(e2, t2, n2) {
         if (!this.enabled) return;
+        if (document.querySelector("#modal.show")) {
+          this.keys.clear();
+          this.touch.clear();
+          return;
+        }
         let r2 = { x: 0, z: 0 };
         for (let e3 of /* @__PURE__ */ new Set([...this.keys, ...this.touch]))
           r2.x += Pl[e3][0], r2.z += Pl[e3][1];
         let i2 = this.avatar.group.position, a2 = this.obstacles(), o2 = El[this.world.location].bounds;
         Ol(i2.x, i2.z, a2, o2) && i2.set(-3, 0.16, 1.25);
         let s2 = kl(i2, r2, this.world.angle, e2, a2, o2), c2 = Math.hypot(s2.x - i2.x, s2.z - i2.z) > 1e-4;
-        c2 && (this.avatar.group.rotation.y = Math.atan2(s2.x - i2.x, s2.z - i2.z)), i2.set(s2.x, jl(this.world.sceneGround, s2.x, s2.z), s2.z), this.avatar.animate(t2, c2, n2), this.interact.hidden = !Al(i2), this.world.updateCameraGoal(), this.publish();
+        c2 && (this.avatar.group.rotation.y = Math.atan2(s2.x - i2.x, s2.z - i2.z)), i2.set(s2.x, jl(this.world.sceneGround, s2.x, s2.z), s2.z), this.avatar.animate(t2, c2, n2), this.interact.hidden = !Al(i2) && !this.nearShop(), this.interact.textContent = this.nearShop() === "books" ? "Visit bookstore \xB7 E" : this.nearShop() === "market" ? "Visit Maple Market \xB7 E" : "Visit my stand \xB7 E", this.world.updateCameraGoal(), this.publish();
+        const shop = this.nearShop();
+        if (shop && this.lastShop !== shop) {
+          this.lastShop = shop;
+          this.world.onShop(shop);
+        }
+        if (!shop) this.lastShop = null;
       }
       publish() {
         let e2 = this.world.container, t2 = this.avatar.group.position;
@@ -18778,8 +18803,9 @@ MADE WITH LOVE`,
     }, Il = new K(-3, 0, -0.8), Ll = new K(11.3, 0, -0.7), Rl = new K(13.3, 0, -0.7), zl = new K(11.8, 0, -0.8), Bl = () => matchMedia(`(prefers-reduced-motion: reduce)`).matches, Vl2 = class {
       constructor(e2, { onSelect: t2 = () => {
       }, onBack: n2 = () => {
+      }, onShop = () => {
       } } = {}) {
-        this.container = e2, this.onSelect = t2, this.onBack = n2, this.view = `neighborhood`, this.angle = 0.55, this.zoom = 1, this.people = /* @__PURE__ */ new Map(), this.personIds = /* @__PURE__ */ new WeakMap(), this.nextId = 0, this.queue = [], this.time = 0, this.signature = ``, this.stockSignature = ``, this.metrics = { sales: 0, upset: 0, rival: 0 }, this.ready = false, this.scene = new Ut(), this.scene.background = new Y(`#8bd8e0`), this.scene.fog = new Ht(`#92d8df`, 70, 140), this.camera = new Fi(-20, 20, 16, -16, 0.1, 150), this.camera.position.set(25, 30, 34), this.target = new K(0, 0, 0), this.desiredTarget = this.target.clone(), this.desiredPosition = this.camera.position.clone(), this.span = 29, this.desiredSpan = 29;
+        this.container = e2, this.onSelect = t2, this.onBack = n2, this.onShop = onShop, this.view = `neighborhood`, this.angle = 0.55, this.zoom = 1, this.people = /* @__PURE__ */ new Map(), this.personIds = /* @__PURE__ */ new WeakMap(), this.nextId = 0, this.queue = [], this.time = 0, this.signature = ``, this.stockSignature = ``, this.metrics = { sales: 0, upset: 0, rival: 0 }, this.ready = false, this.scene = new Ut(), this.scene.background = new Y(`#8bd8e0`), this.scene.fog = new Ht(`#92d8df`, 70, 140), this.camera = new Fi(-20, 20, 16, -16, 0.1, 150), this.camera.position.set(25, 30, 34), this.target = new K(0, 0, 0), this.desiredTarget = this.target.clone(), this.desiredPosition = this.camera.position.clone(), this.span = 29, this.desiredSpan = 29;
         try {
           this.renderer = new wc({
             antialias: true,
@@ -19486,6 +19512,9 @@ MADE WITH LOVE`,
         throw Error(
           `Not enough money in checking to cover the investment and fee.`
         );
+      const pledged = window.LemonadeLoanGuard?.(e2) || 0;
+      if (r2 === "sell" && pledged > 0 && (pu(e2, t2).valueCents - d2) / 100 + 1e-6 < pledged * 2)
+        throw Error("These investments secure a loan. Repay it before selling below the required collateral.");
       let m2 = s2.positions[n2];
       if (r2 === `sell` && (!m2 || u2 > m2.units))
         throw Error(`You do not own enough shares for this sale.`);
@@ -19618,6 +19647,7 @@ MADE WITH LOVE`,
     }
     function yu(e2) {
       let t2 = fu(e2.bank), n2 = t2.legacyCents || 0;
+      if ((window.LemonadeLoanGuard?.(e2.bank) || 0) > 0) return;
       n2 && (e2.bank.checking = (cu(e2.bank.checking) + n2) / 100, t2.legacyCents = 0, e2.ledger.push({
         day: e2.day,
         category: `investment transfer`,
@@ -19958,6 +19988,207 @@ MADE WITH LOVE`,
     window.LemonadeEngine = { World: Vl2, Investments: Du2, capacity: xl2 };
   })();
 
+  // src/finance.js
+  var round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+  var RECIPES = [
+    { id: "good", name: "Good", price: 10, boost: 0.1, lemons: 4.2, sugar: 3.1, ice: 5.3 },
+    { id: "better", name: "Better", price: 25, boost: 0.15, lemons: 4.6, sugar: 3.4, ice: 5.7 },
+    { id: "best", name: "Best", price: 50, boost: 0.2, lemons: 5.2, sugar: 3.7, ice: 6.1 }
+  ];
+  function recipeBonus(state) {
+    return RECIPES.find((r) => state.purchasedRecipes?.includes(r.id) && ["lemons", "sugar", "ice"].every((k) => Math.abs(state.recipe[k] - r[k]) < 1e-9))?.boost || 0;
+  }
+  function debt(state) {
+    return round(state.bank.loans.reduce((sum2, l) => sum2 + Math.max(0, l.balance), 0));
+  }
+  function securedPrincipal(state) {
+    return round(state.bank.loans.filter((l) => l.type === "secured" && l.balance > 0).reduce((sum2, l) => sum2 + Math.max(0, Math.min(l.principal, l.balance)), 0));
+  }
+  function securedLimit(state, value) {
+    return value < 100 ? 0 : Math.max(0, round(Math.min(1e4, Math.floor(value * 50) / 100) - securedPrincipal(state)));
+  }
+  function inventoryValue(state, supplies) {
+    return round(Object.entries(supplies).reduce((sum2, [k, v]) => sum2 + (state.inventory[k] || 0) * v.unit, 0));
+  }
+  function isInsolvent(state, value, supplies) {
+    return state.cash < 0.01 && state.bank.checking < 0.01 && value < 0.01 && inventoryValue(state, supplies) < 0.01 && !state.upgrades.length;
+  }
+  function canRescue(state, value, supplies) {
+    return isInsolvent(state, value, supplies) && state.bank.creditEstablished && state.bank.creditScore >= 670 && debt(state) > 0 && state.rescueDay !== state.day;
+  }
+  function originate(state, amount, type = "standard") {
+    if (!Number.isFinite(amount) || amount <= 0) throw Error("Enter a valid loan amount.");
+    const interest = round(amount * 0.1), total = round(amount + interest);
+    const loan = { id: state.bank.loanSequence++, type, day: state.day, principal: amount, interest, total, balance: total, paid: 0, nextDue: state.day + 5, missedDue: [] };
+    state.bank.loans.push(loan);
+    state.bank.checking = round(state.bank.checking + amount);
+    state.ledger.push({ day: state.day, desc: `${type === "secured" ? "Investment-backed" : "Bank"} loan #${loan.id}`, cash: 0, bankChange: amount, loanChange: total, expense: interest, category: "loan", loanId: loan.id });
+    return loan;
+  }
+  function payLoan(state, loan, full = false) {
+    const amount = full ? loan.balance : Math.min(loan.balance, round(loan.total / 5));
+    if (loan.balance <= 0) throw Error("This loan is already repaid.");
+    if (!full && state.day < loan.nextDue - 2) throw Error(`Payment opens on Day ${loan.nextDue - 2}.`);
+    if (state.bank.checking + 1e-6 < amount) throw Error("Not enough checking money. Deposit stand cash first.");
+    state.bank.checking = round(state.bank.checking - amount);
+    loan.balance = round(loan.balance - amount);
+    loan.paid++;
+    if (state.day <= loan.nextDue) {
+      state.bank.onTime++;
+      state.bank.creditScore = Math.min(850, state.bank.creditScore + 12);
+    }
+    state.bank.creditEstablished = true;
+    loan.nextDue += 5;
+    state.ledger.push({ day: state.day, desc: `Loan #${loan.id} ${full ? "paid in full" : "payment"}`, cash: 0, bankChange: -amount, loanChange: -amount, category: "loan payment" });
+    return amount;
+  }
+  function seizeCollateral(state, amount, quotes = {}) {
+    const portfolio = state.bank.portfolio;
+    if (!portfolio) return { collected: 0, basis: 0 };
+    let remaining = Math.round(amount * 100), collected = 0, basis = 0;
+    const legacy = Math.min(remaining, portfolio.legacyCents || 0);
+    portfolio.legacyCents = (portfolio.legacyCents || 0) - legacy;
+    remaining -= legacy;
+    collected += legacy;
+    basis += legacy;
+    for (const [symbol, pos] of Object.entries(portfolio.positions)) {
+      if (remaining <= 0) break;
+      const price = quotes[symbol] ?? pos.lastPrice;
+      if (!(price > 0)) continue;
+      const units = Math.min(pos.units, Math.ceil(remaining / 100 / price * 1e6));
+      const proceeds = Math.round(units / 1e6 * price * 100);
+      const cost = units === pos.units ? pos.costCents : Math.round(pos.costCents * units / pos.units);
+      pos.units -= units;
+      pos.costCents -= cost;
+      collected += proceeds;
+      basis += cost;
+      remaining -= proceeds;
+      portfolio.trades.push({ id: portfolio.sequence++, side: "sell", symbol, units, price, priceDate: portfolio.marketDate, notionalCents: proceeds, feeCents: 0, totalCents: proceeds, realizedCents: proceeds - cost, executedAt: (/* @__PURE__ */ new Date()).toISOString(), gameDay: state.day, collateral: true });
+      if (!pos.units) delete portfolio.positions[symbol];
+    }
+    return { collected: collected / 100, basis: basis / 100 };
+  }
+  function processOverdue(state, quotes = {}) {
+    for (const loan of state.bank.loans) {
+      loan.missedDue ??= [];
+      while (loan.balance > 1e-3 && state.day > loan.nextDue && !loan.missedDue.includes(loan.nextDue)) {
+        loan.missedDue.push(loan.nextDue);
+        state.bank.missed++;
+        state.bank.creditEstablished = true;
+        state.bank.creditScore = Math.max(300, state.bank.creditScore - 35);
+        state.ledger.push({ day: state.day, desc: `Missed loan #${loan.id} payment due Day ${loan.nextDue}`, cash: 0, category: "credit" });
+        if (loan.type !== "secured") break;
+        const installment = Math.min(loan.balance, round(loan.total / 5));
+        const fee = round(Math.max(1, installment * 0.02));
+        const result = seizeCollateral(state, round(installment + fee), quotes);
+        const paid = Math.min(installment, result.collected);
+        const paidFee = Math.min(fee, round(Math.max(0, result.collected - paid)));
+        const excess = round(Math.max(0, result.collected - paid - paidFee));
+        state.bank.checking = round(state.bank.checking + excess);
+        loan.balance = round(loan.balance - paid + (fee - paidFee));
+        state.ledger.push({ day: state.day, desc: `Collateral liquidation for loan #${loan.id}; 2% fee ($1 minimum)`, cash: 0, bankChange: excess, loanChange: round(-paid + fee - paidFee), investmentChange: -result.collected, realizedGain: round(result.collected - result.basis), expense: fee, category: "collateral liquidation" });
+        loan.nextDue += 5;
+      }
+    }
+  }
+
+  // src/reports.js
+  var sum = (rows, fn) => round(rows.reduce((s, r) => s + (fn(r) || 0), 0));
+  function incomeForDay(state, day) {
+    const rows = state.ledger.filter((r) => r.day === day), history = state.history.find((r) => r.day === day);
+    const has = (c) => rows.some((r) => r.category === c);
+    const sales = sum(rows, (r) => r.category === "sales" ? r.cash : 0) || (history?.revenue || 0);
+    const ingredients = sum(rows, (r) => r.category === "cost" ? r.expense : 0) || (history?.cost || 0);
+    const permits = sum(rows, (r) => r.category === "permit" ? -r.cash : 0) || (history?.permit || 0);
+    const spoilage = sum(rows, (r) => r.category === "spoilage" ? r.expense : 0) || (history?.spoilCost || 0);
+    const interest = sum(rows, (r) => r.category === "loan" ? r.expense ?? Math.max(0, (r.loanChange || 0) - (r.bankChange || 0)) : 0);
+    const investment = sum(rows, (r) => r.category === "investment dividend" ? r.bankChange : r.realizedGain || 0) + sum((state.bank.portfolio?.trades || []).filter((t) => t.gameDay === day && !t.collateral), (t) => t.realizedCents / 100);
+    const other = sum(rows, (r) => !["cost", "spoilage", "loan"].includes(r.category) ? r.expense : 0);
+    const resale = sum(rows, (r) => ["inventory sale", "equipment sale"].includes(r.category) ? r.gain : 0);
+    const income = round(sales + investment + resale), expenses = round(ingredients + permits + spoilage + interest + other);
+    return { day, sales, investment, resale, ingredients, permits, spoilage, interest, other, income, expenses, profit: round(income - expenses) };
+  }
+  function statements(state, supplies, equipment, value) {
+    const days = [.../* @__PURE__ */ new Set([...state.history.map((h) => h.day), ...state.ledger.map((r) => r.day).filter(Number.isFinite)])].sort((a, b) => a - b);
+    if (!days.length) days.push(state.day);
+    const reports = days.map((d) => incomeForDay(state, d));
+    const labels = { sales: "Lemonade sales", investment: "Investment income / (loss)", resale: "Resale gain / (loss)", income: "Total income", ingredients: "Ingredients and cups", permits: "Location permits", spoilage: "Inventory spoilage", interest: "Loan interest", other: "Other expenses / fees", expenses: "Total expenses", profit: "Net income / (loss)" };
+    const income = [["Income Statement", ...days.map((d) => `Day ${d}`), "Total"], ...Object.entries(labels).map(([k, label]) => [label, ...reports.map((r) => r[k]), sum(reports, (r) => r[k])])];
+    const inv = inventoryValue(state, supplies), equip = round(state.upgrades.reduce((s, id) => s + (equipment.find((e) => e.id === id)?.price || 0), 0));
+    const assets = round(state.cash + state.bank.checking + inv + equip + value), liabilities = debt(state), earnings = sum(reports, (r) => r.profit);
+    const balance = [["Balance Sheet", `Day ${state.day}`], ["Cash at stand", state.cash], ["Checking", state.bank.checking], ["Inventory at cost", inv], ["Equipment at cost", equip], ["Investments at market value", value], ["Total assets", assets], ["Loan liabilities (including term interest)", liabilities], ["Reported retained earnings", earnings], ["Opening equity / unrealized investment adjustment", round(assets - liabilities - earnings)], ["Total equity", round(assets - liabilities)], ["Total liabilities and equity", assets]];
+    const rows = state.ledger;
+    const totalCash = round(state.cash + state.bank.checking), movement = sum(rows, (r) => (r.cash || 0) + (r.bankChange || 0));
+    const group = (r) => ["loan", "loan payment"].includes(r.category) ? "financing" : ["equipment", "equipment sale", "investment buy", "investment sell", "investment transfer"].includes(r.category) ? "investing" : "operating";
+    const flow = [["Statement of Cash Flow", "Amount"], ["Opening cash and checking", round(totalCash - movement)], ...["operating", "investing", "financing"].map((g) => [`Net cash from ${g}`, sum(rows.filter((r) => group(r) === g), (r) => (r.cash || 0) + (r.bankChange || 0))]), ["Net change in cash", movement], ["Ending cash and checking", totalCash], ["Noncash collateral debt payments", sum(rows, (r) => r.category === "collateral liquidation" ? -(r.loanChange || 0) : 0)]];
+    return [["Income Statement", income], ["Balance Sheet", balance], ["Statement of Cash Flow", flow]];
+  }
+  var xml = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  var enc = new TextEncoder();
+  function crc32(bytes) {
+    let c = 4294967295;
+    for (const b of bytes) {
+      c ^= b;
+      for (let i = 0; i < 8; i++) c = c >>> 1 ^ (c & 1 ? 3988292384 : 0);
+    }
+    return (c ^ 4294967295) >>> 0;
+  }
+  function zip(entries) {
+    const parts = [], central = [];
+    let offset = 0, centralSize = 0;
+    const u16 = (v2, o, n) => v2.setUint16(o, n, true), u32 = (v2, o, n) => v2.setUint32(o, n, true);
+    for (const [name, text] of entries) {
+      const n = enc.encode(name), data = enc.encode(text), crc = crc32(data), h = new Uint8Array(30 + n.length), v2 = new DataView(h.buffer);
+      u32(v2, 0, 67324752);
+      u16(v2, 4, 20);
+      u16(v2, 10, 0);
+      u16(v2, 12, 33);
+      u32(v2, 14, crc);
+      u32(v2, 18, data.length);
+      u32(v2, 22, data.length);
+      u16(v2, 26, n.length);
+      h.set(n, 30);
+      parts.push(h, data);
+      const c = new Uint8Array(46 + n.length), w = new DataView(c.buffer);
+      u32(w, 0, 33639248);
+      u16(w, 4, 20);
+      u16(w, 6, 20);
+      u16(w, 14, 33);
+      u32(w, 16, crc);
+      u32(w, 20, data.length);
+      u32(w, 24, data.length);
+      u16(w, 28, n.length);
+      u32(w, 42, offset);
+      c.set(n, 46);
+      central.push(c);
+      centralSize += c.length;
+      offset += h.length + data.length;
+    }
+    const end = new Uint8Array(22), v = new DataView(end.buffer);
+    u32(v, 0, 101010256);
+    u16(v, 8, entries.length);
+    u16(v, 10, entries.length);
+    u32(v, 12, centralSize);
+    u32(v, 16, offset);
+    return new Blob([...parts, ...central, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  }
+  function workbook(sheets) {
+    const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+    const entries = [["[Content_Types].xml", `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`], ["_rels/.rels", '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'], ["xl/workbook.xml", `<workbook xmlns="${ns}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map(([name], i) => `<sheet name="${xml(name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`], ["xl/_rels/workbook.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}</Relationships>`]];
+    sheets.forEach(([, rows], i) => entries.push([`xl/worksheets/sheet${i + 1}.xml`, `<worksheet xmlns="${ns}"><sheetData>${rows.map((row, j) => `<row r="${j + 1}">${row.map((value) => typeof value === "number" && Number.isFinite(value) ? `<c><v>${value}</v></c>` : `<c t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`).join("")}</row>`).join("")}</sheetData></worksheet>`]));
+    return zip(entries);
+  }
+  function download(blob, name) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
+  }
+  function csvReports(sheets) {
+    for (const [name, rows] of sheets) download(new Blob([rows.map((r) => r.map((v) => '"' + String(v).replaceAll('"', '""') + '"').join(",")).join("\r\n")], { type: "text/csv" }), name.toLowerCase().replaceAll(" ", "-") + ".csv");
+  }
+
   // src/business.js
   var { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
   (function() {
@@ -19973,7 +20204,7 @@ MADE WITH LOVE`,
       },
       park: {
         name: `Park`,
-        fee: 4,
+        fee: 6,
         foot: 47,
         willing: 2.15,
         sensitivity: 1.15,
@@ -20048,7 +20279,9 @@ MADE WITH LOVE`,
       day: 1,
       cash: 0,
       inventory: { lemons: 0, sugar: 0, ice: 0, cups: 0 },
-      recipe: { lemons: 4, sugar: 3, ice: 5 },
+      recipe: { lemons: 0, sugar: 0, ice: 0 },
+      purchasedRecipes: [],
+      playabilityVersion: 1,
       price: 2.25,
       pitchers: 2,
       location: `neighborhood`,
@@ -20066,6 +20299,8 @@ MADE WITH LOVE`,
     } catch {
       h = m();
     }
+    h.purchasedRecipes ??= [];
+    h.playabilityVersion = 1;
     let g = 0, _ = false, v = null, y = null, b = null, x = null, S = ``, C = `location`, w = `overview`, T = `outside`, E = [
       {
         id: `juicer`,
@@ -20203,9 +20438,20 @@ MADE WITH LOVE`,
         category: `equipment`
       }), L(), U(), M(`\u2699\uFE0F ` + e2.name + ` installed!`));
     }
-    function M(e2) {
-      let n2 = t(`neighborhoodEvent`);
-      n2.textContent = e2, n2.hidden = false;
+    function M(message) {
+      const el = t("neighborhoodEvent");
+      if (h.dismissedEvent === `${h.day}:${message}`) return;
+      el.replaceChildren(document.createTextNode(message));
+      const ok = document.createElement("button");
+      ok.type = "button";
+      ok.textContent = "OK";
+      ok.addEventListener("click", () => {
+        el.hidden = true;
+        h.dismissedEvent = `${h.day}:${message}`;
+        L();
+      });
+      el.append(ok);
+      el.hidden = false;
     }
     function N() {
       if (h.day < 4) return 0;
@@ -20359,7 +20605,7 @@ MADE WITH LOVE`,
       }
     }
     function ce() {
-      return h.bank.loans.find((e2) => e2.balance > 1e-3);
+      return h.bank.loans.find((e2) => e2.balance > 1e-3 && e2.type !== "secured");
     }
     function R() {
       return h.bank.creditEstablished ? h.bank.creditScore >= 720 ? `Excellent` : h.bank.creditScore >= 670 ? `Good` : h.bank.creditScore >= 620 ? `Fair` : `Needs improvement` : `Not established`;
@@ -20391,37 +20637,15 @@ MADE WITH LOVE`,
     function fe(e2, n2) {
       t(`standScreen`).hidden = e2 !== `stand`, t(`bankScreen`).hidden = e2 !== `bank`, t(`cupCapacityBanner`).hidden = e2 !== `stand`, e2 === `bank` ? (t(`bankMessage`).hidden = true, de(n2 || w)) : U(), window.scrollTo({ top: 0, behavior: `instant` });
     }
-    function pe(e2) {
-      let t2 = h.bank;
+    function pe(amount) {
       if (_) return;
-      if (ce()) {
-        B(`Pay off your current loan before applying for another.`, true);
-        return;
-      }
-      if (e2 > ue() || !Number.isFinite(e2) || e2 < 50) {
-        B(`This amount is not available for your current credit score.`, true);
-        return;
-      }
-      let n2 = d(e2 * 0.1), r2 = d(e2 + n2);
-      t2.loans.push({
-        id: t2.loanSequence++,
-        principal: e2,
-        interest: n2,
-        total: r2,
-        balance: r2,
-        paid: 0,
-        nextDue: h.day + 5,
-        missedDue: []
-      }), t2.checking = d(t2.checking + e2), h.ledger.push({
-        day: h.day,
-        desc: `Bank loan received: ` + u(e2),
-        cash: 0,
-        bankChange: e2,
-        loanChange: r2,
-        category: `loan`
-      }), L(), U(), de(`overview`), B(
-        `Loan approved! ` + u(e2) + ` is in your checking account. Withdraw some money to buy stand supplies.`
-      );
+      if (ce()) return B("Pay off your current standard loan before applying for another.", true);
+      if (!Number.isFinite(amount) || amount < 50 || amount > ue()) return B("This loan is not available for your credit score.", true);
+      originate(h, amount);
+      L();
+      U();
+      de("overview");
+      B("Loan approved. Withdraw checking money to buy supplies.");
     }
     function me(e2, t2) {
       if (_) {
@@ -20439,66 +20663,31 @@ MADE WITH LOVE`,
         e2 === `withdraw` ? u(i2) + ` moved to your stand. You can now buy supplies.` : u(i2) + ` deposited in checking.`
       ));
     }
-    function he() {
-      let e2 = ce();
-      if (!e2) return;
-      if (h.day < e2.nextDue - 2) {
-        B(`Your next payment window opens on Day ` + (e2.nextDue - 2) + `.`, true);
-        return;
+    function he(id, full = false) {
+      if (_) return;
+      const loan = h.bank.loans.find((l2) => l2.id === Number(id) && l2.balance > 0) || ce();
+      if (!loan) return;
+      try {
+        const amount = payLoan(h, loan, full);
+        L();
+        U();
+        B(`${u(amount)} paid${full ? " in full" : ""}.`);
+      } catch (error) {
+        B(error.message, true);
       }
-      let t2 = z(e2);
-      if (h.bank.checking + 1e-6 < t2) {
-        B(`Not enough money in checking. Deposit your stand cash first.`, true);
-        return;
-      }
-      let n2 = h.day <= e2.nextDue;
-      e2.nextDue, h.bank.checking = d(h.bank.checking - t2), e2.balance = d(Math.max(0, e2.balance - t2)), e2.paid++, e2.nextDue += 5, n2 && (h.bank.onTime++, h.bank.creditScore = f(h.bank.creditScore + 12, 300, 850)), h.bank.creditEstablished = true, h.ledger.push({
-        day: h.day,
-        desc: `Loan #` + e2.id + ` ` + (n2 ? `on-time` : `late`) + ` payment`,
-        cash: 0,
-        bankChange: -t2,
-        loanChange: -t2,
-        category: `loan payment`
-      }), L(), U(), B(
-        `Payment of ` + u(t2) + ` made ` + (n2 ? `on time! Your game credit score increased.` : `after the due date.`) + (e2.balance < 0.01 ? ` Your loan is fully repaid!` : ``)
-      );
     }
     function ge() {
-      let e2 = ce();
-      if (e2)
-        for (; e2.balance > 1e-3 && h.day > e2.nextDue && !e2.missedDue.includes(e2.nextDue); ) {
-          e2.missedDue.push(e2.nextDue), h.bank.missed++, h.bank.creditEstablished = true, h.bank.creditScore = f(h.bank.creditScore - 35, 300, 850), h.ledger.push({
-            day: h.day,
-            desc: `Missed loan payment due Day ` + e2.nextDue,
-            category: `credit`,
-            cash: 0,
-            bankChange: 0
-          });
-          break;
-        }
+      const quotes = Object.fromEntries(Object.entries(h.bank.portfolio?.positions || {}).map(([symbol, pos]) => [symbol, pos.lastPrice]));
+      processOverdue(h, quotes);
     }
     function _e() {
       let n2 = h.bank, r2 = ce();
-      n2.investments = Ke.value(), Ke.render(), t(`bankDay`).textContent = `DAY ` + h.day, t(`bankChecking`).textContent = u(n2.checking), t(`bankDebt`).textContent = u(r2 ? r2.balance : 0), t(`bankInvestments`).textContent = u(n2.investments), t(`bankStandCash`).textContent = u(h.cash), t(`bankAccountCash`).textContent = u(n2.checking), t(`creditScore`).textContent = n2.creditEstablished ? n2.creditScore : `\u2014`, t(`creditCaption`).textContent = R(), t(`creditStats`).textContent = n2.onTime + ` on time \xB7 ` + n2.missed + ` missed`, t(`creditFill`).style.width = n2.creditEstablished ? (n2.creditScore - 300) / 550 * 100 + `%` : `0%`, t(`bankAlert`).textContent = le() ? `PAYMENT!` : ``, t(`loanTabAlert`).textContent = le() ? `\u25CF` : ``;
+      n2.investments = Ke.value(), Ke.render(), t(`bankDay`).textContent = `DAY ` + h.day, t(`bankChecking`).textContent = u(n2.checking), t(`bankDebt`).textContent = u(debt(h)), t(`bankInvestments`).textContent = u(n2.investments), t(`bankStandCash`).textContent = u(h.cash), t(`bankAccountCash`).textContent = u(n2.checking), t(`creditScore`).textContent = n2.creditEstablished ? n2.creditScore : `\u2014`, t(`creditCaption`).textContent = R(), t(`creditStats`).textContent = n2.onTime + ` on time \xB7 ` + n2.missed + ` missed`, t(`creditFill`).style.width = n2.creditEstablished ? (n2.creditScore - 300) / 550 * 100 + `%` : `0%`, t(`bankAlert`).textContent = le() ? `PAYMENT!` : ``, t(`loanTabAlert`).textContent = le() ? `\u25CF` : ``;
       for (let t2 of e.querySelectorAll(`[data-transfer]`)) {
         let e2 = t2.dataset.amount, r3 = t2.dataset.transfer === `withdraw` ? n2.checking : h.cash;
         t2.disabled = _ || r3 <= 0 || e2 !== `all` && r3 < Number(e2);
       }
-      let i2 = t(`loanArea`);
-      if (r2) {
-        let e2 = z(r2), t2 = h.day < r2.nextDue - 2, a2 = h.day > r2.nextDue;
-        i2.innerHTML = `<div class="active-loan"><h4>\u{1F9FE} Loan #${r2.id} \xB7 ${u(r2.principal)} borrowed</h4><div class="loan-facts"><div class="loan-fact"><span>LEFT TO REPAY</span><strong>${u(r2.balance)}</strong></div><div class="loan-fact"><span>NEXT PAYMENT</span><strong>${u(e2)}</strong></div><div class="loan-fact"><span>DUE DAY</span><strong>${r2.nextDue}</strong></div></div><div class="loan-status ${a2 ? `late` : le() ? `due` : ``}">${a2 ? `\u26A0\uFE0F Payment overdue \u2014 your credit score was lowered.` : t2 ? `Next payment available starting Day ` + (r2.nextDue - 2) + `.` : `\u23F0 Payment is ready. Pay by Day ` + r2.nextDue + `.`}</div><button type="button" class="bank-action" data-loan-pay="yes" ${t2 || n2.checking + 1e-6 < e2 || _ ? `disabled` : ``}>Pay ${u(e2)} from checking</button><p class="loan-note">${r2.paid} of 5 installments made \xB7 Original loan ${u(r2.principal)} + ${u(r2.interest)} interest (10% total for the term). ${n2.checking < e2 ? `You need ` + u(Math.max(0, e2 - n2.checking)) + ` more in checking.` : ``}</p></div>`;
-      } else {
-        let e2 = !n2.loans.length, t2 = ue();
-        if (!t2)
-          i2.innerHTML = `<div class="active-loan"><h4>\u{1F512} New loan not available yet</h4><p>Your next loan requires a game credit score of at least 620 and 3 on-time payments. Current score: ${n2.creditScore}. Keep selling lemonade and managing your money.</p></div>`;
-        else {
-          let n3 = e2 ? [50, 75, 100] : [Math.min(100, t2), Math.min(250, t2), t2].filter(
-            (e3, t3, n4) => n4.indexOf(e3) === t3
-          );
-          i2.innerHTML = `<h4 class="bank-subtitle">${e2 ? `Choose your first startup loan` : `Apply for another loan`}</h4><div class="loan-choices">${n3.map((e3) => `<div class="loan-choice ${e3 === 75 ? `recommended` : ``}">${e3 === 75 ? `<span class="loan-flag">GOOD START</span>` : ``}<div class="loan-amount">${u(e3)}</div><p>Interest: ${u(d(e3 * 0.1))}<br>Total repayment: ${u(d(e3 * 1.1))}<br>5 payments, every 5 game days</p><button type="button" data-loan-apply="${e3}">Apply for ${u(e3)}</button></div>`).join(``)}</div><p class="loan-rules">${e2 ? `\u{1F393} First-time borrowers can get one startup loan without a credit history.` : `Approval is based on your credit score and on-time payment record.`} Loans include a one-time 10% interest charge over the 25-game-day term, not an annual interest rate. The money is deposited into checking.</p>`;
-        }
-      }
+      renderLoans();
     }
     function ve() {
       return l[(h.day - 1) % l.length];
@@ -20508,7 +20697,7 @@ MADE WITH LOVE`,
       return Math.max(
         9,
         Math.round(
-          e2.foot * (h.location === `beach` && t2.name === `Rainy` ? 0.54 : t2.mult)
+          e2.foot * (1 + recipeBonus(h)) * (h.location === `beach` && t2.name === `Rainy` ? 0.54 : t2.mult)
         )
       );
     }
@@ -20537,6 +20726,8 @@ MADE WITH LOVE`,
       return h.inventory.cups < 10 * h.pitchers && e2.push(`Paper cups`), e2;
     }
     function we() {
+      if (h.closed) return "This business is closed. Use Books to export your results.";
+      if (["lemons", "sugar", "ice"].some((key) => h.recipe[key] <= 0)) return "Enter a recipe with lemons, sugar, and ice before opening.";
       if (h.cash === 0 && Object.values(h.inventory).every((e3) => e3 === 0))
         return h.bank.checking > 0 ? `Your money is in checking. Visit the Bank \u2192 Account and withdraw some cash for supplies.` : `You have $0 at the stand. Visit the Bank \u2192 Loans to borrow startup money, then withdraw it for supplies.`;
       if (h.cash < n[h.location].fee)
@@ -20545,8 +20736,9 @@ MADE WITH LOVE`,
       return e2.length ? `Buy more ` + e2.join(`, `) + ` before opening.` : ``;
     }
     function Te() {
-      let e2 = V();
-      return e2 > 0.95 ? `\u2B50 Customer taste test: Delicious! Nicely balanced for the weather.` : e2 > 0.83 ? `\u{1F44D} Customer taste test: Pretty good, but the mix could be better.` : e2 > 0.68 ? `\u{1F610} Customer taste test: A little off. Try adjusting your ingredients.` : `\u{1F62C} Customer taste test: Too sour, too sweet, or not refreshing enough.`;
+      const bonus = recipeBonus(h);
+      const owned = RECIPES.filter((r2) => h.purchasedRecipes.includes(r2.id));
+      return "Recipes can be bought once at the Downtown bookstore (Good $10, Better $25, Best $50), or guess what customers enjoy. " + (bonus ? `This recipe is expected to increase number of visits by ${Math.round(bonus * 100)}%.` : "No purchased recipe matches exactly; no recipe visitor bonus.") + (owned.length ? " Owned: " + owned.map((r2) => `${r2.name}: ${r2.lemons} lemons, ${r2.sugar} sugar, ${r2.ice} ice`).join(" \xB7 ") : "");
     }
     function Ee(e2) {
       return Number(e2.toFixed(2)).toLocaleString(`en-US`, {
@@ -20628,18 +20820,11 @@ MADE WITH LOVE`,
       }
     }
     function Fe() {
-      let e2 = h.history.slice(-7);
-      if (!e2.length) {
-        t(`historyBars`).innerHTML = `<span class="empty">After your first day, you\u2019ll see how your business is doing.</span>`;
-        return;
-      }
-      let n2 = Math.max(10, ...e2.map((e3) => Math.abs(e3.profit)));
-      t(`historyBars`).innerHTML = e2.map(
-        (e3) => `<div class="barwrap"><div title="Day ${e3.day}: ${u(e3.profit)} profit" class="bar ${e3.profit < 0 ? `loss` : ``}" style="height:${Math.max(6, Math.round(Math.abs(e3.profit) / n2 * 48))}px"></div><span>D${e3.day}</span></div>`
-      ).join(``);
+      renderResults();
     }
     function Ie(n2) {
       C = n2;
+      if (n2 === "results") renderResults();
       for (let t2 of e.querySelectorAll(`[data-tab]`)) {
         let e2 = t2.dataset.tab === n2;
         t2.classList.toggle(`active`, e2), t2.setAttribute(`aria-selected`, String(e2)), t2.tabIndex = e2 ? 0 : -1;
@@ -20652,17 +20837,17 @@ MADE WITH LOVE`,
         price: `Set your price`,
         supplies: `Buy supplies`,
         upgrades: `Business upgrades`,
-        results: `Results & money`
+        results: `Results & Projections`
       };
       t(`panelTitle`).textContent = r2[n2];
     }
     function U() {
       let r2 = ve(), i2 = n[h.location];
-      t(`dayPill`).textContent = `DAY ` + h.day, t(`cashHead`).textContent = u(h.cash), t(`weatherLabel`).textContent = r2.icon + ` ` + r2.name + ` \xB7 ` + r2.temp + `\xB0F`, t(`crowdLabel`).textContent = `\u{1F6B6} About ` + ye() + ` visitors`, t(`scene`).classList.toggle(`rain`, r2.name === `Rainy`), t(`scene`).dataset.location = h.location, t(`standPrice`).textContent = u(h.price) + ` / CUP`, t(`feeBadge`).textContent = u(i2.fee) + ` permit`, t(`placeName`).textContent = i2.name;
+      t(`dayPill`).textContent = `DAY ` + h.day, t(`cashHead`).textContent = u(h.cash), t(`weatherLabel`).textContent = r2.icon + ` ` + r2.name + ` \xB7 ` + r2.temp + `\xB0F`, t(`crowdLabel`).textContent = `Expected Visitors: ` + ye(), t(`scene`).classList.toggle(`rain`, r2.name === `Rainy`), t(`scene`).dataset.location = h.location, t(`standPrice`).textContent = u(h.price) + ` / CUP`, t(`feeBadge`).textContent = u(i2.fee) + ` permit`, t(`placeName`).textContent = i2.name;
       let a2 = h.location === `beach` ? `Waterfront` : h.location === `square` ? `Downtown` : h.location === `park` ? `Park` : `Neighborhood`;
       t(`areaHeading`).textContent = a2 === `Downtown` || a2 === `Waterfront` ? a2.toUpperCase() : `THE ` + a2.toUpperCase(), e.querySelector(`[data-scene-view=outside]`).textContent = a2, t(`sceneBack`).textContent = `\u2190 Back to ` + a2.toLowerCase(), t(`locationHint`).textContent = i2.desc, t(`priceValue`).textContent = u(h.price), t(`pitcherValue`).textContent = h.pitchers;
       for (let e2 of [`lemons`, `sugar`, `ice`])
-        t(`recipe` + e2[0].toUpperCase() + e2.slice(1)).textContent = h.recipe[e2];
+        t(`recipe` + e2[0].toUpperCase() + e2.slice(1)).textContent = h.recipe[e2].toFixed(1);
       t(`tasteHint`).textContent = Te(), t(`planCups`).textContent = Se(), t(`planCost`).textContent = u(xe()), t(`planMax`).textContent = u(Se() * h.price - xe() - i2.fee);
       let o2 = Math.ceil((xe() + i2.fee) / h.price);
       t(`breakEven`).textContent = `Sell ` + o2 + ` cups to break even`;
@@ -20672,17 +20857,21 @@ MADE WITH LOVE`,
         let e2 = we();
         t(`validation`).style.display = e2 ? `block` : `none`, t(`validation`).textContent = e2;
         let n2 = h.history.some((e3) => e3.day === h.day);
-        t(`startBtn`).disabled = !!e2 || n2, t(`startBtn`).textContent = n2 ? `Day finished \u2713` : `\u25B6 START DAY`, t(`phaseLabel`).textContent = n2 ? `DAY FINISHED` : `READY TO OPEN`, t(`sceneTitle`).textContent = h.history.length ? `Ready for another day?` : `Your lemonade stand`, t(`sceneDescription`).textContent = h.history.length ? `Change your plan and see what happens.` : `Make your choices, then start selling!`, n2 && (t(`validation`).style.display = `block`, t(`validation`).textContent = `This day is finished. Use Results to start the next day.`);
+        const insolvent = isInsolvent(h, Ke.value(), rSupplies());
+        const close = insolvent && !canBorrowAnything();
+        t(`startBtn`).disabled = h.closed || !close && (!!e2 || n2), t(`startBtn`).textContent = h.closed ? `Business closed` : close ? `Close Business` : n2 ? `Day finished \u2713` : `\u25B6 START DAY`, t(`phaseLabel`).textContent = n2 ? `DAY FINISHED` : `READY TO OPEN`, t(`sceneTitle`).textContent = h.history.length ? `Ready for another day?` : `Your lemonade stand`, t(`sceneDescription`).textContent = h.history.length ? `Change your plan and see what happens.` : `Make your choices, then start selling!`, n2 && (t(`validation`).style.display = `block`, t(`validation`).textContent = `This day is finished. Use Results to start the next day.`);
       }
       if (T === `inside` ? (t(`sceneTitle`).textContent = `Inside your stand`, t(`sceneDescription`).textContent = `See your workspace, upgrades, and inventory storage. Click back outside whenever you want.`) : C === `upgrades` && !_ && (t(`sceneDescription`).textContent = `Click on your stand to pop inside and see how new equipment changes the business.`), !v) {
         let e2 = h.history[h.history.length - 1];
         t(`scoreVisitors`).textContent = e2 ? e2.visitors : `\u2014`, t(`scoreSold`).textContent = e2 ? e2.sold : `\u2014`, t(`scoreRevenue`).textContent = e2 ? u(e2.revenue) : `\u2014`, t(`scoreProfit`).textContent = e2 ? u(e2.profit) : `\u2014`, t(`scoreProfit`).className = e2 ? e2.profit < 0 ? `negative` : `profit` : ``, t(`latestResult`).textContent = e2 ? `Day ` + e2.day + ` \xB7 ` + (e2.profit >= 0 ? `You made ` + u(e2.profit) + `!` : `You lost ` + u(-e2.profit) + `.`) : `Finish your first day to see your results.`, t(`resultNext`).hidden = !(e2 && e2.day === h.day), t(`competitionResults`).textContent = e2 ? `\u{1F620} ${e2.leftUpset || 0} customers left upset \xB7 \u2694\uFE0F ${e2.lostCompetitor || 0} chose a competitor \xB7 \u23F3 Served each cup in ${e2.serviceSteps || 5} steps` : `Long lines can cost you sales. Faster equipment and patient customers help.`;
       }
     }
-    function Le(e2, t2) {
-      if (_) return;
-      let n2 = { lemons: 2, sugar: 1, ice: 2 }, r2 = { lemons: 6, sugar: 6, ice: 8 };
-      h.recipe[e2] = f(h.recipe[e2] + t2, n2[e2], r2[e2]), L(), U();
+    function Le(key, change) {
+      if (_ || h.closed) return;
+      const max = { lemons: 6, sugar: 6, ice: 8 };
+      h.recipe[key] = d(f(h.recipe[key] + change * 0.1, 0, max[key]));
+      L();
+      U();
     }
     function W(e2, t2) {
       _ || (e2 === `pitchers` ? h.pitchers = f(h.pitchers + t2, 1, 12) : h.price = d(f(h.price + 0.25 * t2, 0.75, 5)), L(), U());
@@ -20699,6 +20888,8 @@ MADE WITH LOVE`,
       Ge.customerEvent(e2, t2);
     }
     function K() {
+      if (h.closed) return;
+      if (!_ && isInsolvent(h, Ke.value(), rSupplies()) && !canBorrowAnything()) return closeBusiness();
       if (_ || we() || h.history.some((e2) => e2.day === h.day)) return;
       _ = true;
       let r2 = n[h.location], i2 = ve(), a2 = xe();
@@ -20713,6 +20904,9 @@ MADE WITH LOVE`,
         day: h.day,
         location: h.location,
         weather: i2.name,
+        recipeBonus: recipeBonus(h),
+        recipe: { ...h.recipe },
+        upgrades: [...h.upgrades],
         visitors: 0,
         sold: 0,
         turnedAway: 0,
@@ -20786,13 +20980,9 @@ MADE WITH LOVE`,
       );
     }
     function Ve() {
-      S = `ledger`;
-      let e2 = h.ledger.slice().reverse().slice(0, 50).map(
-        (e3) => `<div class="ledger-row"><div><strong>${e3.desc}</strong><br><span>${e3.day ? `Day ` + e3.day : `Startup`} \xB7 ${e3.category}</span></div><b class="${e3.cash > 0 ? `win` : e3.cash < 0 ? `lose` : ``}">${e3.bankChange ? `Bank ` + (e3.bankChange > 0 ? `+` : ``) + u(e3.bankChange) : e3.cash === 0 ? `Noncash` : u(e3.cash)}</b></div>`
-      ).join(``), n2 = d(
-        Object.keys(r).reduce((e3, t2) => e3 + h.inventory[t2] * r[t2].unit, 0)
-      );
-      t(`modalBody`).innerHTML = `<div class="kicker">THE BOOKS \xB7 BUSINESS RECORDS</div><h2>\u{1F4D2} Cash & transaction ledger</h2><p>Stand cash and bank movements are recorded here. Deposits, withdrawals and loan payments show where the money went.</p><div class="report-grid"><div class="report-cell"><small>CASH ON HAND</small><strong>${u(h.cash)}</strong></div><div class="report-cell"><small>UNUSED SUPPLIES (AT COST)</small><strong>${u(n2)}</strong></div><div class="report-cell"><small>CHECKING</small><strong>${u(h.bank.checking)}</strong></div><div class="report-cell"><small>INVESTMENTS</small><strong>${u(Ke.value())}</strong></div><div class="report-cell"><small>OUTSTANDING LOAN</small><strong>${u(ce()?.balance || 0)}</strong></div><div class="report-cell"><small>EQUIPMENT AT COST</small><strong>${u(h.upgrades.reduce((e3, t2) => e3 + (E.find((e4) => e4.id === t2)?.price || 0), 0))}</strong></div></div><div class="kicker">LATEST TRANSACTIONS</div>${e2 || `<p class="empty">No transactions yet. Your business starts with $0 cash and no supplies.</p>`}<p class="fine">Inventory expense is recognized when you make lemonade; the inventory purchase itself is a separate cash transaction. Loan proceeds increase cash in the bank and a corresponding loan liability; loans are not sales revenue.</p><button class="small-link" id="exportBtn">Export ledger as CSV \u2193</button>`, We();
+      S = "books";
+      t("modalBody").innerHTML = '<h2>Export your financial results?</h2><p>Download an Excel workbook with Income Statement, Balance Sheet, and Statement of Cash Flow.</p><button class="primary" id="exportExcel">Yes, download Excel</button><button class="subtle-btn" id="declineBooks">No</button><p><button class="small-link" id="exportStatementsCSV">Download statements as CSV files</button></p>';
+      We();
     }
     function He() {
       let e2 = [
@@ -20833,9 +21023,237 @@ MADE WITH LOVE`,
     function J() {
       S !== `report` && (t(`modal`).classList.remove(`show`), S = ``);
     }
+    function rSupplies() {
+      return r;
+    }
+    function canBorrowAnything() {
+      if (h.closed) return false;
+      return !ce() && ue() >= 50 || securedLimit(h, Ke.value()) >= 0.01 || canRescue(h, Ke.value(), r);
+    }
+    function renderLoans() {
+      const bank = h.bank, limit = securedLimit(h, Ke.value()), active = bank.loans.filter((l2) => l2.balance > 1e-3);
+      let html = active.map((loan) => {
+        const payment = z(loan), locked = h.day < loan.nextDue - 2;
+        return `<div class="active-loan"><h4>${loan.type === "secured" ? "Investment-backed" : "Business"} loan #${loan.id}</h4><p>Borrowed ${u(loan.principal)} \xB7 Term interest ${u(loan.interest)} \xB7 Balance <strong>${u(loan.balance)}</strong><br>Next installment ${u(payment)} \xB7 Due Day ${loan.nextDue}</p><button class="bank-action" data-loan-pay="${loan.id}" ${_ || locked || bank.checking < payment ? "disabled" : ""}>Pay ${u(payment)}</button> <button class="bank-action" data-loan-full="${loan.id}" ${_ || bank.checking < loan.balance ? "disabled" : ""}>Pay in full (${u(loan.balance)})</button></div>`;
+      }).join("");
+      if (!ce()) {
+        const max = ue(), amounts = !bank.loans.length ? [50, 75, 100] : [Math.min(100, max), Math.min(250, max), max].filter((n2, i2, a2) => n2 >= 50 && a2.indexOf(n2) === i2);
+        html += `<h4>Business loans</h4>${max ? `<div class="loan-choices">${amounts.map((amount) => `<div class="loan-choice"><div class="loan-amount">${u(amount)}</div><p>10% term interest \xB7 Five installments, every five game days</p><button data-loan-apply="${amount}" ${_ ? "disabled" : ""}>Apply for ${u(amount)}</button></div>`).join("")}</div>` : "<p>New business loans require at least 620 credit and three on-time payments.</p>"}`;
+      }
+      html += `<div class="active-loan"><h4>Borrow against investments</h4><p>No credit-score minimum. Requires a portfolio worth at least $100. Total secured principal is limited to 50% of portfolio value and $10,000, regardless of cash or checking balances. Available: <strong>${u(limit)}</strong>.</p><label>Loan amount <input id="securedAmount" type="number" min="0.01" max="${limit}" step="0.01" value="${limit}"></label> <button class="bank-action" id="securedApply" ${_ || limit <= 0 ? "disabled" : ""}>Apply for investment-backed loan</button><p class="fine">10% term interest, five payments every five game days. Missed payments lower credit by 35 points and sell collateral to pay the installment plus a 2% liquidation fee ($1 minimum). Any uncovered amount remains owed. Encumbered investments cannot be sold below the required collateral. Pay in full at any time from checking.</p></div>`;
+      if (canRescue(h, Ke.value(), r)) html += '<div class="active-loan"><h4>Emergency funds</h4><p>Your good credit qualifies for a $25 emergency advance added to your existing loan. Available once per game day when no sellable assets remain. Includes $2.50 term interest.</p><button class="bank-action" id="rescueLoan">Borrow $25</button></div>';
+      t("loanArea").innerHTML = html;
+    }
+    function applySecured() {
+      if (_ || h.closed) return;
+      const amount = d(Number(t("securedAmount").value)), limit = securedLimit(h, Ke.value());
+      if (!Number.isFinite(amount) || amount < 0.01 || amount > limit) return B("Enter an amount within the available collateral limit.", true);
+      originate(h, amount, "secured");
+      L();
+      U();
+      de("overview");
+      B("Investment-backed loan deposited in checking.");
+    }
+    function rescueLoan() {
+      if (_ || !canRescue(h, Ke.value(), r)) return;
+      const loan = h.bank.loans.find((l2) => l2.balance > 0 && l2.type !== "secured") || h.bank.loans.find((l2) => l2.balance > 0);
+      loan.principal = d(loan.principal + 25);
+      loan.interest = d(loan.interest + 2.5);
+      loan.total = d(loan.total + 27.5);
+      loan.balance = d(loan.balance + 27.5);
+      h.bank.checking = d(h.bank.checking + 25);
+      h.rescueDay = h.day;
+      h.ledger.push({ day: h.day, desc: "Emergency advance added to loan #" + loan.id, category: "loan", cash: 0, bankChange: 25, loanChange: 27.5, expense: 2.5 });
+      L();
+      U();
+      de("overview");
+      B("Emergency $25 added to checking and your existing loan.");
+    }
+    function exportSheets() {
+      return statements(h, r, E, Ke.value());
+    }
+    function openShop(shop) {
+      if (_ || h.closed) return;
+      S = shop;
+      if (shop === "books") {
+        t("modalBody").innerHTML = "<h2>Downtown Bookstore</h2><p>Buy a recipe once, then use its exact amounts for a visitor bonus. Recipes are for one 10-cup pitcher. Pay from stand cash.</p>" + RECIPES.map((recipe) => {
+          const owned = h.purchasedRecipes.includes(recipe.id);
+          return `<div class="shop-row"><h3>${recipe.name} recipe \xB7 ${u(recipe.price)} \xB7 +${recipe.boost * 100}% visitors</h3><p>${owned ? `${recipe.lemons.toFixed(1)} lemons \xB7 ${recipe.sugar.toFixed(1)} sugar \xB7 ${recipe.ice.toFixed(1)} ice` : "Purchase to reveal the ingredients."}</p><button data-buy-recipe="${recipe.id}" ${owned || h.cash < recipe.price ? "disabled" : ""}>${owned ? "Owned" : "Buy recipe"}</button>${owned ? ` <button data-use-recipe="${recipe.id}">Use recipe</button>` : ""}</div>`;
+        }).join("");
+      } else {
+        t("modalBody").innerHTML = "<h2>Sell to Maple Market?</h2><p>Sell leftover supplies or equipment for 50% of their purchase price. Unsold prepared lemonade spoils at closing and cannot be resold. Review each offer before selling.</p>" + o.map((key) => `<div class="shop-row"><strong>${a[key]}: ${Ee(h.inventory[key])}</strong><p>Offer for all: ${u(d(h.inventory[key] * r[key].unit * 0.5))}</p><button data-sell-supply="${key}" ${h.inventory[key] <= 0 ? "disabled" : ""}>Sell all ${a[key].toLowerCase()}</button></div>`).join("") + h.upgrades.map((id) => {
+          const item = E.find((e2) => e2.id === id);
+          return item ? `<div class="shop-row"><strong>${item.name}</strong><p>Offer: ${u(d(item.price * 0.5))}</p><button data-sell-equipment="${id}">Sell equipment</button></div>` : "";
+        }).join("");
+      }
+      t("modalBody").insertAdjacentHTML("beforeend", '<button class="primary" id="leaveShop">No / leave shop</button>');
+      We();
+    }
+    function purchaseRecipe(id) {
+      const recipe = RECIPES.find((r2) => r2.id === id);
+      if (_ || h.closed || !recipe || h.purchasedRecipes.includes(id) || h.cash < recipe.price) return;
+      h.cash = d(h.cash - recipe.price);
+      h.purchasedRecipes.push(id);
+      h.ledger.push({ day: h.day, desc: `Purchased ${recipe.name} recipe`, cash: -recipe.price, expense: recipe.price, category: "recipe" });
+      L();
+      U();
+      openShop("books");
+    }
+    function sellSupply(key) {
+      if (_ || h.closed || !r[key]) return;
+      const qty = h.inventory[key], cost = d(qty * r[key].unit), proceeds = d(cost * 0.5);
+      if (qty <= 0) return;
+      S = "sale";
+      t("modalBody").innerHTML = `<h2>Confirm sale</h2><p>Sell ${Ee(qty)} ${a[key]} for ${u(proceeds)}? Original cost: ${u(cost)}.</p><button class="primary" data-confirm-supply="${key}">Yes, sell</button><button id="cancelSale">Cancel</button>`;
+      We();
+    }
+    function confirmSupply(key) {
+      if (_ || h.closed || S !== "sale" || !r[key]) return;
+      const qty = h.inventory[key], cost = d(qty * r[key].unit), proceeds = d(cost * 0.5);
+      if (qty <= 0) return;
+      if (key === "lemons") oe(qty);
+      else h.inventory[key] = 0;
+      h.cash = d(h.cash + proceeds);
+      h.ledger.push({ day: h.day, desc: `Sold ${qty} ${a[key]} to Maple Market`, cash: proceeds, category: "inventory sale", gain: d(proceeds - cost) });
+      L();
+      U();
+      openShop("market");
+    }
+    function sellEquipment(id, confirmed = false) {
+      const item = E.find((e2) => e2.id === id);
+      if (_ || h.closed || !item || !h.upgrades.includes(id)) return;
+      if (!confirmed) {
+        S = "sale";
+        t("modalBody").innerHTML = `<h2>Confirm equipment sale</h2><p>Sell ${item.name} for ${u(d(item.price * 0.5))}? Its upgrade effect will be removed.</p><button class="primary" data-confirm-equipment="${id}">Yes, sell</button><button id="cancelSale">Cancel</button>`;
+        We();
+        return;
+      }
+      if (S !== "sale") return;
+      const proceeds = d(item.price * 0.5);
+      h.cash = d(h.cash + proceeds);
+      h.upgrades = h.upgrades.filter((e2) => e2 !== id);
+      h.ledger.push({ day: h.day, desc: `Sold equipment: ${item.name}`, cash: proceeds, category: "equipment sale", gain: d(proceeds - item.price) });
+      L();
+      U();
+      openShop("market");
+    }
+    function forecast() {
+      const visitors = ye(), interested = visitors * G() * (1 - N());
+      const served = Math.min(Se(), Math.floor(interested), Math.floor(visitors / O()));
+      const revenue = d(served * h.price), expenses = d(xe() + n[h.location].fee + (h.daySpoilage.day === h.day ? h.daySpoilage.cost : 0));
+      return { day: h.day, income: revenue, expenses, profit: d(revenue - expenses), visitors, recipeBonus: recipeBonus(h) };
+    }
+    function graphHTML(rows, all = false) {
+      if (!rows.length) return "<p>No completed days yet. Projections are estimates; actual sales depend on queues and customer choices.</p>";
+      const width = Math.max(440, all ? rows.length * 70 : 440), height = 220, left = 44, right = width - 24, top = 25, bottom = 180;
+      const max = Math.max(1, ...rows.flatMap((r2) => [r2.income, r2.expenses])), min = Math.min(0, ...rows.flatMap((r2) => [r2.income, r2.expenses]));
+      const y2 = (v2) => bottom - (v2 - min) / (max - min) * (bottom - top), x2 = (i2) => rows.length === 1 ? (left + right) / 2 : left + i2 / (rows.length - 1) * (right - left);
+      const series = [["income", "#26734b"], ["expenses", "#c45a35"]];
+      return `<div class="daily-graph-scroll"><svg class="daily-graph" viewBox="0 0 ${width} ${height}" style="min-width:${width}px" role="img" aria-label="Daily income and expenses line graph"><line x1="${left}" x2="${right}" y1="${y2(0)}" y2="${y2(0)}" stroke="#718276"/><text x="0" y="20">$${max.toFixed(0)}</text><text x="0" y="${y2(0)}">$0</text>${series.map(([key, color]) => `<polyline points="${rows.map((r2, i2) => `${x2(i2)},${y2(r2[key])}`).join(" ")}" fill="none" stroke="${color}" stroke-width="3"/>` + rows.map((row, i2) => `<circle data-result-day="${row.day}" tabindex="0" role="button" aria-label="Day ${row.day} ${key} ${u(row[key])}${row.projected ? " projected" : ""}" cx="${x2(i2)}" cy="${y2(row[key])}" r="6" fill="${row.projected ? "white" : color}" stroke="${color}" stroke-width="2"><title>Day ${row.day}: ${key} ${u(row[key])}</title></circle>`).join("")).join("")}${rows.map((row, i2) => `<text x="${x2(i2)}" y="205" text-anchor="middle">D${row.day}${row.projected ? "*" : ""}${h.ledger.some((r2) => r2.day === row.day && r2.category === "equipment") ? " \u2699" : ""}</text>`).join("")}</svg></div><p class="fine">Green: income \xB7 Orange: expenses \xB7 \u2699 Equipment purchased \xB7 * Projection (estimate)</p>`;
+    }
+    function dailyDetails(day) {
+      const history = h.history.find((r2) => r2.day === day), data = incomeForDay(h, day);
+      if (!history && day === h.day && t("showProjection")?.checked) {
+        const p2 = forecast();
+        return `<h3>Day ${day} projection</h3><p>${n[h.location].name} \xB7 ${ve().name} \xB7 Recipe +${p2.recipeBonus * 100}% \xB7 Upgrades: ${h.upgrades.length} \xB7 Expected visitors ${p2.visitors}</p><p>Estimated income ${u(p2.income)} \xB7 Expenses ${u(p2.expenses)} \xB7 Profit ${u(p2.profit)}</p><p class="fine">Uses current price, recipe, weather, location, capacity, service speed, competition, and popularity upgrades. Not a sales guarantee; excludes future financing and investment changes.</p>`;
+      }
+      const entries = [["Sales", data.sales], ["Investment income / loss", data.investment], ["Resale gain / loss", data.resale], ["Ingredients", -data.ingredients], ["Permit", -data.permits], ["Spoilage", -data.spoilage], ["Loan interest", -data.interest], ["Other expenses", -data.other], ["Net income / loss", data.profit]];
+      return `<h3>Day ${day}</h3><p>${history ? n[history.location]?.name || history.location : "No stand opened"} \xB7 ${history?.weather || "Not recorded"} \xB7 Recipe boost ${history?.recipeBonus === void 0 ? "not recorded" : Math.round(history.recipeBonus * 100) + "%"} \xB7 Upgrades ${history?.upgrades?.length ?? "not recorded"}</p><table class="income-table">${entries.map(([name, value]) => `<tr><td>${name}</td><td>${u(value)}</td></tr>`).join("")}</table>`;
+    }
+    function renderResults() {
+      const host = t("resultsGraph");
+      if (!host) return;
+      const show = t("showProjection")?.checked;
+      let rows = h.history.slice(-7).map((row) => ({ ...incomeForDay(h, row.day), day: row.day }));
+      if (show && !h.history.some((r2) => r2.day === h.day)) {
+        rows = [...rows.slice(-6), { ...forecast(), projected: true }];
+      }
+      host.innerHTML = graphHTML(rows);
+      t("dayDetails").innerHTML = rows.length ? dailyDetails(rows.at(-1).day) : "Choose a point to inspect a day.";
+    }
+    function closeBusiness() {
+      if (_ || !isInsolvent(h, Ke.value(), r) || canBorrowAnything()) return;
+      h.closed = true;
+      L();
+      U();
+      S = "closure";
+      const rows = h.history.map((row) => incomeForDay(h, row.day)), totals = statements(h, r, E, Ke.value())[0][1];
+      t("modalBody").innerHTML = `<h2>You made it to day ${h.day}!</h2><div class="closure-summary"><div>${graphHTML(rows, true)}</div><div><h3>Total income / loss statement</h3><table class="income-table">${totals.slice(1).map((row) => `<tr><td>${row[0]}</td><td>${u(row.at(-1))}</td></tr>`).join("")}</table></div></div><p>You ran out of money and can no longer obtain a loan from the bank. Would you like to start another game?</p><button class="primary" id="restartBusiness">Yes, start another game</button><button id="keepClosed">No, return to game</button><p><button id="exportStatementsCSV">Download financial CSV files</button></p>`;
+      We();
+    }
+    function restartBusiness() {
+      h = m();
+      Me();
+      _ = false;
+      v = null;
+      Ge.clearTraffic();
+      L();
+      S = "";
+      t("modal").classList.remove("show");
+      Ie("location");
+      fe("stand");
+      U();
+    }
+    function installPlayabilityUI() {
+      const header = t("areaHeading").parentElement;
+      header.insertBefore(t("weatherLabel"), t("phaseLabel"));
+      header.insertBefore(t("crowdLabel"), t("phaseLabel"));
+      t("scene").querySelector(".scene-bar").remove();
+      t("scene").querySelector(".scene-orbit").hidden = true;
+      e.querySelector("[data-loc=park] small").textContent = "$6 per day";
+      e.querySelector("[data-tab=results]").innerHTML = '<span class="tab-icon">\u{1F4CA}</span>Results & Projections';
+      t("pane-results").insertAdjacentHTML("afterbegin", '<div class="graph-heading"><h3>Daily income & expenses \xB7 past 7 days</h3><label><input type="checkbox" id="showProjection"> Show projection</label></div><div id="resultsGraph"></div><div id="dayDetails" aria-live="polite"></div>');
+      for (const node of t("pane-results").children) if (!["graph-heading"].includes(node.className) && !["resultsGraph", "dayDetails", "resultNext"].includes(node.id)) node.hidden = true;
+      t("resultNext").parentElement.hidden = false;
+      t("showProjection").addEventListener("change", renderResults);
+      e.addEventListener("click", (event) => {
+        const target = event.target.closest("button,[data-result-day]");
+        if (!target) return;
+        const data = target.dataset, id = target.id;
+        if (h.closed && !["exportExcel", "exportStatementsCSV", "declineBooks", "restartBusiness", "keepClosed"].includes(id)) return;
+        if (data.loanFull) he(data.loanFull, true);
+        else if (id === "securedApply") applySecured();
+        else if (id === "rescueLoan") rescueLoan();
+        else if (id === "exportExcel") {
+          download(workbook(exportSheets()), "lemonade-lane-financials.xlsx");
+          J();
+        } else if (id === "exportStatementsCSV") csvReports(exportSheets());
+        else if (["declineBooks", "leaveShop", "keepClosed"].includes(id)) J();
+        else if (data.buyRecipe) purchaseRecipe(data.buyRecipe);
+        else if (data.useRecipe) {
+          const recipe = RECIPES.find((r2) => r2.id === data.useRecipe);
+          if (recipe && h.purchasedRecipes.includes(recipe.id)) {
+            h.recipe = { lemons: recipe.lemons, sugar: recipe.sugar, ice: recipe.ice };
+            L();
+            J();
+            Ie("recipe");
+            U();
+          }
+        } else if (data.sellSupply) sellSupply(data.sellSupply);
+        else if (data.confirmSupply) confirmSupply(data.confirmSupply);
+        else if (data.sellEquipment) sellEquipment(data.sellEquipment);
+        else if (data.confirmEquipment) sellEquipment(data.confirmEquipment, true);
+        else if (id === "cancelSale") openShop("market");
+        else if (data.resultDay) t("dayDetails").innerHTML = dailyDetails(Number(data.resultDay));
+        else if (id === "restartBusiness") restartBusiness();
+      });
+      e.addEventListener("keydown", (event) => {
+        if (["Enter", " "].includes(event.key) && event.target.dataset.resultDay) {
+          event.preventDefault();
+          event.target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        }
+      });
+    }
     e.addEventListener(`click`, (n2) => {
+      if (h.closed) {
+        const button = n2.target.closest("button");
+        if (button && !["ledgerBtn", "booksLink", "exportExcel", "exportStatementsCSV", "declineBooks", "modalClose", "restartBusiness", "keepClosed"].includes(button.id)) {
+          n2.stopImmediatePropagation();
+          return;
+        }
+      }
       let r2 = n2.target.closest(`button`);
-      r2 && e.contains(r2) && (r2.dataset.sceneView ? ie(r2.dataset.sceneView) : r2.id === `playerStand` ? ie(`exterior`) : r2.id === `sceneBack` ? ie(`outside`) : r2.id === `sceneLeft` ? Ge.rotate(-0.25) : r2.id === `sceneRight` ? Ge.rotate(0.25) : r2.id === `exitStandView` ? ie(`outside`) : r2.id === `visitBank` ? fe(`bank`, `overview`) : r2.id === `returnToStand` ? fe(`stand`) : r2.dataset.bankTab ? de(r2.dataset.bankTab) : r2.dataset.loanApply ? pe(Number(r2.dataset.loanApply)) : r2.dataset.loanPay ? he() : r2.dataset.transfer ? me(r2.dataset.transfer, r2.dataset.amount) : r2.dataset.supplyCategory ? (s = r2.dataset.supplyCategory, Ae()) : r2.dataset.supplyStep ? je(
+      r2 && e.contains(r2) && (r2.dataset.sceneView ? ie(r2.dataset.sceneView) : r2.id === `playerStand` ? ie(`exterior`) : r2.id === `sceneBack` ? ie(`outside`) : r2.id === `sceneLeft` ? Ge.rotate(-0.25) : r2.id === `sceneRight` ? Ge.rotate(0.25) : r2.id === `exitStandView` ? ie(`outside`) : r2.id === `visitBank` ? fe(`bank`, `overview`) : r2.id === `returnToStand` ? fe(`stand`) : r2.dataset.bankTab ? de(r2.dataset.bankTab) : r2.dataset.loanApply ? pe(Number(r2.dataset.loanApply)) : r2.dataset.loanPay ? he(r2.dataset.loanPay) : r2.dataset.transfer ? me(r2.dataset.transfer, r2.dataset.amount) : r2.dataset.supplyCategory ? (s = r2.dataset.supplyCategory, Ae()) : r2.dataset.supplyStep ? je(
         Number(r2.dataset.tier),
         Number(r2.dataset.supplyStep)
       ) : r2.id === `upgradePrev` ? (g = (g + E.length - 1) % E.length, j()) : r2.id === `upgradeNext` ? (g = (g + 1) % E.length, j()) : r2.id === `buyUpgrade` ? te() : r2.id === `clearSupplyCart` ? Me() : r2.id === `reviewSupplies` ? Ne() : r2.id === `cancelSupplyPurchase` ? J() : r2.id === `confirmSupplyPurchase` ? H() : r2.dataset.tab ? Ie(r2.dataset.tab) : r2.id === `resultNext` ? q() : r2.dataset.loc && !_ ? (h.location = r2.dataset.loc, L(), U()) : r2.dataset.recipe ? Le(
@@ -20870,7 +21288,8 @@ MADE WITH LOVE`,
     });
     let Ge = new Vl(t(`world3d`), {
       onSelect: () => ie(`exterior`),
-      onBack: () => ie(`outside`)
+      onBack: () => ie(`outside`),
+      onShop: (shop) => openShop(shop)
     }), Ke = new Du(t(`investApp`), {
       getState: () => h,
       commit: () => {
@@ -20878,6 +21297,8 @@ MADE WITH LOVE`,
       },
       isRunning: () => _
     });
+    window.LemonadeLoanGuard = (bank) => securedPrincipal({ bank });
+    installPlayabilityUI();
     L(), Ie(`location`), U();
   })();
 })();

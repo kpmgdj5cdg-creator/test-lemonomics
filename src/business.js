@@ -1,4 +1,6 @@
 import "./engine.js";
+import { RECIPES, recipeBonus, debt, securedLimit, securedPrincipal, inventoryValue, isInsolvent, canRescue, originate, payLoan, processOverdue } from './finance.js';
+import { incomeForDay, statements, workbook, download, csvReports } from './reports.js';
 const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
   (function () {
     "use strict";
@@ -15,7 +17,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         },
         park: {
           name: `Park`,
-          fee: 4,
+          fee: 6,
           foot: 47,
           willing: 2.15,
           sensitivity: 1.15,
@@ -102,7 +104,9 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         day: 1,
         cash: 0,
         inventory: { lemons: 0, sugar: 0, ice: 0, cups: 0 },
-        recipe: { lemons: 4, sugar: 3, ice: 5 },
+        recipe: { lemons: 0, sugar: 0, ice: 0 },
+        purchasedRecipes: [],
+        playabilityVersion: 1,
         price: 2.25,
         pitchers: 2,
         location: `neighborhood`,
@@ -131,6 +135,8 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     } catch {
       h = m();
     }
+    h.purchasedRecipes ??= [];
+    h.playabilityVersion = 1;
     let g = 0,
       _ = !1,
       v = null,
@@ -303,10 +309,15 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         U(),
         M(`⚙️ ` + e.name + ` installed!`));
     }
-    function M(e) {
-      let n = t(`neighborhoodEvent`);
-      ((n.textContent = e), (n.hidden = !1));
+    function M(message) {
+      const el=t('neighborhoodEvent');
+      if (h.dismissedEvent === `${h.day}:${message}`) return;
+      el.replaceChildren(document.createTextNode(message));
+      const ok=document.createElement('button'); ok.type='button';ok.textContent='OK';
+      ok.addEventListener('click',()=>{el.hidden=true;h.dismissedEvent=`${h.day}:${message}`;L();});
+      el.append(ok);el.hidden=false;
     }
+
     function N() {
       if (h.day < 4) return 0;
       let e = h.day < 9 ? 0.18 : 0.29,
@@ -553,7 +564,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       } catch {}
     }
     function ce() {
-      return h.bank.loans.find((e) => e.balance > 0.001);
+      return h.bank.loans.find((e) => e.balance > 0.001 && e.type !== "secured");
     }
     function R() {
       return h.bank.creditEstablished
@@ -610,47 +621,13 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         e === `bank` ? ((t(`bankMessage`).hidden = !0), de(n || w)) : U(),
         window.scrollTo({ top: 0, behavior: `instant` }));
     }
-    function pe(e) {
-      let t = h.bank;
+    function pe(amount) {
       if (_) return;
-      if (ce()) {
-        B(`Pay off your current loan before applying for another.`, !0);
-        return;
-      }
-      if (e > ue() || !Number.isFinite(e) || e < 50) {
-        B(`This amount is not available for your current credit score.`, !0);
-        return;
-      }
-      let n = d(e * 0.1),
-        r = d(e + n);
-      (t.loans.push({
-        id: t.loanSequence++,
-        principal: e,
-        interest: n,
-        total: r,
-        balance: r,
-        paid: 0,
-        nextDue: h.day + 5,
-        missedDue: [],
-      }),
-        (t.checking = d(t.checking + e)),
-        h.ledger.push({
-          day: h.day,
-          desc: `Bank loan received: ` + u(e),
-          cash: 0,
-          bankChange: e,
-          loanChange: r,
-          category: `loan`,
-        }),
-        L(),
-        U(),
-        de(`overview`),
-        B(
-          `Loan approved! ` +
-            u(e) +
-            ` is in your checking account. Withdraw some money to buy stand supplies.`,
-        ));
+      if (ce()) return B('Pay off your current standard loan before applying for another.',true);
+      if (!Number.isFinite(amount)||amount<50||amount>ue()) return B('This loan is not available for your credit score.',true);
+      originate(h,amount); L(); U(); de('overview'); B('Loan approved. Withdraw checking money to buy supplies.');
     }
+
     function me(e, t) {
       if (_) {
         B(`Finish your business day before moving money.`, !0);
@@ -683,72 +660,19 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
                 : u(i) + ` deposited in checking.`,
             )));
     }
-    function he() {
-      let e = ce();
-      if (!e) return;
-      if (h.day < e.nextDue - 2) {
-        B(`Your next payment window opens on Day ` + (e.nextDue - 2) + `.`, !0);
-        return;
-      }
-      let t = z(e);
-      if (h.bank.checking + 1e-6 < t) {
-        B(`Not enough money in checking. Deposit your stand cash first.`, !0);
-        return;
-      }
-      let n = h.day <= e.nextDue;
-      (e.nextDue,
-        (h.bank.checking = d(h.bank.checking - t)),
-        (e.balance = d(Math.max(0, e.balance - t))),
-        e.paid++,
-        (e.nextDue += 5),
-        n &&
-          (h.bank.onTime++,
-          (h.bank.creditScore = f(h.bank.creditScore + 12, 300, 850))),
-        (h.bank.creditEstablished = !0),
-        h.ledger.push({
-          day: h.day,
-          desc: `Loan #` + e.id + ` ` + (n ? `on-time` : `late`) + ` payment`,
-          cash: 0,
-          bankChange: -t,
-          loanChange: -t,
-          category: `loan payment`,
-        }),
-        L(),
-        U(),
-        B(
-          `Payment of ` +
-            u(t) +
-            ` made ` +
-            (n
-              ? `on time! Your game credit score increased.`
-              : `after the due date.`) +
-            (e.balance < 0.01 ? ` Your loan is fully repaid!` : ``),
-        ));
+    function he(id,full=false) {
+      if (_) return;
+      const loan=h.bank.loans.find(l=>l.id===Number(id)&&l.balance>0)||ce();
+      if (!loan) return;
+      try { const amount=payLoan(h,loan,full); L();U();B(`${u(amount)} paid${full?' in full':''}.`); }
+      catch(error){B(error.message,true);}
     }
-    function ge() {
-      let e = ce();
-      if (e)
-        for (
-          ;
-          e.balance > 0.001 &&
-          h.day > e.nextDue &&
-          !e.missedDue.includes(e.nextDue);
 
-        ) {
-          (e.missedDue.push(e.nextDue),
-            h.bank.missed++,
-            (h.bank.creditEstablished = !0),
-            (h.bank.creditScore = f(h.bank.creditScore - 35, 300, 850)),
-            h.ledger.push({
-              day: h.day,
-              desc: `Missed loan payment due Day ` + e.nextDue,
-              category: `credit`,
-              cash: 0,
-              bankChange: 0,
-            }));
-          break;
-        }
+    function ge() {
+      const quotes=Object.fromEntries(Object.entries(h.bank.portfolio?.positions||{}).map(([symbol,pos])=>[symbol,pos.lastPrice]));
+      processOverdue(h,quotes);
     }
+
     function _e() {
       let n = h.bank,
         r = ce();
@@ -756,7 +680,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         Ke.render(),
         (t(`bankDay`).textContent = `DAY ` + h.day),
         (t(`bankChecking`).textContent = u(n.checking)),
-        (t(`bankDebt`).textContent = u(r ? r.balance : 0)),
+        (t(`bankDebt`).textContent = u(debt(h))),
         (t(`bankInvestments`).textContent = u(n.investments)),
         (t(`bankStandCash`).textContent = u(h.cash)),
         (t(`bankAccountCash`).textContent = u(n.checking)),
@@ -776,27 +700,9 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
           r = t.dataset.transfer === `withdraw` ? n.checking : h.cash;
         t.disabled = _ || r <= 0 || (e !== `all` && r < Number(e));
       }
-      let i = t(`loanArea`);
-      if (r) {
-        let e = z(r),
-          t = h.day < r.nextDue - 2,
-          a = h.day > r.nextDue;
-        i.innerHTML = `<div class="active-loan"><h4>🧾 Loan #${r.id} · ${u(r.principal)} borrowed</h4><div class="loan-facts"><div class="loan-fact"><span>LEFT TO REPAY</span><strong>${u(r.balance)}</strong></div><div class="loan-fact"><span>NEXT PAYMENT</span><strong>${u(e)}</strong></div><div class="loan-fact"><span>DUE DAY</span><strong>${r.nextDue}</strong></div></div><div class="loan-status ${a ? `late` : le() ? `due` : ``}">${a ? `⚠️ Payment overdue — your credit score was lowered.` : t ? `Next payment available starting Day ` + (r.nextDue - 2) + `.` : `⏰ Payment is ready. Pay by Day ` + r.nextDue + `.`}</div><button type="button" class="bank-action" data-loan-pay="yes" ${t || n.checking + 1e-6 < e || _ ? `disabled` : ``}>Pay ${u(e)} from checking</button><p class="loan-note">${r.paid} of 5 installments made · Original loan ${u(r.principal)} + ${u(r.interest)} interest (10% total for the term). ${n.checking < e ? `You need ` + u(Math.max(0, e - n.checking)) + ` more in checking.` : ``}</p></div>`;
-      } else {
-        let e = !n.loans.length,
-          t = ue();
-        if (!t)
-          i.innerHTML = `<div class="active-loan"><h4>🔒 New loan not available yet</h4><p>Your next loan requires a game credit score of at least 620 and 3 on-time payments. Current score: ${n.creditScore}. Keep selling lemonade and managing your money.</p></div>`;
-        else {
-          let n = e
-            ? [50, 75, 100]
-            : [Math.min(100, t), Math.min(250, t), t].filter(
-                (e, t, n) => n.indexOf(e) === t,
-              );
-          i.innerHTML = `<h4 class="bank-subtitle">${e ? `Choose your first startup loan` : `Apply for another loan`}</h4><div class="loan-choices">${n.map((e) => `<div class="loan-choice ${e === 75 ? `recommended` : ``}">${e === 75 ? `<span class="loan-flag">GOOD START</span>` : ``}<div class="loan-amount">${u(e)}</div><p>Interest: ${u(d(e * 0.1))}<br>Total repayment: ${u(d(e * 1.1))}<br>5 payments, every 5 game days</p><button type="button" data-loan-apply="${e}">Apply for ${u(e)}</button></div>`).join(``)}</div><p class="loan-rules">${e ? `🎓 First-time borrowers can get one startup loan without a credit history.` : `Approval is based on your credit score and on-time payment record.`} Loans include a one-time 10% interest charge over the 25-game-day term, not an annual interest rate. The money is deposited into checking.</p>`;
-        }
-      }
+      renderLoans();
     }
+
     function ve() {
       return l[(h.day - 1) % l.length];
     }
@@ -806,7 +712,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       return Math.max(
         9,
         Math.round(
-          e.foot *
+          e.foot * (1 + recipeBonus(h)) *
             (h.location === `beach` && t.name === `Rainy` ? 0.54 : t.mult),
         ),
       );
@@ -841,6 +747,8 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       return (h.inventory.cups < 10 * h.pitchers && e.push(`Paper cups`), e);
     }
     function we() {
+      if (h.closed) return "This business is closed. Use Books to export your results.";
+      if (["lemons","sugar","ice"].some(key=>h.recipe[key] <= 0)) return "Enter a recipe with lemons, sugar, and ice before opening.";
       if (h.cash === 0 && Object.values(h.inventory).every((e) => e === 0))
         return h.bank.checking > 0
           ? `Your money is in checking. Visit the Bank → Account and withdraw some cash for supplies.`
@@ -851,15 +759,14 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       return e.length ? `Buy more ` + e.join(`, `) + ` before opening.` : ``;
     }
     function Te() {
-      let e = V();
-      return e > 0.95
-        ? `⭐ Customer taste test: Delicious! Nicely balanced for the weather.`
-        : e > 0.83
-          ? `👍 Customer taste test: Pretty good, but the mix could be better.`
-          : e > 0.68
-            ? `😐 Customer taste test: A little off. Try adjusting your ingredients.`
-            : `😬 Customer taste test: Too sour, too sweet, or not refreshing enough.`;
+      const bonus=recipeBonus(h);
+      const owned=RECIPES.filter(r=>h.purchasedRecipes.includes(r.id));
+      return 'Recipes can be bought once at the Downtown bookstore (Good $10, Better $25, Best $50), or guess what customers enjoy. '+
+        (bonus?`This recipe is expected to increase number of visits by ${Math.round(bonus*100)}%.`:
+        'No purchased recipe matches exactly; no recipe visitor bonus.')+
+        (owned.length?' Owned: '+owned.map(r=>`${r.name}: ${r.lemons} lemons, ${r.sugar} sugar, ${r.ice} ice`).join(' · '):'');
     }
+
     function Ee(e) {
       return Number(e.toFixed(2)).toLocaleString(`en-US`, {
         maximumFractionDigits: 1,
@@ -969,23 +876,11 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
           : (h.inventory[t] = Math.max(0, d(h.inventory[t] - n)));
       }
     }
-    function Fe() {
-      let e = h.history.slice(-7);
-      if (!e.length) {
-        t(`historyBars`).innerHTML =
-          `<span class="empty">After your first day, you’ll see how your business is doing.</span>`;
-        return;
-      }
-      let n = Math.max(10, ...e.map((e) => Math.abs(e.profit)));
-      t(`historyBars`).innerHTML = e
-        .map(
-          (e) =>
-            `<div class="barwrap"><div title="Day ${e.day}: ${u(e.profit)} profit" class="bar ${e.profit < 0 ? `loss` : ``}" style="height:${Math.max(6, Math.round((Math.abs(e.profit) / n) * 48))}px"></div><span>D${e.day}</span></div>`,
-        )
-        .join(``);
-    }
+    function Fe() { renderResults(); }
+
     function Ie(n) {
       C = n;
+      if (n === "results") renderResults();
       for (let t of e.querySelectorAll(`[data-tab]`)) {
         let e = t.dataset.tab === n;
         (t.classList.toggle(`active`, e),
@@ -1000,7 +895,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         price: `Set your price`,
         supplies: `Buy supplies`,
         upgrades: `Business upgrades`,
-        results: `Results & money`,
+        results: `Results & Projections`,
       };
       t(`panelTitle`).textContent = r[n];
     }
@@ -1011,7 +906,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         (t(`cashHead`).textContent = u(h.cash)),
         (t(`weatherLabel`).textContent =
           r.icon + ` ` + r.name + ` · ` + r.temp + `°F`),
-        (t(`crowdLabel`).textContent = `🚶 About ` + ye() + ` visitors`),
+        (t(`crowdLabel`).textContent = `Expected Visitors: ` + ye()),
         t(`scene`).classList.toggle(`rain`, r.name === `Rainy`),
         (t(`scene`).dataset.location = h.location),
         (t(`standPrice`).textContent = u(h.price) + ` / CUP`),
@@ -1035,7 +930,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         (t(`priceValue`).textContent = u(h.price)),
         (t(`pitcherValue`).textContent = h.pitchers));
       for (let e of [`lemons`, `sugar`, `ice`])
-        t(`recipe` + e[0].toUpperCase() + e.slice(1)).textContent = h.recipe[e];
+        t(`recipe` + e[0].toUpperCase() + e.slice(1)).textContent = h.recipe[e].toFixed(1);
       ((t(`tasteHint`).textContent = Te()),
         (t(`planCups`).textContent = Se()),
         (t(`planCost`).textContent = u(xe())),
@@ -1049,8 +944,10 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         ((t(`validation`).style.display = e ? `block` : `none`),
           (t(`validation`).textContent = e));
         let n = h.history.some((e) => e.day === h.day);
-        ((t(`startBtn`).disabled = !!e || n),
-          (t(`startBtn`).textContent = n ? `Day finished ✓` : `▶ START DAY`),
+        const insolvent=isInsolvent(h,Ke.value(),rSupplies());
+        const close=insolvent && !canBorrowAnything();
+        ((t(`startBtn`).disabled = h.closed || (!close && (!!e || n))),
+          (t(`startBtn`).textContent = h.closed ? `Business closed` : close ? `Close Business` : n ? `Day finished ✓` : `▶ START DAY`),
           (t(`phaseLabel`).textContent = n ? `DAY FINISHED` : `READY TO OPEN`),
           (t(`sceneTitle`).textContent = h.history.length
             ? `Ready for another day?`
@@ -1098,12 +995,12 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
             : `Long lines can cost you sales. Faster equipment and patient customers help.`));
       }
     }
-    function Le(e, t) {
-      if (_) return;
-      let n = { lemons: 2, sugar: 1, ice: 2 },
-        r = { lemons: 6, sugar: 6, ice: 8 };
-      ((h.recipe[e] = f(h.recipe[e] + t, n[e], r[e])), L(), U());
+    function Le(key,change) {
+      if (_ || h.closed) return;
+      const max={lemons:6,sugar:6,ice:8};
+      h.recipe[key]=d(f(h.recipe[key]+change*.1,0,max[key]));L();U();
     }
+
     function W(e, t) {
       _ ||
         (e === `pitchers`
@@ -1135,6 +1032,8 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       Ge.customerEvent(e, t);
     }
     function K() {
+      if (h.closed) return;
+      if (!_ && isInsolvent(h,Ke.value(),rSupplies()) && !canBorrowAnything()) return closeBusiness();
       if (_ || we() || h.history.some((e) => e.day === h.day)) return;
       _ = !0;
       let r = n[h.location],
@@ -1153,6 +1052,9 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         day: h.day,
         location: h.location,
         weather: i.name,
+        recipeBonus: recipeBonus(h),
+        recipe: {...h.recipe},
+        upgrades: [...h.upgrades],
         visitors: 0,
         sold: 0,
         turnedAway: 0,
@@ -1339,23 +1241,11 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
           ));
     }
     function Ve() {
-      S = `ledger`;
-      let e = h.ledger
-          .slice()
-          .reverse()
-          .slice(0, 50)
-          .map(
-            (e) =>
-              `<div class="ledger-row"><div><strong>${e.desc}</strong><br><span>${e.day ? `Day ` + e.day : `Startup`} · ${e.category}</span></div><b class="${e.cash > 0 ? `win` : e.cash < 0 ? `lose` : ``}">${e.bankChange ? `Bank ` + (e.bankChange > 0 ? `+` : ``) + u(e.bankChange) : e.cash === 0 ? `Noncash` : u(e.cash)}</b></div>`,
-          )
-          .join(``),
-        n = d(
-          Object.keys(r).reduce((e, t) => e + h.inventory[t] * r[t].unit, 0),
-        );
-      ((t(`modalBody`).innerHTML =
-        `<div class="kicker">THE BOOKS · BUSINESS RECORDS</div><h2>📒 Cash & transaction ledger</h2><p>Stand cash and bank movements are recorded here. Deposits, withdrawals and loan payments show where the money went.</p><div class="report-grid"><div class="report-cell"><small>CASH ON HAND</small><strong>${u(h.cash)}</strong></div><div class="report-cell"><small>UNUSED SUPPLIES (AT COST)</small><strong>${u(n)}</strong></div><div class="report-cell"><small>CHECKING</small><strong>${u(h.bank.checking)}</strong></div><div class="report-cell"><small>INVESTMENTS</small><strong>${u(Ke.value())}</strong></div><div class="report-cell"><small>OUTSTANDING LOAN</small><strong>${u(ce()?.balance || 0)}</strong></div><div class="report-cell"><small>EQUIPMENT AT COST</small><strong>${u(h.upgrades.reduce((e, t) => e + (E.find((e) => e.id === t)?.price || 0), 0))}</strong></div></div><div class="kicker">LATEST TRANSACTIONS</div>${e || `<p class="empty">No transactions yet. Your business starts with $0 cash and no supplies.</p>`}<p class="fine">Inventory expense is recognized when you make lemonade; the inventory purchase itself is a separate cash transaction. Loan proceeds increase cash in the bank and a corresponding loan liability; loans are not sales revenue.</p><button class="small-link" id="exportBtn">Export ledger as CSV ↓</button>`),
-        We());
+      S='books';
+      t('modalBody').innerHTML='<h2>Export your financial results?</h2><p>Download an Excel workbook with Income Statement, Balance Sheet, and Statement of Cash Flow.</p><button class="primary" id="exportExcel">Yes, download Excel</button><button class="subtle-btn" id="declineBooks">No</button><p><button class="small-link" id="exportStatementsCSV">Download statements as CSV files</button></p>';
+      We();
     }
+
     function He() {
       let e = [
           [
@@ -1402,7 +1292,159 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     function J() {
       S !== `report` && (t(`modal`).classList.remove(`show`), (S = ``));
     }
+    function rSupplies(){return r;}
+    function canBorrowAnything(){
+      if (h.closed) return false;
+      return (!ce() && ue()>=50) || securedLimit(h,Ke.value())>=.01 || canRescue(h,Ke.value(),r);
+    }
+    function renderLoans(){
+      const bank=h.bank, limit=securedLimit(h,Ke.value()), active=bank.loans.filter(l=>l.balance>.001);
+      let html=active.map(loan=>{
+        const payment=z(loan),locked=h.day<loan.nextDue-2;
+        return `<div class="active-loan"><h4>${loan.type==='secured'?'Investment-backed':'Business'} loan #${loan.id}</h4><p>Borrowed ${u(loan.principal)} · Term interest ${u(loan.interest)} · Balance <strong>${u(loan.balance)}</strong><br>Next installment ${u(payment)} · Due Day ${loan.nextDue}</p><button class="bank-action" data-loan-pay="${loan.id}" ${_||locked||bank.checking<payment?'disabled':''}>Pay ${u(payment)}</button> <button class="bank-action" data-loan-full="${loan.id}" ${_||bank.checking<loan.balance?'disabled':''}>Pay in full (${u(loan.balance)})</button></div>`;
+      }).join('');
+      if (!ce()) {
+        const max=ue(),amounts=!bank.loans.length?[50,75,100]:[Math.min(100,max),Math.min(250,max),max].filter((n,i,a)=>n>=50&&a.indexOf(n)===i);
+        html+=`<h4>Business loans</h4>${max?`<div class="loan-choices">${amounts.map(amount=>`<div class="loan-choice"><div class="loan-amount">${u(amount)}</div><p>10% term interest · Five installments, every five game days</p><button data-loan-apply="${amount}" ${_?'disabled':''}>Apply for ${u(amount)}</button></div>`).join('')}</div>`:'<p>New business loans require at least 620 credit and three on-time payments.</p>'}`;
+      }
+      html+=`<div class="active-loan"><h4>Borrow against investments</h4><p>No credit-score minimum. Requires a portfolio worth at least $100. Total secured principal is limited to 50% of portfolio value and $10,000, regardless of cash or checking balances. Available: <strong>${u(limit)}</strong>.</p><label>Loan amount <input id="securedAmount" type="number" min="0.01" max="${limit}" step="0.01" value="${limit}"></label> <button class="bank-action" id="securedApply" ${_||limit<=0?'disabled':''}>Apply for investment-backed loan</button><p class="fine">10% term interest, five payments every five game days. Missed payments lower credit by 35 points and sell collateral to pay the installment plus a 2% liquidation fee ($1 minimum). Any uncovered amount remains owed. Encumbered investments cannot be sold below the required collateral. Pay in full at any time from checking.</p></div>`;
+      if(canRescue(h,Ke.value(),r))html+='<div class="active-loan"><h4>Emergency funds</h4><p>Your good credit qualifies for a $25 emergency advance added to your existing loan. Available once per game day when no sellable assets remain. Includes $2.50 term interest.</p><button class="bank-action" id="rescueLoan">Borrow $25</button></div>';
+      t('loanArea').innerHTML=html;
+    }
+    function applySecured(){
+      if(_||h.closed)return;
+      const amount=d(Number(t('securedAmount').value)),limit=securedLimit(h,Ke.value());
+      if(!Number.isFinite(amount)||amount<.01||amount>limit)return B('Enter an amount within the available collateral limit.',true);
+      originate(h,amount,'secured');L();U();de('overview');B('Investment-backed loan deposited in checking.');
+    }
+    function rescueLoan(){
+      if(_||!canRescue(h,Ke.value(),r))return;
+      const loan=h.bank.loans.find(l=>l.balance>0 && l.type!=='secured')||h.bank.loans.find(l=>l.balance>0);
+      loan.principal=d(loan.principal+25);loan.interest=d(loan.interest+2.5);loan.total=d(loan.total+27.5);loan.balance=d(loan.balance+27.5);
+      h.bank.checking=d(h.bank.checking+25);h.rescueDay=h.day;
+      h.ledger.push({day:h.day,desc:'Emergency advance added to loan #'+loan.id,category:'loan',cash:0,bankChange:25,loanChange:27.5,expense:2.5});L();U();de('overview');B('Emergency $25 added to checking and your existing loan.');
+    }
+    function exportSheets(){return statements(h,r,E,Ke.value());}
+    function openShop(shop){
+      if(_||h.closed)return;
+      S=shop;
+      if(shop==='books'){
+        t('modalBody').innerHTML='<h2>Downtown Bookstore</h2><p>Buy a recipe once, then use its exact amounts for a visitor bonus. Recipes are for one 10-cup pitcher. Pay from stand cash.</p>'+RECIPES.map(recipe=>{
+          const owned=h.purchasedRecipes.includes(recipe.id);
+          return `<div class="shop-row"><h3>${recipe.name} recipe · ${u(recipe.price)} · +${recipe.boost*100}% visitors</h3><p>${owned?`${recipe.lemons.toFixed(1)} lemons · ${recipe.sugar.toFixed(1)} sugar · ${recipe.ice.toFixed(1)} ice`:'Purchase to reveal the ingredients.'}</p><button data-buy-recipe="${recipe.id}" ${owned||h.cash<recipe.price?'disabled':''}>${owned?'Owned':'Buy recipe'}</button>${owned?` <button data-use-recipe="${recipe.id}">Use recipe</button>`:''}</div>`;
+        }).join('');
+      }else{
+        t('modalBody').innerHTML='<h2>Sell to Maple Market?</h2><p>Sell leftover supplies or equipment for 50% of their purchase price. Unsold prepared lemonade spoils at closing and cannot be resold. Review each offer before selling.</p>'+o.map(key=>`<div class="shop-row"><strong>${a[key]}: ${Ee(h.inventory[key])}</strong><p>Offer for all: ${u(d(h.inventory[key]*r[key].unit*.5))}</p><button data-sell-supply="${key}" ${h.inventory[key]<=0?'disabled':''}>Sell all ${a[key].toLowerCase()}</button></div>`).join('')+h.upgrades.map(id=>{const item=E.find(e=>e.id===id);return item?`<div class="shop-row"><strong>${item.name}</strong><p>Offer: ${u(d(item.price*.5))}</p><button data-sell-equipment="${id}">Sell equipment</button></div>`:'';}).join('');
+      }
+      t('modalBody').insertAdjacentHTML('beforeend','<button class="primary" id="leaveShop">No / leave shop</button>');We();
+    }
+    function purchaseRecipe(id){
+      const recipe=RECIPES.find(r=>r.id===id);
+      if(_||h.closed||!recipe||h.purchasedRecipes.includes(id)||h.cash<recipe.price)return;
+      h.cash=d(h.cash-recipe.price);h.purchasedRecipes.push(id);
+      h.ledger.push({day:h.day,desc:`Purchased ${recipe.name} recipe`,cash:-recipe.price,expense:recipe.price,category:'recipe'});
+      L();U();openShop('books');
+    }
+    function sellSupply(key){
+      if(_||h.closed||!r[key])return;
+      const qty=h.inventory[key],cost=d(qty*r[key].unit),proceeds=d(cost*.5);
+      if(qty<=0)return;
+      S='sale';t('modalBody').innerHTML=`<h2>Confirm sale</h2><p>Sell ${Ee(qty)} ${a[key]} for ${u(proceeds)}? Original cost: ${u(cost)}.</p><button class="primary" data-confirm-supply="${key}">Yes, sell</button><button id="cancelSale">Cancel</button>`;We();
+    }
+    function confirmSupply(key){
+      if(_||h.closed||S!=='sale'||!r[key])return;
+      const qty=h.inventory[key],cost=d(qty*r[key].unit),proceeds=d(cost*.5);
+      if(qty<=0)return;
+      if(key==='lemons')oe(qty);else h.inventory[key]=0;
+      h.cash=d(h.cash+proceeds);h.ledger.push({day:h.day,desc:`Sold ${qty} ${a[key]} to Maple Market`,cash:proceeds,category:'inventory sale',gain:d(proceeds-cost)});
+      L();U();openShop('market');
+    }
+    function sellEquipment(id,confirmed=false){
+      const item=E.find(e=>e.id===id);
+      if(_||h.closed||!item||!h.upgrades.includes(id))return;
+      if(!confirmed){S='sale';t('modalBody').innerHTML=`<h2>Confirm equipment sale</h2><p>Sell ${item.name} for ${u(d(item.price*.5))}? Its upgrade effect will be removed.</p><button class="primary" data-confirm-equipment="${id}">Yes, sell</button><button id="cancelSale">Cancel</button>`;We();return;}
+      if(S!=='sale')return;
+      const proceeds=d(item.price*.5);h.cash=d(h.cash+proceeds);h.upgrades=h.upgrades.filter(e=>e!==id);
+      h.ledger.push({day:h.day,desc:`Sold equipment: ${item.name}`,cash:proceeds,category:'equipment sale',gain:d(proceeds-item.price)});L();U();openShop('market');
+    }
+    function forecast(){
+      const visitors=ye(),interested=visitors*G()*(1-N());
+      const served=Math.min(Se(),Math.floor(interested),Math.floor(visitors/O()));
+      const revenue=d(served*h.price),expenses=d(xe()+n[h.location].fee+(h.daySpoilage.day===h.day?h.daySpoilage.cost:0));
+      return {day:h.day,income:revenue,expenses,profit:d(revenue-expenses),visitors,recipeBonus:recipeBonus(h)};
+    }
+    function graphHTML(rows,all=false){
+      if(!rows.length)return '<p>No completed days yet. Projections are estimates; actual sales depend on queues and customer choices.</p>';
+      const width=Math.max(440,all?rows.length*70:440),height=220,left=44,right=width-24,top=25,bottom=180;
+      const max=Math.max(1,...rows.flatMap(r=>[r.income,r.expenses])),min=Math.min(0,...rows.flatMap(r=>[r.income,r.expenses]));
+      const y=v=>bottom-(v-min)/(max-min)*(bottom-top),x=i=>rows.length===1?(left+right)/2:left+i/(rows.length-1)*(right-left);
+      const series=[['income','#26734b'],['expenses','#c45a35']];
+      return `<div class="daily-graph-scroll"><svg class="daily-graph" viewBox="0 0 ${width} ${height}" style="min-width:${width}px" role="img" aria-label="Daily income and expenses line graph"><line x1="${left}" x2="${right}" y1="${y(0)}" y2="${y(0)}" stroke="#718276"/><text x="0" y="20">$${max.toFixed(0)}</text><text x="0" y="${y(0)}">$0</text>${series.map(([key,color])=>`<polyline points="${rows.map((r,i)=>`${x(i)},${y(r[key])}`).join(' ')}" fill="none" stroke="${color}" stroke-width="3"/>`+rows.map((row,i)=>`<circle data-result-day="${row.day}" tabindex="0" role="button" aria-label="Day ${row.day} ${key} ${u(row[key])}${row.projected?' projected':''}" cx="${x(i)}" cy="${y(row[key])}" r="6" fill="${row.projected?'white':color}" stroke="${color}" stroke-width="2"><title>Day ${row.day}: ${key} ${u(row[key])}</title></circle>`).join('')).join('')}${rows.map((row,i)=>`<text x="${x(i)}" y="205" text-anchor="middle">D${row.day}${row.projected?'*':''}${h.ledger.some(r=>r.day===row.day&&r.category==='equipment')?' ⚙':''}</text>`).join('')}</svg></div><p class="fine">Green: income · Orange: expenses · ⚙ Equipment purchased · * Projection (estimate)</p>`;
+    }
+    function dailyDetails(day){
+      const history=h.history.find(r=>r.day===day),data=incomeForDay(h,day);
+      if(!history&&day===h.day&&t('showProjection')?.checked){const p=forecast();return `<h3>Day ${day} projection</h3><p>${n[h.location].name} · ${ve().name} · Recipe +${p.recipeBonus*100}% · Upgrades: ${h.upgrades.length} · Expected visitors ${p.visitors}</p><p>Estimated income ${u(p.income)} · Expenses ${u(p.expenses)} · Profit ${u(p.profit)}</p><p class="fine">Uses current price, recipe, weather, location, capacity, service speed, competition, and popularity upgrades. Not a sales guarantee; excludes future financing and investment changes.</p>`;}
+      const entries=[['Sales',data.sales],['Investment income / loss',data.investment],['Resale gain / loss',data.resale],['Ingredients',-data.ingredients],['Permit',-data.permits],['Spoilage',-data.spoilage],['Loan interest',-data.interest],['Other expenses',-data.other],['Net income / loss',data.profit]];
+      return `<h3>Day ${day}</h3><p>${history?n[history.location]?.name||history.location:'No stand opened'} · ${history?.weather||'Not recorded'} · Recipe boost ${history?.recipeBonus===undefined?'not recorded':Math.round(history.recipeBonus*100)+'%'} · Upgrades ${history?.upgrades?.length??'not recorded'}</p><table class="income-table">${entries.map(([name,value])=>`<tr><td>${name}</td><td>${u(value)}</td></tr>`).join('')}</table>`;
+    }
+    function renderResults(){
+      const host=t('resultsGraph');if(!host)return;
+      const show=t('showProjection')?.checked;
+      let rows=h.history.slice(-7).map(row=>({...incomeForDay(h,row.day),day:row.day}));
+      if(show&&!h.history.some(r=>r.day===h.day)){rows=[...rows.slice(-6),{...forecast(),projected:true}];}
+      host.innerHTML=graphHTML(rows);
+      t('dayDetails').innerHTML=rows.length?dailyDetails(rows.at(-1).day):'Choose a point to inspect a day.';
+    }
+    function closeBusiness(){
+      if(_||!isInsolvent(h,Ke.value(),r)||canBorrowAnything())return;
+      h.closed=true;L();U();S='closure';
+      const rows=h.history.map(row=>incomeForDay(h,row.day)), totals=statements(h,r,E,Ke.value())[0][1];
+      t('modalBody').innerHTML=`<h2>You made it to day ${h.day}!</h2><div class="closure-summary"><div>${graphHTML(rows,true)}</div><div><h3>Total income / loss statement</h3><table class="income-table">${totals.slice(1).map(row=>`<tr><td>${row[0]}</td><td>${u(row.at(-1))}</td></tr>`).join('')}</table></div></div><p>You ran out of money and can no longer obtain a loan from the bank. Would you like to start another game?</p><button class="primary" id="restartBusiness">Yes, start another game</button><button id="keepClosed">No, return to game</button><p><button id="exportStatementsCSV">Download financial CSV files</button></p>`;
+      We();
+    }
+    function restartBusiness(){
+      h=m();Me();_=false;v=null;Ge.clearTraffic();L();S='';t('modal').classList.remove('show');Ie('location');fe('stand');U();
+    }
+    function installPlayabilityUI(){
+      const header=t('areaHeading').parentElement;
+      header.insertBefore(t('weatherLabel'),t('phaseLabel'));header.insertBefore(t('crowdLabel'),t('phaseLabel'));
+      t('scene').querySelector('.scene-bar').remove();
+      t('scene').querySelector('.scene-orbit').hidden=true;
+      e.querySelector('[data-loc=park] small').textContent='$6 per day';
+      e.querySelector('[data-tab=results]').innerHTML='<span class="tab-icon">📊</span>Results & Projections';
+      t('pane-results').insertAdjacentHTML('afterbegin','<div class="graph-heading"><h3>Daily income & expenses · past 7 days</h3><label><input type="checkbox" id="showProjection"> Show projection</label></div><div id="resultsGraph"></div><div id="dayDetails" aria-live="polite"></div>');
+      for(const node of t('pane-results').children)if(!['graph-heading'].includes(node.className)&&!['resultsGraph','dayDetails','resultNext'].includes(node.id))node.hidden=true;
+      // Keep the existing day-advance and financial export actions available beneath the new chart.
+      t('resultNext').parentElement.hidden=false;
+      t('showProjection').addEventListener('change',renderResults);
+      e.addEventListener('click',event=>{
+        const target=event.target.closest('button,[data-result-day]');if(!target)return;
+        const data=target.dataset,id=target.id;
+        if(h.closed&&!['exportExcel','exportStatementsCSV','declineBooks','restartBusiness','keepClosed'].includes(id))return;
+        if(data.loanFull)he(data.loanFull,true);
+        else if(id==='securedApply')applySecured();
+        else if(id==='rescueLoan')rescueLoan();
+        else if(id==='exportExcel'){download(workbook(exportSheets()),'lemonade-lane-financials.xlsx');J();}
+        else if(id==='exportStatementsCSV')csvReports(exportSheets());
+        else if(['declineBooks','leaveShop','keepClosed'].includes(id))J();
+        else if(data.buyRecipe)purchaseRecipe(data.buyRecipe);
+        else if(data.useRecipe){const recipe=RECIPES.find(r=>r.id===data.useRecipe);if(recipe&&h.purchasedRecipes.includes(recipe.id)){h.recipe={lemons:recipe.lemons,sugar:recipe.sugar,ice:recipe.ice};L();J();Ie('recipe');U();}}
+        else if(data.sellSupply)sellSupply(data.sellSupply);
+        else if(data.confirmSupply)confirmSupply(data.confirmSupply);
+        else if(data.sellEquipment)sellEquipment(data.sellEquipment);
+        else if(data.confirmEquipment)sellEquipment(data.confirmEquipment,true);
+        else if(id==='cancelSale')openShop('market');
+        else if(data.resultDay)t('dayDetails').innerHTML=dailyDetails(Number(data.resultDay));
+        else if(id==='restartBusiness')restartBusiness();
+      });
+      e.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)&&event.target.dataset.resultDay){event.preventDefault();event.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+    }
+
     (e.addEventListener(`click`, (n) => {
+      if (h.closed) {
+        const button=n.target.closest('button');
+        if (button && !['ledgerBtn','booksLink','exportExcel','exportStatementsCSV','declineBooks','modalClose','restartBusiness','keepClosed'].includes(button.id)) { n.stopImmediatePropagation();return; }
+      }
       let r = n.target.closest(`button`);
       r &&
         e.contains(r) &&
@@ -1427,7 +1469,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
                           : r.dataset.loanApply
                             ? pe(Number(r.dataset.loanApply))
                             : r.dataset.loanPay
-                              ? he()
+                              ? he(r.dataset.loanPay)
                               : r.dataset.transfer
                                 ? me(r.dataset.transfer, r.dataset.amount)
                                 : r.dataset.supplyCategory
@@ -1550,6 +1592,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     let Ge = new Vl(t(`world3d`), {
         onSelect: () => ie(`exterior`),
         onBack: () => ie(`outside`),
+        onShop: shop => openShop(shop),
       }),
       Ke = new Du(t(`investApp`), {
         getState: () => h,
@@ -1558,5 +1601,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         },
         isRunning: () => _,
       });
+    window.LemonadeLoanGuard = bank => securedPrincipal({bank});
+    installPlayabilityUI();
     (L(), Ie(`location`), U());
   })();
