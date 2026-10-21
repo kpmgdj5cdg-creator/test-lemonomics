@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import worker from '../cloud/worker.js';
+import worker,{refreshFund,market} from '../cloud/worker.js';
 import {OnlineProfileStore,CLOUD_BACKUP_KEY} from '../src/online-profiles.js';
 import {PROFILE_KEY} from '../src/profiles.js';
 const state=()=>({day:1,inventory:{lemons:0},ledger:[],bank:{checking:0}});
 function environment(){
- const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));
+ const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../cloud/migrations/0002_fund_refresh.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){
    let args=[];
    return {
@@ -72,4 +72,14 @@ test('invalid/oversized saves and duplicate slots never overwrite a game',async(
  assert.equal((await api('/api/profiles',{method:'POST',body:JSON.stringify({slot:0,profile:{...p,id:crypto.randomUUID()}})})).status,409);
  assert.equal((await api('/api/profiles',{method:'PUT',body:JSON.stringify({slot:0,revision:1,profile:{...p,state:{}}})})).status,400);
  assert.equal((await api('/api/profiles',{method:'PUT',body:' '.repeat(2_000_001)})).status,413);
+});
+
+test('split fund refresh publishes only complete common dates and retains them on provider failure',async()=>{
+ const env=environment(),now=Date.parse('2026-10-21T16:00:00Z');let calls=0;
+ const fetcher=async()=>{calls++;return {ok:true,json:async()=>({chart:{result:[{meta:{currency:'USD'},timestamp:['2026-10-19','2026-10-20'].map(d=>Date.parse(d+'T14:30:00Z')/1000),indicators:{quote:[{close:[100,101]}],adjclose:[{adjclose:[100,101]}]}}]}})}};
+ for(const s of ['DIA','SPY','ARKK','SGOV','GLD'])await refreshFund(env,s,now,fetcher);
+ assert.equal((await(await market(env,now)).json()).data.asOf,'2026-10-19');
+ await refreshFund(env,'SLV',now,fetcher);const current=await(await market(env,now)).json();assert.equal(current.data.asOf,'2026-10-20');assert.equal(current.refreshFunds,false);assert.equal(calls,6);
+ await refreshFund(env,'SLV',now,fetcher);assert.equal(calls,6);
+ const later=now+86400000;await refreshFund(env,'SLV',later,async()=>{calls++;throw new Error('offline')});await refreshFund(env,'SLV',later,fetcher);assert.equal(calls,7);assert.equal((await(await market(env,later)).json()).data.asOf,'2026-10-20');
 });

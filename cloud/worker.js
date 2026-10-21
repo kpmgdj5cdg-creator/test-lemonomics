@@ -1,6 +1,7 @@
 import snapshot from '../src/data/market-snapshot.json' with {type:'json'};
-import {downloadMarket} from '../server/market-provider.js';
+import {downloadFund} from '../server/market-provider.js';
 import {previousSession} from '../src/market-data.js';
+import {SYMBOLS} from '../src/funds.js';
 import {validName} from '../src/profiles.js';
 
 const encoder=new TextEncoder(),COOKIE='__Host-lemonomics',MAX_BODY=2_000_000;
@@ -29,24 +30,41 @@ async function body(request){
   const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length}return new TextDecoder().decode(bytes);
 }
 function validProfile(p){return p&&typeof p.id==='string'&&/^[\da-f-]{36}$/.test(p.id)&&validName(p.name)&&['male','female'].includes(p.avatar)&&p.state&&Number.isInteger(p.state.day)&&p.state.day>0&&p.state.inventory&&Array.isArray(p.state.ledger)}
-async function market(env,now){
+export async function refreshFund(env,symbol,now,fetcher=fetch){
+  if(!SYMBOLS.includes(symbol))return json({message:'Unknown fund.'},404);
+  await env.DB.prepare("INSERT OR IGNORE INTO fund_cache (symbol,as_of,payload,lease) VALUES (?,'',NULL,0)").bind(symbol).run();
+  const row=await env.DB.prepare('SELECT as_of FROM fund_cache WHERE symbol=?').bind(symbol).first();
+  if(row.as_of>=previousSession(new Date(now)))return json({status:'current'});
+  const lease=now+15*60000;
+  const claimed=await env.DB.prepare('UPDATE fund_cache SET lease=? WHERE symbol=? AND lease<=?').bind(lease,symbol,now).run();
+  if(!claimed.meta.changes)return json({status:'pending-or-retained'});
+  try{
+    const fund=await downloadFund(symbol,{fetcher,now:new Date(now)}),asOf=fund.history.at(-1)[0];
+    await env.DB.prepare('UPDATE fund_cache SET payload=?,as_of=? WHERE symbol=? AND as_of<=? AND lease=?').bind(JSON.stringify(fund),asOf,symbol,asOf,lease).run();
+    return json({status:'refreshed'});
+  }catch{return json({status:'retained'})}
+}
+export async function market(env,now){
   await env.DB.prepare('INSERT OR IGNORE INTO market_cache (id,as_of,payload) VALUES (1,?,?)').bind(snapshot.asOf,JSON.stringify(snapshot)).run();
   let row=await env.DB.prepare('SELECT * FROM market_cache WHERE id=1').first();
   const target=previousSession(new Date(now));
   if(row.as_of<target){
-    const lease=now+15*60000;
-    const claimed=await env.DB.prepare('UPDATE market_cache SET lease=? WHERE id=1 AND lease<=?').bind(lease,now).run();
-    if(claimed.meta.changes){
-      try{
-        const data=await downloadMarket({now:new Date(now)});
-        await env.DB.prepare('UPDATE market_cache SET payload=?,as_of=? WHERE id=1 AND as_of<=? AND lease=?').bind(JSON.stringify(data),data.asOf,data.asOf,lease).run();
-      }catch{ /* Keep the last complete snapshot and throttle provider retries. */ }
-      row=await env.DB.prepare('SELECT * FROM market_cache WHERE id=1').first();
+    const cached=await env.DB.prepare('SELECT symbol,payload FROM fund_cache WHERE payload IS NOT NULL').all();
+    if(cached.results.length===6){
+      // Each fund has already been validated in a separate, bounded request.
+      const funds=Object.fromEntries(cached.results.map(r=>[r.symbol,JSON.parse(r.payload)]));
+      const dates=Object.fromEntries(SYMBOLS.map(s=>[s,new Set(funds[s].history.map(p=>p[0]))]));
+      const asOf=funds[SYMBOLS[0]].history.map(p=>p[0]).filter(d=>SYMBOLS.every(s=>dates[s].has(d))).at(-1);
+      if(asOf&&asOf>row.as_of){
+        for(const s of SYMBOLS){funds[s].history=funds[s].history.filter(p=>p[0]<=asOf);funds[s].events=funds[s].events.filter(e=>e.date<=asOf)}
+        const data={version:1,asOf,fetchedAt:new Date(now).toISOString(),source:'Yahoo Finance · daily closes and adjusted fund history',funds};
+        await env.DB.prepare('UPDATE market_cache SET payload=?,as_of=? WHERE id=1 AND as_of<?').bind(JSON.stringify(data),asOf,asOf).run();
+        row=await env.DB.prepare('SELECT * FROM market_cache WHERE id=1').first();
+      }
     }
   }
-  // Only this server writes the cache, after full provider validation.
-  const data=JSON.parse(row.payload);
-  return json({data,status:data.asOf===target?'current':'stale'});
+  const data=JSON.parse(row.payload),stale=data.asOf!==target;
+  return json({data,status:stale?'stale':'current',refreshFunds:stale});
 }
 export default {
  async fetch(request,env){
@@ -74,6 +92,7 @@ export default {
    if(path==='/logout'&&request.method==='POST')return new Response(null,{status:303,headers:{...security,Location:'/login','Set-Cookie':COOKIE+'=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'}});
    if(path==='/api/config'&&request.method==='GET')return json({onlineProfiles:true,version:1});
    if(path==='/api/market'&&request.method==='GET')return market(env,now);
+   if(path.startsWith('/api/market/fund/')&&request.method==='GET')return refreshFund(env,path.slice('/api/market/fund/'.length),now);
    if(path==='/api/profiles'&&request.method==='GET'){
     const rows=await env.DB.prepare('SELECT slot,revision,profile FROM profiles ORDER BY slot').all(),slots=[null,null,null];
     for(const row of rows.results)slots[row.slot]={...JSON.parse(row.profile),revision:row.revision};

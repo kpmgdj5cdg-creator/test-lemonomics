@@ -18,23 +18,24 @@ export function previousSession(now=new Date()){
   while([0,6].includes(d.getUTCDay())||holidays(d.getUTCFullYear()).has(iso(d)))d.setUTCDate(d.getUTCDate()-1);
   return iso(d);
 }
-export function validateMarket(input,now=new Date()){
-  const checked=new Map(),isDate=s=>{if(!checked.has(s))checked.set(s,validDate(s));return checked.get(s)};
-  if(!input||input.version!==1||!input.funds||!isDate(input.asOf)||input.asOf>=marketDay(now))throw new Error('Market data must contain a prior trading day’s closing prices.');
-  const result={version:1,asOf:input.asOf,fetchedAt:input.fetchedAt||'',source:String(input.source||'Market data').slice(0,180),funds:{}};
-  for(const symbol of SYMBOLS){
-    const fund=input.funds[symbol];if(!fund||!Array.isArray(fund.history)||fund.history.length<1)throw new Error('Closing prices are missing for '+symbol+'.');
+export function validateFund(fund,asOf,symbol,checked=new Map()){
+  const isDate=s=>{if(!checked.has(s))checked.set(s,validDate(s));return checked.get(s)};
+if(!fund||!Array.isArray(fund.history)||fund.history.length<1)throw new Error('Closing prices are missing for '+symbol+'.');
     const seen=new Set();const history=fund.history.map(p=>{
-      if(!Array.isArray(p)||!isDate(p[0])||p[0]>input.asOf||seen.has(p[0])||!Number.isFinite(p[1])||p[1]<=0||!Number.isFinite(p[2]??p[1])||(p[2]??p[1])<=0)throw new Error('Invalid price history for '+symbol+'.');
+      if(!Array.isArray(p)||!isDate(p[0])||p[0]>asOf||seen.has(p[0])||!Number.isFinite(p[1])||p[1]<=0||!Number.isFinite(p[2]??p[1])||(p[2]??p[1])<=0)throw new Error('Invalid price history for '+symbol+'.');
       seen.add(p[0]);return [p[0],p[1],p[2]??p[1]];
     }).sort((a,b)=>a[0].localeCompare(b[0]));
-    if(history.at(-1)[0]!==input.asOf)throw new Error('All funds must share the same closing-price date.');
+    if(history.at(-1)[0]!==asOf)throw new Error('All funds must share the same closing-price date.');
     const events=(fund.events||[]).map(e=>{
-      if(!['split','dividend'].includes(e.type)||!isDate(e.date)||e.date>input.asOf||!Number.isFinite(e.value)||e.value<=0)throw new Error('Invalid fund event.');
+      if(!['split','dividend'].includes(e.type)||!isDate(e.date)||e.date>asOf||!Number.isFinite(e.value)||e.value<=0)throw new Error('Invalid fund event.');
       return {type:e.type,date:e.date,value:e.value};
     }).sort((a,b)=>a.date.localeCompare(b.date)||(a.type==='split'?-1:1));
-    result.funds[symbol]={history,events};
-  }
+  return {history,events};
+}
+export function validateMarket(input,now=new Date()){
+  if(!input||input.version!==1||!input.funds||!validDate(input.asOf)||input.asOf>=marketDay(now))throw new Error('Market data must contain a prior trading day’s closing prices.');
+  const result={version:1,asOf:input.asOf,fetchedAt:input.fetchedAt||'',source:String(input.source||'Market data').slice(0,180),funds:{}},checked=new Map();
+  for(const symbol of SYMBOLS)result.funds[symbol]=validateFund(input.funds[symbol],input.asOf,symbol,checked);
   return result;
 }
 export function quotePrice(market,symbol){return market?.funds?.[symbol]?.history.at(-1)?.[1]??null}

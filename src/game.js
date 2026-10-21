@@ -22,7 +22,7 @@ const money=v=>(v<0?'−':'')+'$'+Math.abs(v).toFixed(2), round=v=>Math.round(v*
 const bankInitial=()=>({checking:0,investments:0,loans:[],creditScore:650,creditEstablished:false,onTime:0,missed:0,loanSequence:1});
 const initial=()=>({version:5,upgrades:[],lemonLots:[],daySpoilage:{day:0,lemons:0,cost:0},day:1,cash:0,inventory:{lemons:0,sugar:0,ice:0,cups:0},recipe:{lemons:0,sugar:0,ice:0},purchasedRecipes:[],equipmentCosts:{},price:2.25,pitchers:2,location:'neighborhood',history:[],ledger:[],bank:bankInitial()});
 function normalizeState(saved){const s=saved&&saved.inventory&&saved.ledger?saved:initial();if(!s.bank)s.bank=bankInitial();if((s.version||0)<5&&s.location==='park')s.location='neighborhood';s.version=5;if(!Array.isArray(s.upgrades))s.upgrades=[];if(!Array.isArray(s.lemonLots))s.lemonLots=[{day:s.day,qty:s.inventory.lemons||0}].filter(x=>x.qty>0);if(!s.daySpoilage)s.daySpoilage={day:0,lemons:0,cost:0};return s;}
-let state=initial(),activeProfile=null,profileStore=null,profileScreen=null,sessionPaused=false,saveBusy=false,runConfig=null,statusTimeout=null;
+let state=initial(),activeProfile=null,profileStore=null,profileScreen=null,profileBootError='',sessionPaused=false,saveBusy=false,runConfig=null,statusTimeout=null;
 let upgradeIndex=0;let running=false,dayRun=null,interval=null,openingTimeout=null,closingTimeout=null,modalKind='',activeTab='location',activeBankTab='overview',currentScreen='stand',bankFeedback='',sceneView='outside';
 const upgradeItems=[
  {id:'juicer',name:'High Output Citrus Juicer',price:49.99,icon:'🧃',desc:'Squeeze lemons much faster!',effect:'Cuts serving time by one step. Shorter lines mean fewer unhappy customers.'},
@@ -392,10 +392,12 @@ $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
 const world=new Neighborhood($('world3d'),{onSelect:()=>setSceneView('exterior'),onBack:()=>setSceneView('outside'),onShop:shop=>showShop(shop)});
 const investmentDesk=new InvestmentDesk($('investApp'),{getState:()=>state,commit:()=>{reviewDueDate();save();renderBank()},isRunning:()=>running||state.closed});
 const resultsPane=$('pane-results');const graph=root.querySelector('.result-history');if(resultsPane&&graph)resultsPane.prepend(graph);
-profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error('Enable browser storage to create or load a profile.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile});
+profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error(profileBootError||'Loading profiles. Please wait, or reload to reconnect.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile});
 async function initializeProfiles(){
+let onlineMode=false;
 try{
  if(await onlineAvailable()){
+  onlineMode=true;
   profileStore=new OnlineProfileStore(window.localStorage,fetch,message=>notifySave(message));
   await profileStore.refresh();
   const note=profileScreen.host.querySelector('.profile-local-note');
@@ -405,12 +407,12 @@ try{
   const logout=document.createElement('form');logout.method='post';logout.action='/logout';logout.innerHTML='<button type="submit" class="profile-cancel">Lock family playtest</button>';recovery.after(logout);
  }else{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy();profileScreen.host.querySelector('.profile-local-note').textContent='Three players. Three businesses. Your progress is saved on this device.'}
 }catch(error){
- if(error.name==='SecurityError'){
+ if(error.name==='SecurityError'&&!onlineMode){
   // Opaque embedded previews cannot use browser storage. Keep that limitation
   // explicit while allowing the downloaded game to be previewed and played.
   const memory=new Map();profileStore=new LocalProfileStore({getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)});profileStore.temporary=true;
   profileScreen.host.querySelector('.profile-local-note').textContent='Preview mode: profiles last while this page stays open. Open the downloaded HTML in your browser to keep saves.';
- }else{profileStore=null;profileScreen.error(error.message);}
+ }else{profileStore=null;profileBootError=error.message;profileScreen.error(error.message);}
 }
 world.paused=true;activateTab('location');render();profileScreen.show();
 }

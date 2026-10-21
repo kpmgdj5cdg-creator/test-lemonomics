@@ -1,4 +1,5 @@
 import snapshot from './data/market-snapshot.json';
+import {SYMBOLS} from './funds.js';
 import {validateMarket} from './market-data.js';
 export class MarketClient{
   constructor(){
@@ -17,7 +18,13 @@ export class MarketClient{
     this.pending=(async()=>{try{
       const response=await fetch('/api/market',{signal:AbortSignal.timeout(20000),cache:'no-store'});
       if(!response.ok)throw new Error('The price service is unavailable.');
-      const result=await response.json(),data=validateMarket(result.data);
+      let result=await response.json();
+      if(result.refreshFunds===true){
+        await Promise.all(SYMBOLS.map(async symbol=>{const r=await fetch('/api/market/fund/'+symbol,{signal:AbortSignal.timeout(20000),cache:'no-store'});if(!r.ok)throw new Error('Fund refresh unavailable.')}));
+        const refreshed=await fetch('/api/market',{signal:AbortSignal.timeout(10000),cache:'no-store'});
+        if(!refreshed.ok)throw new Error('The price service is unavailable.');result=await refreshed.json();
+      }
+      const data=validateMarket(result.data);
       if(this.data&&data.asOf<this.data.asOf)throw new Error('The price service returned an older snapshot.');
       if(!this.data||data.asOf>this.data.asOf||data.fetchedAt>=this.data.fetchedAt)this.data=data;
       try{localStorage.setItem('lemonadeLane_market_v1',JSON.stringify(this.data))}catch{}

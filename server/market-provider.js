@@ -1,5 +1,5 @@
 import {SYMBOLS} from '../src/funds.js';
-import {marketDay,validateMarket} from '../src/market-data.js';
+import {marketDay,validateMarket,validateFund} from '../src/market-data.js';
 
 export function parseYahoo(symbol,payload,today){
   const r=payload.chart?.result?.[0];if(!r||r.meta?.currency!=='USD')throw new Error(symbol+': provider returned no USD data.');
@@ -10,16 +10,17 @@ export function parseYahoo(symbol,payload,today){
   for(const e of Object.values(r.events?.dividends||{})){const date=marketDay(new Date(e.date*1000));if(date<today)events.push({date,type:'dividend',value:e.amount});}
   if(history.length<2)throw new Error(symbol+': provider returned insufficient history.');return {history,events};
 }
-export async function downloadMarket({fetcher=fetch,now=new Date()}={}){
+export async function downloadFund(symbol,{fetcher=fetch,now=new Date()}={}){
+  if(!SYMBOLS.includes(symbol))throw new Error('Unknown fund.');
   const today=marketDay(now),start=new Date(today+'T00:00:00Z');start.setUTCFullYear(start.getUTCFullYear()-5);start.setUTCDate(start.getUTCDate()-12);
-  const funds={};
-  // Only the six fixed symbols can be requested. No arbitrary proxy URL is accepted.
-  await Promise.all(SYMBOLS.map(async symbol=>{
-    const params=new URLSearchParams({period1:String(Math.floor(start.getTime()/1000)),period2:String(Math.floor(now.getTime()/1000)),interval:'1d',events:'div,splits'});
-    const response=await fetcher('https://query1.finance.yahoo.com/v8/finance/chart/'+symbol+'?'+params,{headers:{'User-Agent':'LemonadeLane/1.0 personal educational game'},signal:AbortSignal.timeout(15000)});
-    if(!response.ok)throw new Error('Market provider returned HTTP '+response.status+' for '+symbol+'.');
-    funds[symbol]=parseYahoo(symbol,await response.json(),today);
-  }));
+  const params=new URLSearchParams({period1:String(Math.floor(start.getTime()/1000)),period2:String(Math.floor(now.getTime()/1000)),interval:'1d',events:'div,splits'});
+  const response=await fetcher('https://query1.finance.yahoo.com/v8/finance/chart/'+symbol+'?'+params,{headers:{'User-Agent':'LemonadeLane/1.0 personal educational game'},signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw new Error('Market provider returned HTTP '+response.status+' for '+symbol+'.');
+  const parsed=parseYahoo(symbol,await response.json(),today);
+  return validateFund(parsed,parsed.history.at(-1)[0],symbol);
+}
+export async function downloadMarket({fetcher=fetch,now=new Date()}={}){
+  const funds=Object.fromEntries(await Promise.all(SYMBOLS.map(async symbol=>[symbol,await downloadFund(symbol,{fetcher,now})])));
   // Holidays or a lagging individual fund must never mix execution dates.
   const dates=Object.fromEntries(SYMBOLS.map(s=>[s,new Set(funds[s].history.map(p=>p[0]))]));
   const common=funds[SYMBOLS[0]].history.map(p=>p[0]).filter(date=>SYMBOLS.every(s=>dates[s].has(date)));
