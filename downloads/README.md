@@ -8,7 +8,7 @@
 
 You can also download [the standalone HTML](Lemonade-Lane.html) using GitHub’s **Download raw file** button.
 
-The October 20, 2026 release implements the playability change list: Maple Market resales, Downtown recipe books and purchased-recipe visitor bonuses, decimal recipe controls, $6 Park permits, Excel financial statements, daily results and projections, investment-secured loans, early payoff, emergency credit and business closure. All four voxel locations and avatars are retained. New businesses start with $0, no supplies and a zero recipe; use Bank → Loans, withdraw funds, choose a recipe and buy supplies.
+The October 21, 2026 release expands the Neighborhood to 23 colorful modern homes along both sides of the streets, with deeper backyards, extended sidewalks and room to walk and zoom out. It also implements the playability change list: Maple Market resales, Downtown recipe books and purchased-recipe visitor bonuses, decimal recipe controls, $6 Park permits, Excel financial statements, daily results and projections, investment-secured loans, early payoff, emergency credit and business closure. All four voxel locations and avatars are retained. New businesses start with $0, no supplies and a zero recipe; use Bank → Loans, withdraw funds, choose a recipe and buy supplies.
 
 The file contains October 19, 2026 closing prices for DIA, SPY, ARKK, SGOV, GLD and SLV, plus five years of history. Offline copies cannot automatically fetch new daily prices. History remains viewable, but investment trading and collateral sales pause when prices are stale. Daily automatic pricing requires running the editable project and its pricing service. This download is not a public hosted game.
 
