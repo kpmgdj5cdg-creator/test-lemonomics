@@ -19117,10 +19117,10 @@ MADE WITH LOVE`,
           this.desiredTarget.set(
             -1.2,
             t2 ? 1.7 : n2 ? 1 : 1.2,
-            t2 ? -1.8 : n2 ? 0 : this.location === "neighborhood" ? -6.8 : -1.2
+            t2 ? -1.8 : n2 ? 0 : this.location === "neighborhood" ? -8.2 : -1.2
           ), this.desiredPosition.copy(this.desiredTarget).add(
             new K(Math.sin(this.angle) * 34, 23, Math.cos(this.angle) * 34)
-          ), this.desiredSpan = Math.max(this.location === "neighborhood" ? 26 : t2 || n2 ? 18 : 15.8, (this.location === "neighborhood" ? 42 : 26) / Math.max(e2, this.location === "neighborhood" ? 0.7 : 0.9)) / this.zoom;
+          ), this.desiredSpan = Math.max(this.location === "neighborhood" ? 28 : t2 || n2 ? 18 : 15.8, (this.location === "neighborhood" ? 42 : 26) / Math.max(e2, this.location === "neighborhood" ? 0.7 : 0.9)) / this.zoom;
         } else {
           let e3 = this.view === `interior`, t2 = e3 ? 7 : 10;
           this.desiredTarget.copy(Il).add(new K(0, e3 ? 1 : 0.9, 0)), this.desiredPosition.copy(this.desiredTarget).add(

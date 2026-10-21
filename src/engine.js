@@ -27184,7 +27184,7 @@ MADE WITH LOVE`,
           (this.desiredTarget.set(
             -1.2,
             t ? 1.7 : n ? 1 : 1.2,
-            t ? -1.8 : n ? 0 : this.location==='neighborhood' ? -6.8 : -1.2,
+            t ? -1.8 : n ? 0 : this.location==='neighborhood' ? -8.2 : -1.2,
           ),
             this.desiredPosition
               .copy(this.desiredTarget)
@@ -27192,7 +27192,7 @@ MADE WITH LOVE`,
                 new K(Math.sin(this.angle) * 34, 23, Math.cos(this.angle) * 34),
               ),
             (this.desiredSpan =
-              Math.max(this.location==='neighborhood'?26:t || n ? 18 : 15.8, (this.location==='neighborhood'?42:26) / Math.max(e, this.location==='neighborhood'?.7:.9)) / this.zoom));
+              Math.max(this.location==='neighborhood'?28:t || n ? 18 : 15.8, (this.location==='neighborhood'?42:26) / Math.max(e, this.location==='neighborhood'?.7:.9)) / this.zoom));
         } else {
           let e = this.view === `interior`,
             t = e ? 7 : 10;

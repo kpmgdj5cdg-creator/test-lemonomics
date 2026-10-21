@@ -2,7 +2,7 @@
 from pathlib import Path
 from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
-from browser_helpers import saved,load,capture_world
+from browser_helpers import saved,load,capture_world,house_screen_bounds
 import subprocess,urllib.request,time,copy,openpyxl
 ROOT=Path(__file__).resolve().parents[1]
 server=subprocess.Popen(['python3','-m','http.server','8128','--bind','127.0.0.1','--directory',str(ROOT/'downloads')],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -57,6 +57,9 @@ try:
   layout=page.evaluate('''()=>{const w=testWorld;return {houses:w.environment.userData.houses,trees:w.environment.children.filter(c=>c.name.startsWith('backyard-')).map(c=>c.userData.treeCount),rival:w.rivalPosition,position:w.rival.group.position}}''')
   assert len(layout['houses'])==4 and layout['trees']==[2,2,2,2]
   assert layout['rival']['x']==14.7 and layout['rival']['z']==-1.7
+  page.wait_for_timeout(1400)
+  bounds=house_screen_bounds(page)
+  assert len(bounds)==4 and all(-1<h['minX']<h['maxX']<1 and -1<h['minY']<h['maxY']<1 for h in bounds),bounds
   page.screenshot(path='/tmp/lemon-part2-neighborhood.png',full_page=True)
   print('PASS notification dismissal and rebuilt neighborhood scene metadata',flush=True)
   # A full selling day must respect limited stock and expense only the actual prepared amount.

@@ -42,3 +42,7 @@ def enter_shop(page,shop,activation='keyboard'):
   page.mouse.click(point['x'],point['y'])
  page.locator('#modal.show').wait_for()
  return result
+
+def house_screen_bounds(page):
+ # Conservative house envelopes include the chimney and porch after renderer mesh batching.
+ return page.evaluate("""()=>{const w=testWorld;return w.environment.userData.houses.map(h=>{let points=[];for(const x of [-2.75,2.75])for(const y of [0,5])for(const z of [-2.1,2.4])points.push(w.camera.position.clone().set(h.x+x*Math.cos(h.yaw)+z*Math.sin(h.yaw),y,h.z-x*Math.sin(h.yaw)+z*Math.cos(h.yaw)).project(w.camera));return {name:h.id,minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))}})}""")
