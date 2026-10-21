@@ -18,3 +18,15 @@ test('an online profile outage never presents empty local save slots',async({pag
  await page.goto('/');await page.locator('#password').fill('family-local-testing-only');await page.getByRole('button',{name:'Play Lemonomics'}).click();
  await expect(page.locator('#profileError')).toContainText('Online profiles temporarily unavailable.');await expect(page.locator('[data-new-slot]')).toHaveCount(0);
 });
+
+test('fifth online slot can be deleted after confirmation and disappears on another PC',async({browser})=>{
+ const one=await browser.newContext(),two=await browser.newContext(),a=await one.newPage(),b=await two.newPage();
+ await signIn(a);await expect(a.locator('[data-profile-slot]')).toHaveCount(5);
+ await a.locator('[data-new-slot="4"]').click();await a.locator('#profileName').fill('LastPlayer');await a.locator('[data-submit-name]').click();await a.locator('[data-avatar=female]').click();await a.locator('#welcomeBack').click();await quit(a);
+ await signIn(b);await expect(b.locator('[data-load-slot="4"]')).toContainText('LastPlayer');
+ await b.locator('[data-delete-slot="4"]').click();await b.locator('#cancelDeleteProfile').click();await expect(b.locator('[data-load-slot="4"]')).toBeVisible();
+ await b.route('**/api/profiles',r=>r.request().method()==='DELETE'?r.abort():r.continue());await b.locator('[data-delete-slot="4"]').click();await b.locator('#confirmDeleteProfile').click();await expect(b.locator('#deleteProfileError')).toBeVisible();await expect(b.locator('[data-load-slot="4"]')).toBeVisible();
+ await b.unroute('**/api/profiles');await b.locator('#confirmDeleteProfile').click();await expect(b.locator('[data-new-slot="4"]')).toBeVisible();
+ await a.reload();await expect(a.locator('[data-new-slot="4"]')).toBeVisible();await expect(a.locator('[data-load-slot="0"]')).toContainText('CloudTester');
+ await one.close();await two.close();
+});

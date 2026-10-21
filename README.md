@@ -1,6 +1,6 @@
 # Lemonomics
 
-A browser business game with four voxel environments, playable avatars, banking and fund investments. Three local player profiles now keep separate businesses, while existing single-business saves migrate without losing progress.
+A browser business game with four voxel environments, playable avatars, banking and fund investments. Five player profiles now keep separate businesses, while existing single-business saves migrate without losing progress.
 
 ## Run locally
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the address printed by Vite. On the Lemonomics title screen, choose one of three slots, enter a name (1–16 letters), and choose a male or female avatar. An existing save appears as **Player** in the first slot. Click a saved name to continue. In the game, click the lemonade stand to inspect its exterior, then choose **Inside stand** for the 3D cutaway. **Back to neighborhood** returns to the map. Drag, or focus the scene and press the arrow keys to rotate. Escape returns to the neighborhood. Focus the scene before using the scroll wheel to zoom. Touch dragging and the view buttons work on tablets and phones. Reduced-motion preferences make camera transitions instant and disable walking swings.
+Open the address printed by Vite. On the Lemonomics title screen, choose one of five slots, enter a name (1–16 letters), and choose a male or female avatar. An existing save appears as **Player** in the first slot. Click a saved name to continue. In the game, click the lemonade stand to inspect its exterior, then choose **Inside stand** for the 3D cutaway. **Back to neighborhood** returns to the map. Drag, or focus the scene and press the arrow keys to rotate. Escape returns to the neighborhood. Focus the scene before using the scroll wheel to zoom. Touch dragging and the view buttons work on tablets and phones. Reduced-motion preferences make camera transitions instant and disable walking swings.
 
 For a single-file version, run `npm run build` and use **`dist/lemonade-lane.html`**. It contains all JavaScript, Three.js, styles, and geometry in one HTML document, with no CDN, module imports, or sibling files to load. Do not open the repository's source `index.html` directly: that development entry needs Vite. The single-file build also works in script-enabled sandboxed iframes; browsers that deny storage in a sandbox cannot persist saves there. WebGL must be available in the viewing environment.
 
@@ -21,7 +21,7 @@ A new business still starts with **$0 and no inventory**. Use Bank → Loans, bo
 
 ## Private online family test
 
-The Cloudflare Worker adds password protection, a shared D1 database for three profiles, confirmed online saves, conflict detection and browser recovery checkpoints. Follow [the private playtest setup](docs/PRIVATE-PLAYTEST.md) to connect the repository in Cloudflare and obtain the HTTPS testing link. No hosting account credentials or family password belong in this repository.
+The Cloudflare Worker adds password protection, a shared D1 database for five profiles, confirmed online saves, conflict detection and browser recovery checkpoints. Follow [the private playtest setup](docs/PRIVATE-PLAYTEST.md) to connect the repository in Cloudflare and obtain the HTTPS testing link. No hosting account credentials or family password belong in this repository.
 
 ## Build and deploy
 
@@ -110,7 +110,7 @@ The sidewalks and lane markings extend past the new blocks. Neighborhood walking
 
 ## Player profiles and saving
 
-The plain green title screen has yellow voxel lettering and three independent save slots. Each saved slot shows the player’s avatar, name, game day and last-save time in local `MM-DD-YYYY, HH:MM AM/PM` format. Names allow only A–Z / a–z, up to 16 characters. Avatar appearance is separate from the rig and movement state so wardrobes and additional avatars can be added later.
+The plain green title screen has yellow voxel lettering and five independent save slots. Each saved slot shows the player’s avatar, name, game day and last-save time in local `MM-DD-YYYY, HH:MM AM/PM` format. Names allow only A–Z / a–z, up to 16 characters. Avatar appearance is separate from the rig and movement state so wardrobes and additional avatars can be added later.
 
 The upper-right exit icon opens **Save**, **Save & Quit**, and **Back to Game**. Saving first checkpoints progress, requests a fresh market snapshot, applies valid new prices and portfolio events, and saves again. Unavailable or older data leaves the last known prices intact. The simulation pauses while this menu is open. A selling day saved partway through resumes with the same queue, money and inventory, without charging another permit or brewing twice. The end-of-day report also offers **Save or quit**.
 
@@ -121,3 +121,11 @@ Automatic saves still occur after business actions and on page exit. Selecting S
 `src/profiles.js` is the storage adapter boundary; profile records have stable IDs, a schema version, appearance, timestamps, market date and business state. `src/online-profiles.js` retains this record format while the authenticated Cloudflare Worker persists it in D1 with per-profile revision checks. Player names alone are not login credentials.
 
 Backyards now vary across 23 homes: six retain the original seating, six have round voxel tree canopies, six combine a tree with a circular table near the back door, and five have flower gardens/open lawn.
+
+### Five slots, deletion and 3D avatar previews
+
+The title screen now has five slots. Existing three-slot documents expand in place without changing their original profiles. D1 migration `0003_five_profiles.sql` preserves all existing ids, revisions and business states while widening the slot constraint.
+
+Each saved row has a separate Delete button. A named confirmation dialog defaults focus to Keep saved game. Confirming deletes that business, makes the slot available again, and removes its recovery checkpoint from this browser. Online deletion requires the displayed id and revision; a stale browser cannot delete a replacement save or recreate an erased record. Other computers may retain old browser checkpoints, and previously exported/platform backups are separate from the active save.
+
+Title-screen and avatar-picker portraits are rendered from the same `PlayerAvatar` geometry and appearance as gameplay, using an orthographic camera, directional light, shadows and a grass platform. One shared WebGL renderer caches the resulting portraits, so five slots do not require five graphics contexts or continuous animation.

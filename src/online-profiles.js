@@ -1,4 +1,4 @@
-import {LocalProfileStore,PROFILE_KEY} from './profiles.js';
+import {LocalProfileStore,PROFILE_KEY,PROFILE_SLOTS,emptySlots} from './profiles.js';
 const clone=v=>JSON.parse(JSON.stringify(v));
 export const CLOUD_BACKUP_KEY='lemonomics_online_recovery_v1';
 async function request(fetcher,path,options={}){
@@ -15,7 +15,7 @@ export class OnlineProfileStore extends LocalProfileStore{
  }
  async refresh(){
   await this.flush();const data=await request(this.fetcher,'/api/profiles');
-  if(data.version!==1||data.slots?.length!==3)throw new Error('The online profiles could not be read.');
+  if(data.version!==1||![3,PROFILE_SLOTS].includes(data.slots?.length))throw new Error('The online profiles could not be read.');
   this.storage.setItem(PROFILE_KEY,JSON.stringify(data));this.read();
  }
  checkpoint(profile){
@@ -29,7 +29,21 @@ export class OnlineProfileStore extends LocalProfileStore{
   try{
    this.checkpoint(p);const saved=await request(this.fetcher,'/api/profiles',{method:'POST',body:JSON.stringify({slot,profile:p})});
    const data=this.read();data.slots[slot]=saved;this.storage.setItem(PROFILE_KEY,JSON.stringify(data));return clone(saved);
-  }catch(e){this.storage.setItem(PROFILE_KEY,before||JSON.stringify({version:1,slots:[null,null,null]}));throw e}
+  }catch(e){this.storage.setItem(PROFILE_KEY,before||JSON.stringify({version:1,slots:emptySlots()}));throw e}
+ }
+ async delete(id,revision){
+  await this.flush();
+  const data=this.read(),slot=data.slots.findIndex(p=>p?.id===id),profile=data.slots[slot];
+  if(!profile)throw new Error('This profile is no longer available.');
+  await request(this.fetcher,'/api/profiles',{method:'DELETE',body:JSON.stringify({slot,id,revision})});
+  data.slots[slot]=null;this.storage.setItem(PROFILE_KEY,JSON.stringify(data));
+  this.dirty.delete(id);this.versions.delete(id);
+  // Remove this browser's checkpoint too; other profiles and old local games stay intact.
+  try{
+    const records=JSON.parse(this.backupStorage.getItem(CLOUD_BACKUP_KEY)||'{}');delete records[id];
+    this.backupStorage.setItem(CLOUD_BACKUP_KEY,JSON.stringify(records));
+    LocalProfileStore.prototype.clearLegacyCopy.call({storage:this.backupStorage},profile);
+  }catch{throw new Error('Online save deleted, but this browser backup could not be cleared. Clear it in browser storage.');}
  }
  save(id,state,marketAsOf,now){
   if(this.conflict)throw this.conflict;

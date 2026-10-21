@@ -8,6 +8,7 @@ import {PROFILE_KEY} from '../src/profiles.js';
 const state=()=>({day:1,inventory:{lemons:0},ledger:[],bank:{checking:0}});
 function environment(){
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../cloud/migrations/0002_fund_refresh.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../cloud/migrations/0003_five_profiles.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){
    let args=[];
    return {
@@ -82,4 +83,30 @@ test('split fund refresh publishes only complete common dates and retains them o
  await refreshFund(env,'SLV',now,fetcher);const current=await(await market(env,now)).json();assert.equal(current.data.asOf,'2026-10-20');assert.equal(current.refreshFunds,false);assert.equal(calls,6);
  await refreshFund(env,'SLV',now,fetcher);assert.equal(calls,6);
  const later=now+86400000;await refreshFund(env,'SLV',later,async()=>{calls++;throw new Error('offline')});await refreshFund(env,'SLV',later,fetcher);assert.equal(calls,7);assert.equal((await(await market(env,later)).json()).data.asOf,'2026-10-20');
+});
+
+test('five online slots, deletion, stale tabs and replacements remain isolated',async()=>{
+ const env=environment(),api=await family(env),disk=storage(),store=new OnlineProfileStore(disk,api);await store.refresh();
+ const created=[];for(let slot=0;slot<5;slot++)created.push(await store.create(slot,'Player'+String.fromCharCode(65+slot),'male',state()));
+ assert.equal(store.list().filter(Boolean).length,5);
+ const old=created[4];await store.delete(old.id,old.revision);assert.equal(store.list()[4],null);
+ assert.equal(JSON.parse(disk.getItem(CLOUD_BACKUP_KEY))[old.id],undefined);
+ const replacement=await store.create(4,'NewPlayer','female',state());
+ assert.equal((await api('/api/profiles',{method:'DELETE',body:JSON.stringify({slot:4,id:old.id,revision:old.revision})})).status,409);
+ assert.equal((await api('/api/profiles',{method:'PUT',body:JSON.stringify({slot:4,profile:old,revision:old.revision})})).status,409);
+ const slots=(await(await api('/api/profiles')).json()).slots;assert.equal(slots[4].id,replacement.id);assert.equal(slots[0].id,created[0].id);
+});
+test('deletion requires login, origin and the currently displayed revision',async()=>{
+ const env=environment(),api=await family(env),store=new OnlineProfileStore(storage(),api);await store.refresh();const p=await store.create(0,'Tester','male',state());
+ assert.equal((await worker.fetch(new Request('https://game.example/api/profiles',{method:'DELETE',headers:{Origin:'https://game.example'},body:JSON.stringify({slot:0,id:p.id,revision:1})}),env)).status,401);
+ assert.equal((await api('/api/profiles',{method:'DELETE',headers:{Origin:'https://evil.example'},body:JSON.stringify({slot:0,id:p.id,revision:1})})).status,403);
+ store.save(p.id,{...state(),day:2});await store.flush();await assert.rejects(()=>store.delete(p.id,p.revision),/changed on another computer/);
+ assert.equal((await(await api('/api/profiles')).json()).slots[0].state.day,2);
+});
+test('three-slot database migration preserves saved ids, revisions and payloads',()=>{
+ const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));
+ db.prepare('INSERT INTO profiles VALUES (?,?,?,?)').run(2,'existing',42,'saved business');
+ db.exec(readFileSync(new URL('../cloud/migrations/0003_five_profiles.sql',import.meta.url),'utf8'));
+ assert.deepEqual({...db.prepare('SELECT * FROM profiles WHERE slot=2').get()},{slot:2,id:'existing',revision:42,profile:'saved business'});
+ db.prepare('INSERT INTO profiles VALUES (?,?,?,?)').run(4,'new',1,'new business');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM profiles').get().n,2);
 });

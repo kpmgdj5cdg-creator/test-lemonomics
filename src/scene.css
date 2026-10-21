@@ -5,9 +5,9 @@ body.profile-home-visible{background:#6bb461}
 .voxel-title{margin:0 0 42px 68px;line-height:1;filter:drop-shadow(0 8px 0 #397d3c55)}
 .voxel-title svg{display:block;width:100%;height:auto;overflow:visible}
 .profile-slots{display:grid;gap:25px}
-.profile-row{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;align-items:center;position:relative}
-.profile-avatar{width:54px;position:absolute;left:0;bottom:-4px;pointer-events:none}
-.profile-portrait{display:block;width:100%;height:100%}
+.profile-row{display:grid;grid-template-columns:68px minmax(0,1fr) 55px;gap:10px;align-items:center;position:relative}
+.profile-avatar{width:68px;position:absolute;left:0;bottom:-4px;pointer-events:none}
+.profile-portrait{display:block;width:100%;height:auto;object-fit:contain}
 .profile-slot{grid-column:2;width:100%;height:52px;display:grid;grid-template-columns:1fr .6fr 1.25fr;border:3px solid #215c32;border-radius:3px;background:#d7edb0;color:#174e2d;box-shadow:0 4px 0 #397d3c;padding:0;font:800 18px 'Trebuchet MS',sans-serif;overflow:hidden;text-align:left}
 button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 .profile-slot>span,.profile-name-cell{min-width:0;display:flex;align-items:center;padding:0 18px}
@@ -27,7 +27,7 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 .profile-dialog h2{margin:0 0 9px;color:#175b30;font-size:27px}.profile-dialog p{font-size:14px;line-height:1.5}
 .avatar-choices{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
 .avatar-choices button{display:flex;align-items:center;flex-direction:column;gap:12px;background:#c9e99a;border:3px solid #4d8d44;border-radius:9px;padding:20px;color:#174e2d;font-size:18px;font-weight:900;cursor:pointer}
-.avatar-choices button:hover{background:#e4f6b2;border-color:#1a6532}.avatar-choices svg{height:130px;width:90px}
+.avatar-choices button:hover{background:#e4f6b2;border-color:#1a6532}.avatar-choices .profile-portrait{height:160px;width:120px}
 .profile-cancel{border:0;background:none;color:#275b35;text-decoration:underline;padding:8px 22px;font-weight:800;cursor:pointer}
 .save-menu-button{display:grid;place-items:center;color:#eaffb9!important;background:#236f3c!important;border-color:#8bc259!important;padding:8px!important}
 .save-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
@@ -36,7 +36,7 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 .save-status{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:2500;background:#fff6c9;color:#174e2d;border:3px solid #276b38;border-radius:8px;padding:12px 20px;max-width:90vw;box-shadow:0 4px 0 #17502a;font-size:13px;font-weight:800;text-align:center}
 @media(max-width:620px){
   #profileScreen{padding:36px 12px}.profile-home{padding-bottom:8vh}.voxel-title{margin-left:44px;margin-bottom:32px}
-  .profile-row{grid-template-columns:36px minmax(0,1fr);gap:8px}.profile-avatar{width:36px;bottom:1px}.profile-slot{height:54px;grid-template-columns:1fr .48fr 1.2fr;font-size:13px;border-width:2px}.profile-slot>span,.profile-name-cell>button{padding-left:8px;padding-right:5px}.profile-slot>span:nth-child(2){font-size:11px}.profile-slot>span:last-child{font-size:9px;padding:0 4px;white-space:normal;text-align:center;line-height:1.6}.profile-name-form input{font-size:12px;padding:0 5px}.profile-name-form button{padding:0 5px;font-size:17px}.profile-local-note,.profile-error{margin-left:44px;font-size:11px}
+  .profile-row{grid-template-columns:44px minmax(0,1fr) 35px;gap:8px}.profile-avatar{width:44px;bottom:1px}.profile-slot{height:54px;grid-template-columns:1fr .48fr 1.2fr;font-size:13px;border-width:2px}.profile-slot>span,.profile-name-cell>button{padding-left:8px;padding-right:5px}.profile-slot>span:nth-child(2){font-size:11px}.profile-slot>span:last-child{font-size:9px;padding:0 4px;white-space:normal;text-align:center;line-height:1.6}.profile-name-form input{font-size:12px;padding:0 5px}.profile-name-form button{padding:0 5px;font-size:17px}.profile-local-note,.profile-error{margin-left:44px;font-size:11px}
   #ll-app .hud-resources #saveMenuBtn{position:absolute;right:10px;top:10px;width:35px;height:35px}#ll-app .hud-resources #helpBtn{right:52px}.mini-brand{padding-right:86px}
 }
 /* Scoped to the original neighborhood window; business UI is unchanged. */
@@ -150,3 +150,11 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 #ll-app .world-heading{flex-wrap:wrap;gap:8px}#ll-app .heading-forecast{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}#ll-app .heading-forecast .scene-label{position:static;font-size:11px;padding:7px 9px}#ll-app .scene-nav{top:12px}#ll-app #sceneBack{top:55px}#ll-app #neighborhoodEvent{pointer-events:auto;top:55px}#ll-app #neighborhoodEvent button{margin-left:8px;background:#fffbd8;color:#15552c;border:1px solid #588346;border-radius:5px;padding:4px 8px;font-weight:bold}#ll-app .daily-chart{width:100%;display:block;min-height:190px}#ll-app .daily-chart-scroll{overflow-x:auto}#ll-app .daily-chart g[role=button]{cursor:pointer}#ll-app .daily-chart g:focus{outline:2px solid #357a4e}#ll-app .projection-toggle{display:flex;justify-content:flex-end;gap:6px;font-size:12px;margin:8px 0}#ll-app .resale-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #cddaa9}#ll-app .resale-row input{width:90px}#ll-app .resale-row button,#ll-app .active-loan button{padding:8px;border-radius:6px;border:1px solid #79a35e;background:#e0efa9;color:#144c32;margin:4px 0}#ll-app .closing-results{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);gap:18px}#ll-app .modal:has(.closing-results){width:min(1100px,96vw)}#ll-app:has(#phaseLabel[data-closed=true]) .setup{pointer-events:none}#ll-app .result-history{min-width:0}#ll-app #recipeBooks{font-size:12px;line-height:1.65}#ll-app #recipeBooks button{font-size:12px}#ll-app .world-heading #phaseLabel{font-size:10px}@media(max-width:620px){#ll-app .closing-results{grid-template-columns:1fr}#ll-app .heading-forecast{margin-left:0}#ll-app .heading-forecast .scene-label{font-size:9px;padding:5px}#ll-app .world-heading{gap:5px}#ll-app #neighborhoodEvent{max-width:180px;font-size:10px}}
 
 #ll-app .counter input[data-recipe-input]{width:74px;min-width:0;text-align:center;font-weight:900;font-size:22px;border:1px solid #98b572;border-radius:6px;background:#fffbe4;color:#145332;padding:6px 1px}#ll-app .result-history{position:relative;margin-bottom:18px}#ll-app .daily-chart g[role=button] circle{pointer-events:none}
+
+.profile-delete{grid-column:3;border:1px solid #6b6d3d;border-radius:5px;background:#e7edb8;color:#66422a;font:700 12px 'Trebuchet MS',sans-serif;padding:10px 4px;cursor:pointer}
+.profile-delete:hover{background:#fff0c9;border-color:#9c4d35}
+.delete-profile-actions{display:flex;gap:12px;justify-content:center;margin-top:24px}
+.delete-profile-actions button{padding:12px;border:2px solid #356a38;border-radius:6px;background:#d5edb0;color:#174e2d;font-weight:800;cursor:pointer}
+.delete-profile-actions #confirmDeleteProfile{background:#9b3d2d;border-color:#793125;color:#fff}
+.delete-profile-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:620px){.profile-delete{font-size:10px;padding:10px 1px}.avatar-choices button{padding:12px 6px}.avatar-choices .profile-portrait{width:100%;height:150px}.delete-profile-actions{flex-direction:column}}

@@ -1,6 +1,6 @@
 # Private family playtest on Cloudflare
 
-This deployment uses a Cloudflare Worker, bundled static game assets and one D1 database. A family password protects **every game asset and API**, not just the title screen. Three profiles are shared by the family; names select businesses, rather than acting as passwords. Use Save & Quit before switching PCs. No domain purchase is required: Cloudflare supplies an HTTPS `workers.dev` address.
+This deployment uses a Cloudflare Worker, bundled static game assets and one D1 database. A family password protects **every game asset and API**, not just the title screen. Five profiles are shared by the family; names select businesses, rather than acting as passwords. Use Save & Quit before switching PCs. No domain purchase is required: Cloudflare supplies an HTTPS `workers.dev` address.
 
 ## Set up in the Cloudflare dashboard
 
@@ -62,5 +62,5 @@ Provider access must be checked on the deployed Worker: local tests can verify f
 - An unsigned browser goes to the family login even when requesting a direct `/assets/...js` URL; `/api/profiles` returns 401.
 - Sign in, create one profile, borrow money, Save & Quit; another browser sees the same avatar, day and checking balance.
 - Losing connectivity during Save keeps the game open with an error and browser backup; reconnect and retry.
-- Re-deploying code retains the same three slots. Locking the game removes access to profile APIs.
+- Re-deploying code retains the same five slots. Locking the game removes access to profile APIs.
 - Confirm the investment price date and complete one reviewed purchase with fresh prior-close data. Fresh upstream pricing and real account deployment are final live checks, not guaranteed by the local test run.

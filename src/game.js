@@ -392,7 +392,7 @@ $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
 const world=new Neighborhood($('world3d'),{onSelect:()=>setSceneView('exterior'),onBack:()=>setSceneView('outside'),onShop:shop=>showShop(shop)});
 const investmentDesk=new InvestmentDesk($('investApp'),{getState:()=>state,commit:()=>{reviewDueDate();save();renderBank()},isRunning:()=>running||state.closed});
 const resultsPane=$('pane-results');const graph=root.querySelector('.result-history');if(resultsPane&&graph)resultsPane.prepend(graph);
-profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error(profileBootError||'Loading profiles. Please wait, or reload to reconnect.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile});
+profileScreen=new ProfileScreen(document.getElementById('profileScreen'),{list:()=>{if(!profileStore)throw new Error(profileBootError||'Loading profiles. Please wait, or reload to reconnect.');return profileStore.list()},onCreate:createProfile,onLoad:loadProfile,onDelete:async(id,revision)=>{await profileStore.delete(id,revision)}});
 async function initializeProfiles(){
 let onlineMode=false;
 try{
@@ -405,7 +405,7 @@ try{
   const recovery=document.createElement('button');recovery.type='button';recovery.className='profile-cancel';recovery.textContent='Download browser backup';
   recovery.onclick=()=>{const blob=new Blob([localStorage.getItem(CLOUD_BACKUP_KEY)||'{}'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Lemonomics-browser-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};note.after(recovery);
   const logout=document.createElement('form');logout.method='post';logout.action='/logout';logout.innerHTML='<button type="submit" class="profile-cancel">Lock family playtest</button>';recovery.after(logout);
- }else{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy();profileScreen.host.querySelector('.profile-local-note').textContent='Three players. Three businesses. Your progress is saved on this device.'}
+ }else{profileStore=new LocalProfileStore(window.localStorage);profileStore.migrateLegacy();profileScreen.host.querySelector('.profile-local-note').textContent='Five players. Five businesses. Your progress is saved on this device.'}
 }catch(error){
  if(error.name==='SecurityError'&&!onlineMode){
   // Opaque embedded previews cannot use browser storage. Keep that limitation

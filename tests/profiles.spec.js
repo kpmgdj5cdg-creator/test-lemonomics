@@ -10,15 +10,15 @@ async function create(page,slot,name,avatar='male'){
 }
 async function quit(page){await page.locator('#saveMenuBtn').click();await page.locator('#saveAndQuit').click();await expect(page.locator('#profileScreen')).toBeVisible();}
 
-test('title screen creates three independent profiles, filters names and restores the chosen business',async({page})=>{
+test('title screen creates five independent profiles, filters names and restores the chosen business',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await feed(page);await page.goto('/');
- await expect(page.getByRole('heading',{name:'Lemonomics',exact:true})).toBeVisible();await expect(page.locator('[data-new-slot]')).toHaveCount(3);await expect(page.locator('#ll-app')).toBeHidden();
+ await expect(page.getByRole('heading',{name:'Lemonomics',exact:true})).toBeVisible();await expect(page.locator('[data-new-slot]')).toHaveCount(5);await expect(page.locator('#ll-app')).toBeHidden();
  await page.locator('[data-new-slot="0"]').click();await page.locator('#profileName').fill('Al3 ice!');await expect(page.locator('#profileName')).toHaveValue('Alice');
  await page.locator('#profileName').fill('AbcdefghijklmnopQ');await expect(page.locator('#profileName')).toHaveValue('Abcdefghijklmnop');await page.locator('#profileName').fill('Alice');await page.locator('[data-submit-name]').click();await page.locator('[data-avatar=female]').click();await page.locator('#welcomeBank').click();
  await expect(page.locator('#world3d')).toHaveAttribute('data-avatar-type','female');await expect(page.locator('[data-bank-pane=loans]')).toBeVisible();await page.locator('[data-loan-apply="100"]').click();await expect(page.locator('#bankChecking')).toHaveText('$100.00');await quit(page);
  await expect(page.locator('[data-load-slot="0"]')).toContainText('Alice');await expect(page.locator('[data-load-slot="0"]')).toContainText('Day 1');await expect(page.locator('[data-load-slot="0"]')).toContainText(/\d{2}-\d{2}-\d{4}, \d{2}:\d{2} [AP]M/);await expect(page.locator('[data-profile-slot="0"] .profile-portrait')).toBeVisible();
  await create(page,1,'Ben');await expect(page.locator('#cashHead')).toHaveText('$0.00');await page.locator('#visitBank').click();await expect(page.locator('#bankChecking')).toHaveText('$0.00');await quit(page);
- await create(page,2,'Calvin','female');await quit(page);await expect(page.locator('[data-new-slot]')).toHaveCount(0);await page.reload();await expect(page.locator('#profileScreen')).toBeVisible();await expect(page.locator('[data-load-slot]')).toHaveCount(3);
+ await create(page,2,'Calvin','female');await quit(page);await create(page,3,'Drew');await quit(page);await create(page,4,'Eve','female');await quit(page);await expect(page.locator('[data-new-slot]')).toHaveCount(0);await page.reload();await expect(page.locator('#profileScreen')).toBeVisible();await expect(page.locator('[data-load-slot]')).toHaveCount(5);
  await page.locator('[data-load-slot="0"]').click();await page.locator('#visitBank').click();await expect(page.locator('#bankChecking')).toHaveText('$100.00');const saved=await records(page);expect(saved[0].state.bank.loans).toHaveLength(1);expect(saved[1].state.bank.loans).toHaveLength(0);expect(saved[2].state.bank.loans).toHaveLength(0);expect(errors).toEqual([]);
 });
 
@@ -71,4 +71,14 @@ test('opening the save menu pauses the customer approach timer as well as sales'
 test('phone title, avatar picker and save menu fit without horizontal overflow',async({page})=>{
  await page.setViewportSize({width:390,height:844});await feed(page);await page.goto('/');await page.screenshot({path:'artifacts/profiles-mobile-title.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
  await create(page,0,'Abcdefghijklmnop','female');await expect(page.locator('#saveMenuBtn')).toBeVisible();await page.locator('#saveMenuBtn').click();await page.locator('#modal').screenshot({path:'artifacts/profiles-mobile-save.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);await page.locator('#saveAndQuit').click();await expect(page.locator('#profileScreen')).toBeVisible();const cell=page.locator('[data-load-slot="0"]>span').first();expect(await cell.evaluate(el=>el.scrollWidth<=el.clientWidth&&el.scrollHeight<=el.clientHeight)).toBe(true);await page.screenshot({path:'artifacts/profiles-mobile-saved.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('delete requires confirmation, frees the correct slot and renders playable 3D avatars',async({page})=>{
+ await feed(page);await page.goto('/');await expect(page.locator('[data-new-slot]')).toHaveCount(5);
+ await create(page,4,'DeleteMe','female');await quit(page);
+ const portrait=page.locator('[data-profile-slot="4"] img[data-preview="3d"]');await expect(portrait).toBeVisible();expect(await portrait.evaluate(img=>img.complete&&img.naturalWidth===240)).toBe(true);
+ await page.screenshot({path:'artifacts/five-profiles-3d.png'});
+ await page.locator('[data-delete-slot="4"]').click();await expect(page.locator('#deleteProfileWarning')).toContainText('DeleteMe');await page.locator('#cancelDeleteProfile').click();await expect(page.locator('[data-load-slot="4"]')).toBeVisible();
+ await page.locator('[data-delete-slot="4"]').click();await page.locator('#confirmDeleteProfile').click();await expect(page.locator('[data-new-slot="4"]')).toBeVisible();await page.reload();await expect(page.locator('[data-new-slot]')).toHaveCount(5);
+ await page.locator('[data-new-slot="4"]').click();await page.locator('#profileName').fill('NewPlayer');await page.locator('[data-submit-name]').click();await expect(page.locator('#avatarPicker img[data-preview="3d"]')).toHaveCount(2);await page.locator('#avatarPicker').screenshot({path:'artifacts/avatar-picker-3d.png'});
 });

@@ -2,7 +2,7 @@ import snapshot from '../src/data/market-snapshot.json' with {type:'json'};
 import {downloadFund} from '../server/market-provider.js';
 import {previousSession} from '../src/market-data.js';
 import {SYMBOLS} from '../src/funds.js';
-import {validName} from '../src/profiles.js';
+import {validName,PROFILE_SLOTS,emptySlots} from '../src/profiles.js';
 
 const encoder=new TextEncoder(),COOKIE='__Host-lemonomics',MAX_BODY=2_000_000;
 const security={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow, noarchive','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY','Content-Security-Policy':"frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"};
@@ -94,14 +94,22 @@ export default {
    if(path==='/api/market'&&request.method==='GET')return market(env,now);
    if(path.startsWith('/api/market/fund/')&&request.method==='GET')return refreshFund(env,path.slice('/api/market/fund/'.length),now);
    if(path==='/api/profiles'&&request.method==='GET'){
-    const rows=await env.DB.prepare('SELECT slot,revision,profile FROM profiles ORDER BY slot').all(),slots=[null,null,null];
+    const rows=await env.DB.prepare('SELECT slot,revision,profile FROM profiles ORDER BY slot').all(),slots=emptySlots();
     for(const row of rows.results)slots[row.slot]={...JSON.parse(row.profile),revision:row.revision};
     return json({version:1,slots});
+   }
+   if(path==='/api/profiles'&&request.method==='DELETE'){
+    let payload;try{payload=JSON.parse(await body(request))}catch(e){if(e.status)throw e;throw error('Invalid delete request.',400)}
+    const {slot,id,revision}=payload;
+    if(!Number.isInteger(slot)||slot<0||slot>=PROFILE_SLOTS||typeof id!=='string'||!Number.isInteger(revision)||revision<1)throw error('Invalid delete request.',400);
+    const result=await env.DB.prepare('DELETE FROM profiles WHERE slot=? AND id=? AND revision=?').bind(slot,id,revision).run();
+    if(!result.meta.changes)return json({message:'This save changed on another computer. Reload the main screen and review it before deleting.'},409);
+    return json({deleted:true,id});
    }
    if(path==='/api/profiles'&&['POST','PUT'].includes(request.method)){
     let payload;try{payload=JSON.parse(await body(request))}catch(e){if(e.status)throw e;throw error('Invalid save format.',400)}
     const {slot,profile,revision}=payload;
-    if(!Number.isInteger(slot)||slot<0||slot>2||!validProfile(profile))throw error('Invalid player profile.',400);
+    if(!Number.isInteger(slot)||slot<0||slot>=PROFILE_SLOTS||!validProfile(profile))throw error('Invalid player profile.',400);
     const clean={id:profile.id,name:profile.name,avatar:profile.avatar,state:profile.state,savedAt:new Date(now).toISOString(),marketAsOf:profile.marketAsOf||null};
     let result;
     if(request.method==='POST')result=await env.DB.prepare('INSERT OR IGNORE INTO profiles (slot,id,revision,profile) VALUES (?,?,1,?)').bind(slot,clean.id,JSON.stringify(clean)).run();

@@ -34,3 +34,15 @@ test('names accept up to sixteen alphabetic characters and dates have the reques
  for(const name of ['', 'Abcdefghijklmnopq','John Doe','Ben2','<script>','é'])assert.equal(validName(name),false);
  assert.equal(formatSavedAt(new Date(2026,9,21,13,5).toISOString()),'10-21-2026, 01:05 PM');assert.equal(formatSavedAt(null),'Imported save');
 });
+
+test('old three-slot documents expand without changing any saved state; all five slots can be used',()=>{
+ const disk=storage(),store=new LocalProfileStore(disk),p=store.create(0,'Original','male',gameWithChecking(200));
+ const legacy=JSON.parse(disk.getItem(PROFILE_KEY));legacy.slots=legacy.slots.slice(0,3);disk.setItem(PROFILE_KEY,JSON.stringify(legacy));
+ assert.equal(store.list().length,5);assert.deepEqual(store.list()[0],p);
+ store.create(3,'Fourth','female',gameWithChecking(30));store.create(4,'Fifth','male',gameWithChecking(40));assert.equal(store.list()[4].state.bank.checking,40);
+ store.delete(p.id);assert.equal(new LocalProfileStore(disk).list()[0],null);assert.equal(store.list()[3].name,'Fourth');store.create(0,'Replacement','male',gameWithChecking());
+});
+test('failed deletion preserves the local save',()=>{
+ const disk=storage(),store=new LocalProfileStore(disk),p=store.create(0,'Keep','female',gameWithChecking(50));
+ disk.setItem=()=>{throw new Error('QuotaExceededError')};assert.throws(()=>store.delete(p.id),/Quota/);assert.equal(store.list()[0].id,p.id);
+});
