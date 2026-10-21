@@ -1,7 +1,7 @@
 import {FUNDS,SYMBOLS} from './funds.js';
 import {MarketClient} from './market-client.js';
 import {marketFresh,previousSession,quotePrice,fundSeries,rangeStart} from './market-data.js';
-import {ensurePortfolio,portfolioTotals,portfolioHistory,quoteTrade,executeTrade,applyMarket,releaseLegacy,money,shares,cents,SHARE_SCALE} from './investments.js';
+import {ensurePortfolio,portfolioTotals,portfolioHistory,holdingPrice,quoteTrade,executeTrade,applyMarket,releaseLegacy,money,shares,cents,SHARE_SCALE} from './investments.js';
 import {drawChart} from './investment-chart.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=s=>s?new Date(s+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unavailable';
@@ -90,7 +90,7 @@ export class InvestmentDesk{
     const positions=FUNDS.filter(f=>p.positions[f.symbol]?.units);
     if(!positions.length)return '<div class="invest-empty-holdings">Your portfolio starts here.<span>Buy a little of a fund above to start tracking your investments.</span></div>';
     return '<div class="invest-table-wrap"><table><thead><tr><th>Fund</th><th>Shares</th><th>Average cost*</th><th>Market value</th><th>Gain / loss*</th><th>Allocation</th><th></th></tr></thead><tbody>'+positions.map(f=>{
-      const pos=p.positions[f.symbol],price=quotePrice(market,f.symbol)??pos.lastPrice,value=Math.round(pos.units/SHARE_SCALE*price*100),gain=value-pos.costCents;
+      const pos=p.positions[f.symbol],price=holdingPrice(p,market,f.symbol),value=Math.round(pos.units/SHARE_SCALE*price*100),gain=value-pos.costCents;
       return '<tr><td><strong>'+f.symbol+'</strong><small>'+f.name+'</small></td><td>'+shares(pos.units)+'</td><td>'+money(Math.round(pos.costCents/(pos.units/SHARE_SCALE)))+'</td><td>'+money(value)+'</td><td class="'+(gain<0?'negative':'positive')+'">'+money(gain)+'</td><td>'+((value/(totals.valueCents||1))*100).toFixed(1)+'%</td><td><button type="button" data-sell-fund="'+f.symbol+'">Sell all</button></td></tr>';
     }).join('')+'</tbody></table></div><p class="invest-small-note">*Average cost and unrealized gain / loss include purchase fees.</p>';
   }

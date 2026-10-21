@@ -11,9 +11,13 @@ export function ensurePortfolio(bank){
   if(p.version!==1||!p.positions||!Array.isArray(p.trades)||!Array.isArray(p.events)||!Array.isArray(p.snapshots))throw new Error('This portfolio save format is not supported.');
   return p;
 }
+export function holdingPrice(portfolio,market,symbol){
+  const current=market&&(!portfolio.marketDate||market.asOf>=portfolio.marketDate);
+  return (current?quotePrice(market,symbol):null)??portfolio.positions[symbol]?.lastPrice??null;
+}
 export function portfolioTotals(bank,market){
   const p=ensurePortfolio(bank);let value=p.legacyCents||0,basis=0,realized=0,fees=0,dividends=0,totalBought=0;
-  for(const symbol of SYMBOLS){const pos=p.positions[symbol];if(!pos)continue;const price=quotePrice(market,symbol)??pos.lastPrice;value+=Math.round(pos.units/SHARE_SCALE*(price||0)*100);basis+=pos.costCents;}
+  for(const symbol of SYMBOLS){const pos=p.positions[symbol];if(!pos)continue;const price=holdingPrice(p,market,symbol);value+=Math.round(pos.units/SHARE_SCALE*(price||0)*100);basis+=pos.costCents;}
   for(const t of p.trades){realized+=t.realizedCents||0;fees+=t.feeCents;if(t.side==='buy')totalBought+=t.totalCents;}
   for(const e of p.events)dividends+=e.amountCents||0;
   const unrealized=value-(p.legacyCents||0)-basis;
@@ -94,7 +98,7 @@ export function releaseLegacy(state){
  * splits when valuing the shares that actually existed on an earlier date. */
 export function portfolioHistory(bank,market){
   const p=ensurePortfolio(bank);if(!p.trades.length)return [];
-  if(!market)return p.snapshots;
+  if(!market||(p.marketDate&&market.asOf<p.marketDate))return p.snapshots;
   const first=p.trades[0].priceDate,priceMaps={},currentPrice={},futureFactor={},units={},eventMap=new Map();
   for(const symbol of SYMBOLS){priceMaps[symbol]=new Map(market.funds[symbol].history.map(x=>[x[0],x[1]]));futureFactor[symbol]=1;
     for(const e of market.funds[symbol].events)if(e.date>=first)eventMap.set(symbol+':'+e.type+':'+e.date,{...e,symbol});

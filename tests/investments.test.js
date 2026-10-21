@@ -6,6 +6,13 @@ import {marketFixture,gameWithChecking} from './fixtures/market.js';
 const now=new Date('2026-10-20T16:00:00Z');
 function setup(){const state=gameWithChecking(),market=marketFixture(now);for(const f of Object.values(market.funds))f.history.at(-1)[1]=100;applyMarket(state,market);return {state,market}}
 function trade(state,market,request,time=now){const q=quoteTrade(state.bank,market,request,time);return executeTrade(state,market,request,q.signature,time)}
+test('an older cached feed cannot replace a newer saved holding value',()=>{
+ const {state,market}=setup();trade(state,market,{symbol:'SPY',side:'buy',mode:'dollars',amount:'100'});
+ const next=marketFixture(new Date('2026-10-21T16:00:00Z'));next.funds.SPY.history.at(-1)[1]=125;applyMarket(state,next);
+ const value=portfolioTotals(state.bank,next).valueCents;assert.equal(value,12500);
+ assert.equal(applyMarket(state,market),false);assert.equal(portfolioTotals(state.bank,market).valueCents,value);assert.equal(state.bank.portfolio.positions.SPY.lastPrice,125);
+ assert.deepEqual(portfolioHistory(state.bank,market),state.bank.portfolio.snapshots);assert.equal(portfolioHistory(state.bank,market).at(-1).date,next.asOf);
+});
 test('a fractional buy uses only checking and accounts for its fee and saved basis',()=>{
   const {state,market}=setup();const request={symbol:'SPY',side:'buy',mode:'dollars',amount:'10'};
   const q=quoteTrade(state.bank,market,request,now);assert.equal(q.units,100000);assert.equal(q.feeCents,5);assert.equal(q.totalCents,1005);

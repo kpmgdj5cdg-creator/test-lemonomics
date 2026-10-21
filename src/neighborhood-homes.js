@@ -9,6 +9,7 @@ const palette=[
   ['#c9a5ba','#566879','#f6e7d0'],['#e0ceab','#476e71','#fff2d7'],
 ];
 export const HOME_ROOF_COLORS=palette.map(([,roof])=>roof);
+export const HOME_TREE_COLORS=['#73b451','#367b42','#519c48'];
 export const RESIDENTIAL_LOTS=[
   // The former far-left house now shares Maple Market's front-door line (z=-3.7).
   ...[-40,-30,-20].map((x,i)=>({x,z:-5.8,angle:0,style:i,walkEnd:5.95})),
@@ -100,7 +101,7 @@ function roundTree(parent){
     if(Math.hypot(x*step,y*step,z*step)>radius)continue;
     // Only the shell needs geometry; buried cubes would add no visible detail.
     if(Math.hypot(x*step,y*step,z*step)<radius-step*1.25)continue;
-    box(g,x*step,2.7+y*step,z*step,step,step,step,y>1?'#73b451':x<0?'#367b42':'#519c48');
+    box(g,x*step,2.7+y*step,z*step,step,step,step,HOME_TREE_COLORS[y>1?0:x<0?1:2]);
   }
 }
 function circularPatio(parent){

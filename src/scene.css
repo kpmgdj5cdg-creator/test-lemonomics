@@ -11,6 +11,7 @@ body.profile-home-visible{background:#6bb461}
 .profile-slot{grid-column:2;width:100%;height:52px;display:grid;grid-template-columns:1fr .6fr 1.25fr;border:3px solid #215c32;border-radius:3px;background:#d7edb0;color:#174e2d;box-shadow:0 4px 0 #397d3c;padding:0;font:800 18px 'Trebuchet MS',sans-serif;overflow:hidden;text-align:left}
 button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 .profile-slot>span,.profile-name-cell{min-width:0;display:flex;align-items:center;padding:0 18px}
+.profile-slot>span:first-child{overflow-wrap:anywhere;line-height:1.05}
 .profile-slot>span+span,.profile-slot.empty>span{border-left:2px solid #83b46b}
 .profile-slot>span:nth-child(2){justify-content:center;font-size:15px;white-space:nowrap}
 .profile-slot>span:last-child{font-size:13px;white-space:nowrap;justify-content:center;font-variant-numeric:tabular-nums;padding:0 9px}

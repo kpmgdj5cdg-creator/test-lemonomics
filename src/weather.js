@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {group,box,batch,disposeGroup} from './models.js';
-import {HOME_ROOF_COLORS} from './neighborhood-homes.js';
+import {HOME_ROOF_COLORS,HOME_TREE_COLORS} from './neighborhood-homes.js';
 
-const snowColors=new Set([...HOME_ROOF_COLORS,'#1e6a80','#e17d62','#f2ba53','#20787f','#268b8c','#217449','#2a9853','#54af58','#438d42','#246535','#68a548','#278c54','#156744','#fff0c5','#f2bc25','#f6b61c','#248cc0','#577f88','#a7b9c0','#347c91','#257f90','#c96e72','#df7852']);
+const snowColors=new Set([...HOME_ROOF_COLORS,...HOME_TREE_COLORS,'#1e6a80','#e17d62','#f2ba53','#20787f','#268b8c','#217449','#2a9853','#54af58','#438d42','#246535','#68a548','#278c54','#156744','#fff0c5','#f2bc25','#f6b61c','#248cc0','#577f88','#a7b9c0','#347c91','#257f90','#c96e72','#df7852']);
 export class WeatherEffects{
   constructor(scene){
     this.root=group(scene);this.mode='sunny';this.caps=[];

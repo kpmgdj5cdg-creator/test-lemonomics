@@ -47,12 +47,12 @@ test('front walks and existing customer routes stay clear of the expanded reside
   for(const visitor of planArrivals(6,'neighborhood').visitors){for(let d=0;d<visitor.length;d+=.25){const p=pointOnRoute(visitor.path,d);assert.equal(blocked(p.x,p.z,obstacles,{minX:-80,maxX:80,minZ:-80,maxZ:80}),false,`Customer path ${visitor.route} at ${d}`)}}
 });
 
-test('all new roof finishes receive visible snow on their upper surfaces',async()=>{
-  const {HOME_ROOF_COLORS}=await import('../src/neighborhood-homes.js');
+test('all new roof and tree finishes receive visible snow on their upper surfaces',async()=>{
+  const {HOME_ROOF_COLORS,HOME_TREE_COLORS}=await import('../src/neighborhood-homes.js');
   const {WeatherEffects}=await import('../src/weather.js');
   const {box}=await import('../src/models.js');
   const effects=new WeatherEffects(new THREE.Scene());
-  for(const color of HOME_ROOF_COLORS){
+  for(const color of [...HOME_ROOF_COLORS,...HOME_TREE_COLORS]){
     const roof=new THREE.Group();box(roof,0,3,0,5,.2,4,color);
     effects.register(roof);effects.set('snow');
     assert.equal(effects.caps[0].visible,true);

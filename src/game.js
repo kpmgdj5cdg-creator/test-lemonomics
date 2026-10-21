@@ -71,7 +71,7 @@ function save(){
  if(running&&dayRun&&runConfig)state.session={dayRun, ...runConfig};else delete state.session;
  state.playerView=world.avatarController?.snapshot(sceneView);
  try{
-  activeProfile=profileStore.save(activeProfile.id,state,investmentDesk.market.data?.asOf);
+  activeProfile=profileStore.save(activeProfile.id,state,state.bank.portfolio?.marketDate||investmentDesk.market.data?.asOf);
   // A compatibility mirror supports older releases; all new loads use slots.
   try{localStorage.setItem(LEGACY_KEYS[0],JSON.stringify(state))}catch{}
   return true;
@@ -240,7 +240,9 @@ function startSellingSession(){
  }
  if(tick>=visitors){closingTimeout=setTimeout(finishDay,800);return;}
  $('worldLiveStats').textContent='🚶 Visitors are walking in from around the area';
- const beginService=()=>{openingTimeout=null;if(!running||!dayRun)return;if(sessionPaused){openingTimeout=setTimeout(beginService,100);return;}
+ const beginService=()=>{openingTimeout=null;if(!running||!dayRun)return;
+ const remaining=arrivals.lead-(performance.now()/1000-world.arrivalStart);
+ if(sessionPaused||(runConfig.stage==='opening'&&remaining>.01)){openingTimeout=setTimeout(beginService,sessionPaused?100:Math.max(16,remaining*1000));return;}
  runConfig.stage='serving';$('sceneTitle').textContent='Open for business!';
  interval=setInterval(()=>{
   if(!dayRun||sessionPaused)return;const d=dayRun;const arrivingPerson=arrivals.visitors[tick].person;tick++;d.visitors++;

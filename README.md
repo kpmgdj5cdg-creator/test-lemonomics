@@ -28,7 +28,7 @@ npm run preview
 
 Deploy the generated `dist/` directory to a static web host. Three.js is bundled locally; the game does not load a graphics CDN or require API keys. A WebGL-capable browser is required. Keep the same web origin to keep browser-local saved games available: localStorage does not transfer automatically between domains or from a `file:` URL to a web server. Profiles use the versioned `lemonomics_profiles_v1` storage document. The original `lemonadeLane_bank_v3` and fallback `lemonadeLane_zero_v2` keys are imported once; `lemonomics_legacy_backup_v1` retains an untouched copy. The original active-save key is maintained as a compatibility mirror. Do not clear existing browser storage during migration.
 
-The updated art direction uses a closer orthographic composition, vivid blue and coral buildings, extruded pixel lettering, sculpted palms, white tiled sidewalks, dark asphalt, and directional shadows. Only the neighborhood panel is restyled. The old CSS scene is permanently hidden, including when the graphics cannot initialize; startup failures show a specific message in the scene instead of silently displaying the old art.
+The updated art direction uses a closer orthographic composition, vivid blue and coral buildings, extruded pixel lettering, sculpted palms, white tiled sidewalks, dark asphalt, and directional shadows. The neighborhood panel keeps this art direction, alongside the new Lemonomics title screen and profile controls. The old CSS scene is permanently hidden, including when the graphics cannot initialize; startup failures show a specific message in the scene instead of silently displaying the old art.
 
 ## Implementation
 

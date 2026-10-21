@@ -9,7 +9,7 @@ async function open(page,{state=gameWithChecking(),market=marketFixture(),failur
   await page.route('**/api/market',route=>route.fulfill({status:failure?503:200,contentType:'application/json',body:JSON.stringify(failure?{data:null,status:'unavailable'}:{data:market,status:'current'})}));
   await page.goto('/');await expect(page.locator('#world3d')).toHaveAttribute('data-ready','true');await enterGame(page);
   await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();
-  if(!failure){await expect(page.locator('.invest-price-status')).toContainText('Latest prior trading day');await expect(page.locator('#investApp')).toContainText('TEST FIXTURE');}else await expect(page.locator('.invest-feed-note')).toBeVisible();
+  if(!failure){await expect(page.locator('.invest-price-status')).toContainText('Latest prior trading day');await expect(page.locator('#investApp')).toContainText('TEST FIXTURE');}else await expect(page.locator('.invest-feed-note[role=status]')).toContainText('Showing saved prices.');
   return market;
 }
 async function buy(page,symbol,amount,mode='dollars'){

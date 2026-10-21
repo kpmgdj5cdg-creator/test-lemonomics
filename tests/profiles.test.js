@@ -22,6 +22,10 @@ test('a quota failure preserves the previous save and reports failure',()=>{
  const before=disk.getItem(PROFILE_KEY);disk.setItem=()=>{throw new Error('QuotaExceededError')};
  assert.throws(()=>store.save(p.id,{...p.state,day:9}),/QuotaExceededError/);assert.equal(disk.getItem(PROFILE_KEY),before);
 });
+test('saving with an older cache keeps the last known market date',()=>{
+ const disk=storage(),store=new LocalProfileStore(disk),state=gameWithChecking();state.bank.portfolio={marketDate:'2026-10-20'};
+ const profile=store.create(0,'Saver','male',state);store.save(profile.id,state,'2026-10-20');store.save(profile.id,state,'2026-10-19');assert.equal(store.list()[0].marketAsOf,'2026-10-20');
+});
 test('invalid or unsupported save documents are not overwritten by migration',()=>{
  const disk=storage();disk.setItem(PROFILE_KEY,'broken json');disk.setItem('lemonadeLane_bank_v3',JSON.stringify(gameWithChecking()));const store=new LocalProfileStore(disk);store.migrateLegacy();assert.throws(()=>store.list(),/could not be read/);assert.equal(disk.getItem(PROFILE_KEY),'broken json');
 });

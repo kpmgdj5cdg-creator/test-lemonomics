@@ -40,7 +40,8 @@ export class LocalProfileStore{
     if(!validState(state))throw new Error('This game could not be saved.');
     const data=this.read(),slot=data.slots.findIndex(p=>p?.id===id);
     if(slot<0)throw new Error('This profile is no longer available.');
-    const profile={...data.slots[slot],state:clone(state),savedAt:now.toISOString(),marketAsOf:marketAsOf||data.slots[slot].marketAsOf};
+    const lastMarket=[marketAsOf,data.slots[slot].marketAsOf,state.bank?.portfolio?.marketDate].filter(Boolean).sort().at(-1)||null;
+    const profile={...data.slots[slot],state:clone(state),savedAt:now.toISOString(),marketAsOf:lastMarket};
     data.slots[slot]=profile;
     // One atomic storage write contains the whole profile. A failed write leaves
     // the previous save intact and is surfaced to the player instead of quitting.

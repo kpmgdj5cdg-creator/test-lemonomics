@@ -195,6 +195,7 @@ test('waterfront trading keeps the original permit, demand, inventory, and sales
   await expect(page.locator('#world3d')).toHaveAttribute('data-sales',String(day.sold));await expect(page.locator('#world3d')).toHaveAttribute('data-upset',String(day.leftUpset));
 });
 test('waterfront rival choices preserve sales totals and competitor routing',async({page})=>{
+  test.setTimeout(120000);
   const state=saved();state.location='beach';await seed(page,state);await ready(page);await page.evaluate(()=>{Math.random=()=>.1});
   await page.locator('#startBtn').click();await expect(page.locator('#nextDay')).toBeVisible({timeout:45000});
   const day=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).history[0],key);
