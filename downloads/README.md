@@ -8,7 +8,7 @@
 
 You can also download [the standalone HTML](Lemonade-Lane.html) using GitHub’s **Download raw file** button.
 
-The new **Lemonomics** title screen has three separate player profiles. Choose **New game**, enter a name (up to 16 letters), and choose a male or female avatar. Saved slots display the avatar, name, game day and last-save date/time. The exit icon at the upper right opens **Save**, **Save & Quit**, and **Back to Game**. You can save partway through a selling day and resume without paying for supplies or a permit twice.
+The new **Lemonomics** title screen has five separate player profiles. Choose **New game**, enter a name (up to 16 letters), and choose a male or female avatar. Saved slots display the avatar, name, game day and last-save date/time. The exit icon at the upper right opens **Save**, **Save & Quit**, and **Back to Game**. You can save partway through a selling day and resume without paying for supplies or a permit twice.
 
 Profiles in this downloaded copy are saved in this browser. The separate password-protected Cloudflare website supports online profiles across PCs; see [private hosting setup](../docs/PRIVATE-PLAYTEST.md). Saving and starting a new profile check the pricing service when it is available. An offline HTML copy retains the last available prices.
 
