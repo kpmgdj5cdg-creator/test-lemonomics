@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import {box,group,label,batch,disposeGroup,tree,bush,fence,house,bench,lamp,stand,character} from './models.js';
+import {box,group,label,batch,disposeGroup,tree,bush,bench,lamp,stand,character} from './models.js';
 import {palm,planter,market,chalkboard} from './street-details.js';
+import {buildNeighborhoodHomes} from './neighborhood-homes.js';
 import {buildPark} from './park.js';
 import {buildDowntown} from './downtown.js';
 import {buildWaterfront,animateWaterfront} from './waterfront.js';
@@ -40,13 +41,13 @@ export class Neighborhood{
     box(g,0,-.23,0,150,.4,150,'#51a05a');
     box(g,0,.005,4,150,.07,4.6,'#334754');box(g,8,.006,-35,4.6,.07,76,'#334754');
     const paving=['#e6e9dc','#dce4d6','#eef0e1','#d5e1d1'];
-    for(let x=-35;x<35;x+=.75)for(const z of [.92,7.08]){
+    for(let x=-54;x<59;x+=.75)for(const z of [.92,7.08]){
       for(let row=0;row<2;row++)box(g,x,.1,z+(row-.5)*.72,.73,.17,.7,paving[(Math.round(x*4)+row+400)%4]);
       box(g,x,.18,z+(z<4?.69:-.69),.74,.18,.16,'#fcf8e8');
     }
-    for(let z=-26;z<1;z+=.75)for(const x of [4.95,11.05])box(g,x,.09,z,1.4,.16,.73,paving[(Math.round(-z*4)+400)%4]);
-    for(let x=-35;x<35;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f3d16b');
-    for(let z=-28;z<0;z+=2.4)box(g,8,.055,z,.09,.018,1.1,'#f3d16b');
+    for(let z=-59;z<1;z+=.75)for(const x of [4.95,11.05])box(g,x,.09,z,1.4,.16,.73,paving[(Math.round(-z*4)+400)%4]);
+    for(let x=-54;x<59;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f3d16b');
+    for(let z=-59;z<0;z+=2.4)box(g,8,.055,z,.09,.018,1.1,'#f3d16b');
     for(let i=0;i<6;i++){box(g,8,.06,2.3+i*.6,3.6,.025,.28,'#f0f0dc');box(g,5.95+i*.6,.06,-.1,.27,.025,2.4,'#f0f0dc');}
     // Slightly irregular mosaic tiles are modeled, not painted into a flat backdrop.
     for(let i=0;i<120;i++){
@@ -55,26 +56,21 @@ export class Neighborhood{
       box(g,x,.005,z,.4+(i%3)*.16,.025,.3,i%2?'#69b967':'#409557');
     }
     market(g,-10,-5.8);
-    house(g,-2.1,-7.5,{wall:'#e77d62',roof:'#1e6a80',width:4.7});
-    house(g,13.2,-7.6,{wall:'#2c9ab1',roof:'#f2ba53',width:4.2});
-    house(g,-11,-14.3,{wall:'#e2b756',roof:'#247b8b',width:4.8});
-    house(g,-2.2,-14.3,{wall:'#d8d9b6',roof:'#e17d62',width:4.7});
-    for(const x of [-2.1,13.2])for(let z=-5.4;z<.2;z+=.7)box(g,x,.08,z,1.15,.13,.66,'#d5dccc');
-    fence(g,-5.5,-3.9,6.8);fence(g,-5.5,-11,8.5);fence(g,-15,-11,9);fence(g,-15,-11,6,'z');
-    planter(g,-9,-2.6,3.3);planter(g,1.5,-3,2);planter(g,-7,8.9,3.5);planter(g,12,8.9,3);
-    palm(g,-13,-1.9,1.18);palm(g,3,-6.9,1.05);palm(g,13.6,-2.5,.9);palm(g,-9,9.1,1.1);palm(g,10.5,10,1.1);
-    tree(g,-6.3,-9.5,1.15);tree(g,1,-11.7,1.2,1);tree(g,14.6,-12,1,1);
-    for(const [x,z] of [[-14,-10],[-12,-10],[1,-5.2],[12,-10],[-4,9.5],[1,9.5]])bush(g,x,z,1.6);
-    bench(g,.8,-1.8,0);bench(g,-4,9.5,Math.PI);lamp(g,-7,.2);lamp(g,11.7,6.9);lamp(g,4.1,-6.9);
+    this.homes=buildNeighborhoodHomes(g);
+    this.container.dataset.houses=String(this.homes.length);
+    planter(g,-9,-2.6,3.3);planter(g,1.5,-3,2);planter(g,-7,8.9,3.5);planter(g,11.7,8.9,2);
+    palm(g,-13,-1.9,1.18);palm(g,3,-6.9,1.05);palm(g,20.7,-1.8,.9);palm(g,-15,9.2,1.1);palm(g,8.7,9.5,1.1);
+    tree(g,-10,-13.8,1);
+    for(const [x,z] of [[-1.5,10.5],[1.9,10.7]])bush(g,x,z,1.1);
+    bench(g,.8,-1.8,0);bench(g,-4,9.5,Math.PI);lamp(g,-7,.2);lamp(g,11.7,7.95);lamp(g,4.1,-6.9);
     chalkboard(g,-5.4,-.02);
     // Neighborhood props establish scale: mailboxes, flower beds, bicycle and hydrant.
-    for(const x of [-2.1,13.2]){box(g,x-1.5,.56,-.1,.12,1.12,.12,'#825831');box(g,x-1.5,1.22,-.1,.5,.36,.36,'#e9bd58');box(g,x-1.44,1.28,.1,.05,.24,.02,'#d75d4a');}
     for(let i=0;i<7;i++){const x=-6.7+i*.25;box(g,x,.35,-2.3,.16,.4,.15,'#317849');box(g,x,.61,-2.3,.17,.16,.16,i%2?'#f7d94f':'#ec8797');}
     box(g,RIVAL.x,.075,RIVAL.z,3.8,.12,3.3,'#a5b890');
     for(let i=0;i<5;i++)for(const z of [-1.65,1.65])box(g,RIVAL.x-1.8+i*.8,.15,RIVAL.z+z,.4,.06,.06,'#e6e8ca');
     const plot=label(g,'ROOM TO GROW',RIVAL.x,.16,RIVAL.z,2.5,.45,{background:'#a5b890',color:'#466746',size:70});plot.rotation.x=-Math.PI/2;this.plotLabel=plot;
     for(const x of [-6,1]){box(g,x,.07,2.1,.65,.06,.32,'#243a43');for(let i=0;i<4;i++)box(g,x-.24+i*.16,.11,2.1,.04,.02,.25,'#6e9297');}
-    box(g,3.8,.35,.8,.25,.6,.25,'#df6546');box(g,3.8,.65,.8,.35,.12,.32,'#f08055');
+    box(g,3.8,.35,1.45,.25,.6,.25,'#df6546');box(g,3.8,.65,1.45,.35,.12,.32,'#f08055');
     const car=group(g,-12.8,.1,4.9);box(car,0,.5,0,2.7,.6,1.25,'#e7a249');box(car,0,1,0,1.4,.65,1.1,'#ffd071');box(car,.05,1.02,.57,1.03,.4,.03,'#236180');box(car,.78,.97,0,.03,.42,.95,'#80b9c5');for(const x of [-.9,.9])for(const z of [-.6,.6])box(car,x,.28,z,.46,.46,.16,'#25353a');box(car,1.36,.5,.4,.03,.17,.22,'#f6e6b2');
   }
 
@@ -156,7 +152,7 @@ export class Neighborhood{
     c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.last;this.drag.last=e.clientX;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5)this.rotate(-dx*.008)});
     c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6){const r=c.getBoundingClientRect();this.pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);if(this.raycaster.intersectObject(this.hitbox).length)this.onSelect()}this.drag=null});
     c.addEventListener('pointercancel',()=>{this.drag=null});
-    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,.8,1.4);this.updateCameraGoal()},{passive:false});
+    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
     c.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
   }
   clearTraffic(){for(const a of this.people.values())disposeGroup(a.group);this.people.clear();this.arrivals=[];this.queue=[];}

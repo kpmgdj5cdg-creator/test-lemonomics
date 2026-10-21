@@ -1,5 +1,5 @@
 // World-space movement is independent of Three.js and avatar appearance.
-export const NEIGHBORHOOD_BOUNDS={minX:-17,maxX:17,minZ:-17,maxZ:11};
+export const NEIGHBORHOOD_BOUNDS={minX:-49,maxX:55,minZ:-58,maxZ:29};
 // Geometry capture handles props; these semantic barriers keep players out of water
 // and the decorative subway stairwell, even where the surface is below knee height.
 export const WALKING_AREAS={

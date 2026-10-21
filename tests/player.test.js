@@ -17,7 +17,7 @@ test('walls stop travel, allow sliding and cannot be crossed during a delayed fr
   for(let i=0;i<20;i++)p=movePlayer(p,{x:1,z:1},0,1,walls);
   assert.ok(p.x<=.25);assert.ok(p.z>1);assert.equal(blocked(p.x,p.z,walls),false);
   p={x:0,z:0};for(let i=0;i<1000;i++)p=movePlayer(p,{x:0,z:-1},0,.05,[]);
-  assert.ok(p.z>=-16.75);assert.equal(nearStand({x:-3,z:1.25}),true);assert.equal(nearStand({x:16,z:9}),false);
+  assert.ok(p.z>=WALKING_AREAS.neighborhood.bounds.minZ+.25);assert.equal(nearStand({x:-3,z:1.25}),true);assert.equal(nearStand({x:16,z:9}),false);
 });
 test('collision capture includes solids but excludes floors and overhead roofs',()=>{
   const g=new THREE.Group();box(g,0,0,0,150,.2,150,'#888888');box(g,2,1,0,1,2,1,'#888888');box(g,0,4,0,10,.3,10,'#888888');

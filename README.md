@@ -96,3 +96,10 @@ Investment review actions run directly in the app and do not depend on native HT
 - If no saleable investments, stock or equipment remain and combined cash/checking cannot cover even the cheapest restart ($15.92 at current pack sizes and permit fees), borrowers with good credit (670+) can add $25 once to an existing loan, with $2.50 term interest. Otherwise, when other credit is exhausted, Start Day becomes Close Business. The closing screen includes a horizontally scrolling daily graph and aggregate income statement. Yes resets; No preserves a closed, Books-only business across reloads.
 
 The financial and shop changes are covered by unit and browser tests, including actual avatar movement to the shop doors and XLSX download validation. `npm test` and `npm run test:browser` run the suites. The downloadable release is regenerated from these sources.
+
+
+### Expanded suburban neighborhood
+
+The Neighborhood contains 23 street-facing homes along both sides of the main road and side street, with eight facade palettes, pitched/flat/shed roofs, porches, glazing, mailboxes and connected front walks. Each home has a separate fenced rear garden extending 8.8 world units behind its back wall, with a tree and patio furniture. The relocated western house shares Maple Market's front-door line. Property footprints, including fences and landscaping, do not overlap. Streetside trees and furniture leave the new approaches clear.
+
+The sidewalks and lane markings extend past the new blocks. Neighborhood walking bounds cover the residential streets; focus the scene and scroll out to see more of the suburb (neighborhood zoom range 0.4–1.4). The other locations retain their existing bounds and zoom limits. The new roofs support the existing snow accumulation. Source geometry is in `src/neighborhood-homes.js`; collision and door-alignment checks are in `tests/neighborhood-layout.test.js`.
