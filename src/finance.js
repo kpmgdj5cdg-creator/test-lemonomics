@@ -250,3 +250,41 @@ export function processOverdue(state, quotes = {}) {
     }
   }
 }
+
+// Ownership gates both the traffic bonus and the guaranteed satisfaction rating.
+export function matchedRecipe(state) {
+  return RECIPES.find(
+    (recipe) =>
+      state.purchasedRecipes?.includes(recipe.id) &&
+      ["lemons", "sugar", "ice"].every(
+        (key) => Math.abs(state.recipe[key] - recipe[key]) < 1e-9,
+      ),
+  );
+}
+export function satisfaction(state, temperature = 82) {
+  const recipe = matchedRecipe(state);
+  if (recipe) return { good: 7, better: 8, best: 9 }[recipe.id];
+  const mix = state.recipe;
+  const quality =
+    1 -
+    (Math.abs(mix.lemons - 4) * 0.075 +
+      Math.abs(mix.sugar - 3) * 0.09 +
+      Math.abs(mix.ice - (temperature >= 90 ? 6 : 5)) * 0.025);
+  return Math.max(1, Math.min(10, Math.round(quality * 10)));
+}
+export function tasteTest(state, temperature = 82) {
+  if (state.closed) throw Error("This business is closed.");
+  if (state.cash < 0.5)
+    throw Error("You need $0.50 in stand cash for an owner taste test.");
+  state.cash = round(state.cash - 0.5);
+  const rating = satisfaction(state, temperature);
+  state.lastTasteTest = { rating, recipe: { ...state.recipe }, temperature };
+  state.ledger.push({
+    day: state.day,
+    desc: "Owner taste test",
+    category: "taste test",
+    cash: -0.5,
+    expense: 0.5,
+  });
+  return rating;
+}

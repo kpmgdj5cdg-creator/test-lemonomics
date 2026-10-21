@@ -173,3 +173,42 @@ test("inventory/equipment resale records loss and excludes acquisition cash from
   ];
   assert.equal(incomeForDay(s, 1).profit, -30);
 });
+
+test("owner tests charge stand cash once and exact owned tiers score 7/8/9", async () => {
+  const { satisfaction, tasteTest } = await import("../src/finance.js");
+  for (const [index, recipe] of RECIPES.entries()) {
+    const s = state();
+    s.cash = 1;
+    s.purchasedRecipes = [recipe.id];
+    s.recipe = { lemons: recipe.lemons, sugar: recipe.sugar, ice: recipe.ice };
+    assert.equal(satisfaction(s), 7 + index);
+    assert.equal(tasteTest(s), 7 + index);
+    assert.equal(s.cash, 0.5);
+    assert.equal(incomeForDay(s, 1).other, 0.5);
+    tasteTest(s);
+    assert.equal(s.cash, 0);
+    assert.throws(() => tasteTest(s), /\$0.50/);
+    assert.equal(s.cash, 0);
+  }
+  const s = state();
+  s.recipe = { lemons: 0, sugar: 0, ice: 0 };
+  assert.ok(satisfaction(s) >= 1 && satisfaction(s) <= 10);
+});
+
+test("neighborhood house fronts face closest street and competitor plot clears both sidewalks", async () => {
+  const { NEIGHBORHOOD: n } = await import("../src/neighborhood.js");
+  for (const house of n.houses) {
+    const closestX = Math.abs(house.x - 8) < Math.abs(house.z - 4);
+    if (closestX) {
+      assert.ok(Math.abs(Math.sin(house.yaw)) > 0.99);
+      assert.equal(Math.sign(Math.sin(house.yaw)), Math.sign(8 - house.x));
+    } else {
+      assert.ok(Math.cos(house.yaw) > 0.99);
+    }
+  }
+  assert.ok(n.rival.x - 1.9 > 11.75);
+  assert.ok(n.rival.z + 1.65 < 0.2);
+  const moved = n.houses.filter((h) => ["yellow", "orange"].includes(h.id));
+  assert.ok(moved.find((h) => h.id === "yellow").x < -15);
+  assert.ok(moved.find((h) => h.id === "orange").z < -18);
+});

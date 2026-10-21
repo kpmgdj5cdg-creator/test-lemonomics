@@ -1,3 +1,4 @@
+import { NEIGHBORHOOD } from "./neighborhood.js";
 // Extracted from the original offline release. Includes Three.js r186, all four voxel worlds, avatars, and investment market data.
 (function () {
   var e,
@@ -24833,6 +24834,34 @@ void main() {
     }
     return o;
   }
+  function neighborhoodHouse(environment,house){
+    const group=Rc(environment,house.x,house.z,house);group.rotation.y=house.yaw;
+    group.name='house-'+house.id;
+    const yard=$(environment,house.x,0,house.z);yard.rotation.y=house.yaw;yard.name='backyard-'+house.id;
+    const half=house.width/2+1.1,rear=-6.2,front=-2;
+    Q(yard,0,.015,(rear+front)/2,half*2,.035,front-rear,'#64ac60');
+    const pickets=(x,z,length,axis='x')=>{
+      const fence=$(yard,x,0,z);fence.name='white-picket-fence';
+      if(axis==='z')fence.rotation.y=-Math.PI/2;
+      for(let offset=0;offset<=length+.001;offset+=.4){
+        Q(fence,offset,.38,0,.105,.72,.11,'#fffdf3');Q(fence,offset,.77,0,.065,.09,.09,'#fffdf3');
+      }
+      for(const y of [.24,.56])Q(fence,length/2,y,-.035,length,.09,.10,'#f9f7ed');
+    };
+    pickets(-half,rear,half*2);pickets(-half,rear,front-rear,'z');pickets(half,rear,front-rear,'z');
+    // Exactly two small trees per backyard; street trees are kept out of the competitor's plot.
+    Fc(yard,-half*.45,-4.1,.58);Fc(yard,half*.45,-5.1,.55,1);
+    yard.userData.treeCount=2;
+    const doorX=house.x+Math.sin(house.yaw)*2.4,doorZ=house.z+Math.cos(house.yaw)*2.4;
+    const isSideStreet=Math.abs(Math.sin(house.yaw))>.5;
+    if(isSideStreet){
+      const end=house.x<8?4.95:11.8;
+      for(let x=Math.min(doorX,end);x<=Math.max(doorX,end);x+=.65)Q(environment,x,.08,doorZ,.62,.13,1.05,'#d5dccc');
+    }else{
+      for(let z=doorZ;z<.2;z+=.65)Q(environment,doorX,.08,z,1.05,.13,.62,'#d5dccc');
+    }
+    return {id:house.id,x:house.x,z:house.z,yaw:house.yaw,doorX,doorZ,trees:2};
+  }
   function zc(e, t, n, r = 0) {
     let i = $(e, t, 0.12, n);
     i.rotation.y = r;
@@ -26443,7 +26472,7 @@ MADE WITH LOVE`,
     },
     Tl = { minX: -17, maxX: 17, minZ: -17, maxZ: 11 },
     El = {
-      neighborhood: { bounds: Tl, barriers: [] },
+      neighborhood: { bounds: NEIGHBORHOOD.bounds, barriers: [] },
       park: {
         bounds: { minX: -20, maxX: 20, minZ: -17, maxZ: 15 },
         barriers: [{ minX: -9, maxX: -1, minZ: -10.5, maxZ: -4.5 }],
@@ -26724,9 +26753,7 @@ MADE WITH LOVE`,
           (this.interact.textContent = this.nearShop()==='books'?'Visit bookstore · E':this.nearShop()==='market'?'Visit Maple Market · E':'Visit my stand · E'),
           this.world.updateCameraGoal(),
           this.publish());
-        const shop=this.nearShop();
-        if(shop && this.lastShop!==shop){this.lastShop=shop;this.world.onShop(shop);}
-        if(!shop)this.lastShop=null;
+
       }
       publish() {
         let e = this.world.container,
@@ -26832,6 +26859,12 @@ MADE WITH LOVE`,
           (this.hitbox = new cr(new Vr(4, 3.4, 3.4), new Xn({ visible: !1 }))),
           this.hitbox.position.copy(Il).add(new K(0, 1.7, 0)),
           this.scene.add(this.hitbox),
+          (this.shopDoors = [
+            {shop:'books',x:-10,z:-4.28}, {shop:'market',x:1.4,z:-13.48}
+          ].map(door=>{
+            const mesh=new cr(new Vr(1.05,2.5,.3),new Xn({visible:false}));
+            mesh.position.set(door.x,1.4,door.z);mesh.userData.shop=door.shop;this.scene.add(mesh);return mesh;
+          })),
           (this.avatarController = new Fl(this)),
           (this.raycaster = new ta()),
           (this.pointer = new G()),
@@ -26920,30 +26953,11 @@ MADE WITH LOVE`,
               t % 2 ? `#69b967` : `#409557`,
             );
         }
-        (Gc(e, -10, -5.8),
-          Rc(e, -2.1, -7.5, { wall: `#e77d62`, roof: `#1e6a80`, width: 4.7 }),
-          Rc(e, 13.2, -7.6, { wall: `#2c9ab1`, roof: `#f2ba53`, width: 4.2 }),
-          Rc(e, -11, -14.3, { wall: `#e2b756`, roof: `#247b8b`, width: 4.8 }),
-          Rc(e, -2.2, -14.3, { wall: `#d8d9b6`, roof: `#e17d62`, width: 4.7 }));
-        for (let t of [-2.1, 13.2])
-          for (let n = -5.4; n < 0.2; n += 0.7)
-            Q(e, t, 0.08, n, 1.15, 0.13, 0.66, `#d5dccc`);
-        (Lc(e, -5.5, -3.9, 6.8),
-          Lc(e, -5.5, -11, 8.5),
-          Lc(e, -15, -11, 9),
-          Lc(e, -15, -11, 6, `z`),
-          Wc(e, -9, -2.6, 3.3),
-          Wc(e, 1.5, -3, 2),
-          Wc(e, -7, 8.9, 3.5),
-          Wc(e, 12, 8.9, 3),
-          Uc(e, -13, -1.9, 1.18),
-          Uc(e, 3, -6.9, 1.05),
-          Uc(e, 13.6, -2.5, 0.9),
-          Uc(e, -9, 9.1, 1.1),
-          Uc(e, 10.5, 10, 1.1),
-          Fc(e, -6.3, -9.5, 1.15),
-          Fc(e, 1, -11.7, 1.2, 1),
-          Fc(e, 14.6, -12, 1, 1));
+        Gc(e,-10,-5.8);
+        e.userData.houses=NEIGHBORHOOD.houses.map(house=>neighborhoodHouse(e,house));
+        e.userData.rivalPlot={...NEIGHBORHOOD.rival};
+        Wc(e,-9,-2.6,3.3);Wc(e,-7,8.9,3.5);Wc(e,12,8.9,3);
+        Uc(e,-13,-1.9,1.18);Uc(e,-9,9.1,1.1);Uc(e,10.5,10,1.1);
         for (let [t, n] of [
           [-14, -10],
           [-12, -10],
@@ -26977,20 +26991,20 @@ MADE WITH LOVE`,
               t % 2 ? `#f7d94f` : `#ec8797`,
             ));
         }
-        Q(e, Ll.x, 0.075, Ll.z, 3.8, 0.12, 3.3, `#a5b890`);
+        Q(e, NEIGHBORHOOD.rival.x, 0.075, NEIGHBORHOOD.rival.z, 3.8, 0.12, 3.3, `#a5b890`);
         for (let t = 0; t < 5; t++)
           for (let n of [-1.65, 1.65])
             Q(
               e,
-              Ll.x - 1.8 + t * 0.8,
+              NEIGHBORHOOD.rival.x - 1.8 + t * 0.8,
               0.15,
-              Ll.z + n,
+              NEIGHBORHOOD.rival.z + n,
               0.4,
               0.06,
               0.06,
               `#e6e8ca`,
             );
-        let n = Mc(e, `ROOM TO GROW`, Ll.x, 0.16, Ll.z, 2.5, 0.45, {
+        let n = Mc(e, `ROOM TO GROW`, NEIGHBORHOOD.rival.x, 0.16, NEIGHBORHOOD.rival.z, 2.5, 0.45, {
           background: `#a5b890`,
           color: `#466746`,
           size: 70,
@@ -27024,7 +27038,7 @@ MADE WITH LOVE`,
                 ? `park`
                 : `neighborhood`;
         ((this.rivalPosition =
-          n === `waterfront` ? zl : n === `downtown` ? Rl : Ll),
+          n === `waterfront` ? zl : n === `downtown` ? Rl : n === `neighborhood` ? new K(NEIGHBORHOOD.rival.x,0,NEIGHBORHOOD.rival.z) : Ll),
           this.location !== n &&
             (this.weatherEffects.clearCaps(),
             Pc(this.environment),
@@ -27170,7 +27184,7 @@ MADE WITH LOVE`,
           (this.desiredTarget.set(
             -1.2,
             t ? 1.7 : n ? 1 : 1.2,
-            t ? -1.8 : n ? 0 : -1.2,
+            t ? -1.8 : n ? 0 : this.location==='neighborhood' ? -6.8 : -1.2,
           ),
             this.desiredPosition
               .copy(this.desiredTarget)
@@ -27178,7 +27192,7 @@ MADE WITH LOVE`,
                 new K(Math.sin(this.angle) * 34, 23, Math.cos(this.angle) * 34),
               ),
             (this.desiredSpan =
-              Math.max(t || n ? 18 : 15.8, 26 / Math.max(e, 0.9)) / this.zoom));
+              Math.max(this.location==='neighborhood'?26:t || n ? 18 : 15.8, (this.location==='neighborhood'?42:26) / Math.max(e, this.location==='neighborhood'?.7:.9)) / this.zoom));
         } else {
           let e = this.view === `interior`,
             t = e ? 7 : 10;
@@ -27203,6 +27217,13 @@ MADE WITH LOVE`,
         if (!this.renderer) return;
         let { clientWidth: e, clientHeight: t } = this.container;
         e && t && (this.renderer.setSize(e, t, !1), this.updateCameraGoal());
+      }
+      activateShopDoor() {
+        if(this.businessClosed || this.location!=='downtown' || !this.avatarController.enabled)return false;
+        const nearby=this.avatarController.nearShop();
+        const hit=this.raycaster.intersectObjects(this.shopDoors).find(hit=>hit.object.userData.shop===nearby);
+        if(!hit)return false;
+        this.onShop(nearby);return true;
       }
       installControls() {
         let e = this.container;
@@ -27235,8 +27256,7 @@ MADE WITH LOVE`,
                   (-(t.clientY - n.top) / n.height) * 2 + 1,
                 ),
                   this.raycaster.setFromCamera(this.pointer, this.camera),
-                  this.raycaster.intersectObject(this.hitbox).length &&
-                    this.onSelect());
+                  this.activateShopDoor() || (this.raycaster.intersectObject(this.hitbox).length && this.onSelect()));
               }
               this.drag = null;
             }
@@ -27455,7 +27475,7 @@ MADE WITH LOVE`,
           (this.raf = requestAnimationFrame(this.frame)));
       }
       dispose() {
-        (this.avatarController?.dispose(),
+        (this.shopDoors?.forEach(door=>Pc(door)),this.avatarController?.dispose(),
           this.weatherEffects?.dispose(),
           cancelAnimationFrame(this.raf),
           this.resizeObserver?.disconnect());
@@ -27769,7 +27789,7 @@ MADE WITH LOVE`,
       }
     },
     ou = 1e6,
-    su = 0.005,
+    su = 0.10,
     cu = (e) => Math.round((e + 2 ** -52) * 100),
     lu = (e) =>
       new Intl.NumberFormat(`en-US`, {
@@ -27858,10 +27878,8 @@ MADE WITH LOVE`,
     )
       throw Error(`Choose a valid fund and trade type.`);
     let s = fu(e);
-    if (!nu(t, o))
-      throw Error(
-        `Refresh prices before trading. Trades use the latest prior trading day’s close.`,
-      );
+    if (!(tu(t,n)>0) || !Number.isFinite(tu(t,n)))
+      throw Error('No saved closing price is available for this fund. Refresh prices to load one.');
     if (s.marketDate && t.asOf < s.marketDate)
       throw Error(
         `These quotes are older than your portfolio. Refresh prices first.`,
@@ -28521,11 +28539,11 @@ MADE WITH LOVE`,
           n = this.market.data,
           r = pu(e, n),
           i = nu(n),
-          a = this.isRunning() || !i,
+          a = this.isRunning() || !n,
           o = n?.asOf;
-        ((this.host.innerHTML = `<div class="invest-intro"><div><div class="invest-eyebrow">LEMONADE LANE · INVESTING</div><h3>Grow a little, learn a lot.</h3><p>Choose a fund. Build your portfolio. Follow the real market.</p></div><div class="invest-price-status"><strong>${n ? `Closing prices · ` + Eu(o) : `Closing prices unavailable`}</strong><span>${this.market.loading ? `Refreshing six funds…` : i ? `Latest prior trading day` : n ? `Saved prices · refresh required to trade` : `No verified market data loaded`}</span><button type="button" id="refreshMarket" ${this.market.loading ? `disabled` : ``}>${this.market.loading ? `Refreshing…` : `Refresh prices ↻`}</button></div></div>
+        ((this.host.innerHTML = `<div class="invest-intro"><div><div class="invest-eyebrow">LEMONADE LANE · INVESTING</div><h3>Grow a little, learn a lot.</h3><p>Choose a fund. Build your portfolio. Follow the real market.</p></div><div class="invest-price-status"><strong>${n ? `Closing prices · ` + Eu(o) : `Closing prices unavailable`}</strong><span>${this.market.loading ? `Refreshing six funds…` : i ? `Latest prior trading day` : n ? `Using last available closing prices` : `No verified market data loaded`}</span><button type="button" id="refreshMarket" ${this.market.loading ? `disabled` : ``}>${this.market.loading ? `Refreshing…` : `Refresh prices ↻`}</button></div></div>
     ${this.market.error ? `<p class="invest-feed-note" role="status">` + Tu(this.market.error) + (n ? `` : ` Fund details are available below; trading opens once prices arrive.`) + `</p>` : ``}
-    ${n && !i ? `<p class="invest-feed-note">Expected close: ` + Eu($l()) + `. Purchases and sales are paused until current prices are available.</p>` : ``}
+    ${n && !i ? `<p class="invest-feed-note">Expected close: ` + Eu($l()) + `. Trading uses the last available close shown above; a delayed refresh does not pause trading.</p>` : ``}
     <div class="invest-summary"><div><span>PORTFOLIO VALUE</span><strong id="investValue">${lu(r.valueCents)}</strong></div><div><span>NET GAIN / LOSS</span><strong class="${r.profitCents < 0 ? `negative` : `positive`}" id="portfolioGain">${lu(r.profitCents)}</strong></div><div><span>CHECKING AVAILABLE</span><strong>${lu(cu(e.checking))}</strong></div><div><span>TRADING FEES PAID</span><strong>${lu(r.feeCents)}</strong></div></div>
     ${t.legacyCents ? `<div class="invest-feed-note">Your previous investment balance of ` + lu(t.legacyCents) + ` is preserved as unallocated money. <button type="button" id="releaseLegacy" ` + (this.isRunning() ? `disabled` : ``) + `>Move it to checking</button></div>` : ``}
     <section class="invest-chart-card"><div class="invest-chart-tabs" role="tablist" aria-label="Investment chart"><button type="button" role="tab" data-chart-tab="funds" aria-selected="${this.chartTab === `funds`}">Explore funds</button><button type="button" role="tab" data-chart-tab="portfolio" aria-selected="${this.chartTab === `portfolio`}">My portfolio</button></div><div class="invest-chart-heading"><div><h4 id="investChartTitle">${this.chartTab === `funds` ? `Compare fund performance` : `Your portfolio performance`}</h4><p id="investChartCaption"></p></div><div class="invest-ranges" role="group" aria-label="Chart time period">${[`1W`, `1M`, `YTD`, `1Y`, `5Y`].map((e) => `<button type="button" data-range="` + e + `" aria-pressed="` + (e === this.range) + `">` + e + `</button>`).join(``)}</div></div><div class="invest-series-select" ${this.chartTab === `portfolio` ? `hidden` : ``}>${Ul.map((e) => `<label style="--fund-color:` + e.color + `"><input type="checkbox" data-compare="` + e.symbol + `" ` + (this.selected.has(e.symbol) ? `checked` : ``) + `><span>` + e.name + `</span></label>`).join(``)}</div><div id="investChart" class="invest-chart"></div><p class="invest-chart-note">${this.chartTab === `funds` ? `Percentage change from the start of the selected period. Adjusted fund history accounts for splits and distributions.` : `Net gain or loss after trading fees, including realized gains and credited fund distributions. Adding money is not counted as a gain. History begins with your first purchase.`}</p></section>
@@ -28560,7 +28578,7 @@ MADE WITH LOVE`,
       },
     ).join(``)}</div></section>
     <section class="invest-trade-card"><h4>Make an investment</h4><p class="invest-trade-sub">Your checking account funds every purchase.</p><div class="invest-side-picker" role="group" aria-label="Trade direction"><button type="button" data-trade-side="buy" aria-pressed="${this.form.side === `buy`}">Buy</button><button type="button" data-trade-side="sell" aria-pressed="${this.form.side === `sell`}">Sell</button></div>
-    <form id="tradeForm" novalidate><label for="tradeFund">Fund</label><select id="tradeFund">${Ul.map((e) => `<option value="` + e.symbol + `" ` + (e.symbol === this.form.symbol ? `selected` : ``) + `>` + e.name + ` · ` + e.symbol + `</option>`).join(``)}</select><div class="invest-form-row"><div><label for="tradeMode">Enter an amount in</label><select id="tradeMode"><option value="dollars" ${this.form.mode === `dollars` ? `selected` : ``}>Dollars</option><option value="shares" ${this.form.mode === `shares` ? `selected` : ``}>Shares</option></select></div><div><label for="tradeAmount">${this.form.mode === `shares` ? `Shares` : `Dollars before fee`}</label><input id="tradeAmount" type="number" min="${this.form.mode === `shares` ? `0.000001` : `.01`}" step="${this.form.mode === `shares` ? `0.000001` : `.01`}" inputmode="decimal" placeholder="${this.form.mode === `shares` ? `0.000000` : `0.00`}" value="${Tu(this.form.amount)}" required></div></div><div id="tradeEstimate" class="invest-estimate" aria-live="polite"></div><p class="invest-fee-note">0.5% fee per buy or sell, rounded to cents; minimum $0.01. Fractional shares to 6 decimal places.</p><button type="button" id="reviewTrade" class="invest-review" ${a ? `disabled` : ``}>Review ${this.form.side === `buy` ? `purchase` : `sale`} →</button>${a ? `<p class="invest-form-note">` + (this.isRunning() ? `Finish your business day before trading.` : `Current closing prices are required to trade.`) + `</p>` : ``}</form>
+    <form id="tradeForm" novalidate><label for="tradeFund">Fund</label><select id="tradeFund">${Ul.map((e) => `<option value="` + e.symbol + `" ` + (e.symbol === this.form.symbol ? `selected` : ``) + `>` + e.name + ` · ` + e.symbol + `</option>`).join(``)}</select><div class="invest-form-row"><div><label for="tradeMode">Enter an amount in</label><select id="tradeMode"><option value="dollars" ${this.form.mode === `dollars` ? `selected` : ``}>Dollars</option><option value="shares" ${this.form.mode === `shares` ? `selected` : ``}>Shares</option></select></div><div><label for="tradeAmount">${this.form.mode === `shares` ? `Shares` : `Dollars before fee`}</label><input id="tradeAmount" type="number" min="${this.form.mode === `shares` ? `0.000001` : `.01`}" step="${this.form.mode === `shares` ? `0.000001` : `.01`}" inputmode="decimal" placeholder="${this.form.mode === `shares` ? `0.000000` : `0.00`}" value="${Tu(this.form.amount)}" required></div></div><div id="tradeEstimate" class="invest-estimate" aria-live="polite"></div><p class="invest-fee-note">10.0% fee per buy or sell, rounded to cents; minimum $0.01. Fractional shares to 6 decimal places.</p><button type="button" id="reviewTrade" class="invest-review" ${a ? `disabled` : ``}>Review ${this.form.side === `buy` ? `purchase` : `sale`} →</button>${a ? `<p class="invest-form-note">` + (this.isRunning() ? `Finish your business day before trading.` : `A saved closing price is required to trade.`) + `</p>` : ``}</form>
     ${this.review ? this.reviewHTML() : ``}<div id="investNotice" tabindex="-1" role="status" class="invest-notice ${this.error ? `error` : ``}" ${this.notice ? `` : `hidden`}>${Tu(this.notice)}</div></section></div>
     <section class="invest-holdings"><div class="invest-section-heading"><h4>Your holdings</h4><span>${n ? `VALUED AT ` + Eu(o).toUpperCase() : `LAST KNOWN VALUE`}</span></div>${this.holdingsHTML(t, n, r)}<div class="invest-performance-detail">Realized gain / loss: ${lu(r.realizedCents)} · Unrealized: ${lu(r.unrealizedCents)} · Fund distributions: ${lu(r.dividendCents)}</div></section>
     <details class="invest-activity"><summary>Trade history · ${t.trades.length} ${t.trades.length === 1 ? `trade` : `trades`}</summary>${
@@ -28655,7 +28673,7 @@ MADE WITH LOVE`,
               lu(cu(t.price)) +
               `</span><b>` +
               lu(t.notionalCents) +
-              `</b></div><div><span>Trading fee · 0.5%</span><b>` +
+              `</b></div><div><span>Trading fee · 10.0%</span><b>` +
               lu(t.feeCents) +
               `</b></div><div class="estimate-total"><span>` +
               (t.side === `buy` ? `Total from checking` : `Net to checking`) +

@@ -471,7 +471,7 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
 @media(max-width:650px){#investApp .invest-intro{align-items:flex-start;flex-direction:column;gap:14px}#investApp h3{font-size:23px}#investApp .invest-price-status{text-align:left}#investApp #refreshMarket{justify-self:start}#investApp .invest-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#investApp .invest-lower-grid{grid-template-columns:1fr;gap:22px}#investApp .invest-series-select{gap:9px 12px;padding:0 14px 10px}#investApp .invest-series-select label{font-size:10px}#investApp .invest-chart-heading{padding:17px 14px 12px;gap:10px}#investApp .invest-chart-tabs{padding:0 14px}#investApp .invest-chart-note{padding:10px 14px;font-size:9px}#investApp .invest-chart{padding:0;min-height:190px}#investApp .invest-chart svg{min-height:190px}#investApp .chart-tooltip{right:10px;top:0;max-width:90%}#investApp .invest-section-heading>span{font-size:7px}#investApp .invest-trade-card{padding:17px}#investApp .invest-performance-detail{line-height:1.8}}
 
 .world-heading{gap:8px;flex-wrap:wrap}.world-heading .scene-label{font-size:11px;color:#184b30;padding:5px 8px}.scene-nav{top:12px!important}.scene-orbit[hidden]{display:none!important}.neighborhood-event button{margin-left:10px;border:1px solid #ad995c;border-radius:6px;padding:4px 12px}.daily-graph-scroll{overflow-x:auto;max-width:100%}.daily-graph{display:block;width:100%;font:11px sans-serif}.daily-graph [role=button]{cursor:pointer}.daily-graph [role=button]:focus{outline:3px solid #ffbd28}.graph-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.graph-heading h3{font-size:14px}.graph-heading label{font-size:12px;white-space:nowrap}.shop-row{padding:12px 0;border-bottom:1px solid #d8dfca}.shop-row button,#modalBody>button{padding:9px 14px;border-radius:8px;border:1px solid #9cb587}.closure-summary{display:flex;align-items:flex-start;gap:20px}.closure-summary>div{min-width:0;flex:1}.modal:has(.closure-summary){width:min(1100px,95vw)}#securedAmount{width:120px;padding:8px}.active-loan .bank-action{margin:5px}.active-loan{margin-bottom:12px}@media(max-width:650px){.closure-summary{display:block}.world-heading #phaseLabel{margin-left:auto}.world-heading .scene-label{font-size:9px}}
-</style></head>
+#ll-app .neighborhood-event{pointer-events:auto} #ownerTasteResult{font-size:12px;line-height:1.5} </style></head>
 <body><div class="wrap" id="ll-app">
 <header class="hud">
  <div class="mini-brand"><div class="brand-icon">🍋</div><div><h1>LEMONADE LANE</h1><small>BUILD YOUR BUSINESS!</small></div></div>
@@ -657,6 +657,50 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
   window.setTimeout(failed,12000);
 })();
 </script><script>(() => {
+  // src/neighborhood.js
+  var NEIGHBORHOOD = {
+    rival: { x: 14.7, z: -1.7 },
+    houses: [
+      {
+        id: "coral",
+        x: 0,
+        z: -7.8,
+        yaw: Math.PI / 2,
+        width: 4.7,
+        wall: "#e77d62",
+        roof: "#1e6a80"
+      },
+      {
+        id: "blue",
+        x: 14.8,
+        z: -7.6,
+        yaw: -Math.PI / 2,
+        width: 4.2,
+        wall: "#2c9ab1",
+        roof: "#f2ba53"
+      },
+      {
+        id: "yellow",
+        x: -19,
+        z: -14.5,
+        yaw: 0,
+        width: 4.8,
+        wall: "#e2b756",
+        roof: "#247b8b"
+      },
+      {
+        id: "orange",
+        x: 1.3,
+        z: -21.2,
+        yaw: Math.PI / 2,
+        width: 4.7,
+        wall: "#d8d9b6",
+        roof: "#e17d62"
+      }
+    ],
+    bounds: { minX: -25, maxX: 24, minZ: -29, maxZ: 11 }
+  };
+
   // src/engine.js
   (function() {
     var e, t, n, r, i, a, o, s, c, l = 1e3, u = 1001, d = 1002, f = 1003, p = 1006, m = 1008, h = 1009, g = 1012, _ = 1014, v = 1015, y = 1016, b = 1017, x = 1018, S = 1020, C = 1023, w = 1026, T = 1027, E = 1029, D = 1030, O = 1031, ee = 1033, k = 2300, A = 2301, j = 2302, te = 2303, M = 2400, N = 2401, P = 2402, F = `srgb`, ne = `srgb-linear`, I = `linear`, re = `srgb`, ie = 7680, ae = 2e3;
@@ -17366,6 +17410,41 @@ void main() {
       }
       return o2;
     }
+    function neighborhoodHouse(environment, house) {
+      const group = Rc(environment, house.x, house.z, house);
+      group.rotation.y = house.yaw;
+      group.name = "house-" + house.id;
+      const yard = $(environment, house.x, 0, house.z);
+      yard.rotation.y = house.yaw;
+      yard.name = "backyard-" + house.id;
+      const half = house.width / 2 + 1.1, rear = -6.2, front = -2;
+      Q(yard, 0, 0.015, (rear + front) / 2, half * 2, 0.035, front - rear, "#64ac60");
+      const pickets = (x2, z2, length, axis = "x") => {
+        const fence = $(yard, x2, 0, z2);
+        fence.name = "white-picket-fence";
+        if (axis === "z") fence.rotation.y = -Math.PI / 2;
+        for (let offset = 0; offset <= length + 1e-3; offset += 0.4) {
+          Q(fence, offset, 0.38, 0, 0.105, 0.72, 0.11, "#fffdf3");
+          Q(fence, offset, 0.77, 0, 0.065, 0.09, 0.09, "#fffdf3");
+        }
+        for (const y2 of [0.24, 0.56]) Q(fence, length / 2, y2, -0.035, length, 0.09, 0.1, "#f9f7ed");
+      };
+      pickets(-half, rear, half * 2);
+      pickets(-half, rear, front - rear, "z");
+      pickets(half, rear, front - rear, "z");
+      Fc(yard, -half * 0.45, -4.1, 0.58);
+      Fc(yard, half * 0.45, -5.1, 0.55, 1);
+      yard.userData.treeCount = 2;
+      const doorX = house.x + Math.sin(house.yaw) * 2.4, doorZ = house.z + Math.cos(house.yaw) * 2.4;
+      const isSideStreet = Math.abs(Math.sin(house.yaw)) > 0.5;
+      if (isSideStreet) {
+        const end = house.x < 8 ? 4.95 : 11.8;
+        for (let x2 = Math.min(doorX, end); x2 <= Math.max(doorX, end); x2 += 0.65) Q(environment, x2, 0.08, doorZ, 0.62, 0.13, 1.05, "#d5dccc");
+      } else {
+        for (let z2 = doorZ; z2 < 0.2; z2 += 0.65) Q(environment, doorX, 0.08, z2, 1.05, 0.13, 0.62, "#d5dccc");
+      }
+      return { id: house.id, x: house.x, z: house.z, yaw: house.yaw, doorX, doorZ, trees: 2 };
+    }
     function zc(e2, t2, n2, r2 = 0) {
       let i2 = $(e2, t2, 0.12, n2);
       i2.rotation.y = r2;
@@ -18604,7 +18683,7 @@ MADE WITH LOVE`,
         Pc(this.group);
       }
     }, Tl = { minX: -17, maxX: 17, minZ: -17, maxZ: 11 }, El = {
-      neighborhood: { bounds: Tl, barriers: [] },
+      neighborhood: { bounds: NEIGHBORHOOD.bounds, barriers: [] },
       park: {
         bounds: { minX: -20, maxX: 20, minZ: -17, maxZ: 15 },
         barriers: [{ minX: -9, maxX: -1, minZ: -10.5, maxZ: -4.5 }]
@@ -18783,12 +18862,6 @@ MADE WITH LOVE`,
         Ol(i2.x, i2.z, a2, o2) && i2.set(-3, 0.16, 1.25);
         let s2 = kl(i2, r2, this.world.angle, e2, a2, o2), c2 = Math.hypot(s2.x - i2.x, s2.z - i2.z) > 1e-4;
         c2 && (this.avatar.group.rotation.y = Math.atan2(s2.x - i2.x, s2.z - i2.z)), i2.set(s2.x, jl(this.world.sceneGround, s2.x, s2.z), s2.z), this.avatar.animate(t2, c2, n2), this.interact.hidden = !Al(i2) && !this.nearShop(), this.interact.textContent = this.nearShop() === "books" ? "Visit bookstore \xB7 E" : this.nearShop() === "market" ? "Visit Maple Market \xB7 E" : "Visit my stand \xB7 E", this.world.updateCameraGoal(), this.publish();
-        const shop = this.nearShop();
-        if (shop && this.lastShop !== shop) {
-          this.lastShop = shop;
-          this.world.onShop(shop);
-        }
-        if (!shop) this.lastShop = null;
       }
       publish() {
         let e2 = this.world.container, t2 = this.avatar.group.position;
@@ -18825,7 +18898,16 @@ MADE WITH LOVE`,
           bottom: -22,
           near: 1,
           far: 70
-        }), this.sun.shadow.normalBias = 0.035, this.sun.shadow.bias = -15e-5, this.sun.shadow.radius = 3, this.scene.add(this.sun), this.environment = $(this.scene), this.location = `neighborhood`, this.buildNeighborhood(), this.sceneObstacles = Ml(this.environment), this.sceneGround = Nl(this.environment), Nc(this.environment), this.weatherEffects = new bl(this.scene), this.arrivals = [], this.actorRoot = $(this.scene), this.hitbox = new cr(new Vr(4, 3.4, 3.4), new Xn({ visible: false })), this.hitbox.position.copy(Il).add(new K(0, 1.7, 0)), this.scene.add(this.hitbox), this.avatarController = new Fl(this), this.raycaster = new ta(), this.pointer = new G(), this.drag = null, this.installControls(), this.resizeObserver = new ResizeObserver(() => this.resize()), this.resizeObserver.observe(e2), this.resize(), this.clock = new ia(), this.ready = true, this.frame = this.frame.bind(this), this.raf = requestAnimationFrame(this.frame), this.renderer.domElement.addEventListener(`webglcontextlost`, (e3) => {
+        }), this.sun.shadow.normalBias = 0.035, this.sun.shadow.bias = -15e-5, this.sun.shadow.radius = 3, this.scene.add(this.sun), this.environment = $(this.scene), this.location = `neighborhood`, this.buildNeighborhood(), this.sceneObstacles = Ml(this.environment), this.sceneGround = Nl(this.environment), Nc(this.environment), this.weatherEffects = new bl(this.scene), this.arrivals = [], this.actorRoot = $(this.scene), this.hitbox = new cr(new Vr(4, 3.4, 3.4), new Xn({ visible: false })), this.hitbox.position.copy(Il).add(new K(0, 1.7, 0)), this.scene.add(this.hitbox), this.shopDoors = [
+          { shop: "books", x: -10, z: -4.28 },
+          { shop: "market", x: 1.4, z: -13.48 }
+        ].map((door) => {
+          const mesh = new cr(new Vr(1.05, 2.5, 0.3), new Xn({ visible: false }));
+          mesh.position.set(door.x, 1.4, door.z);
+          mesh.userData.shop = door.shop;
+          this.scene.add(mesh);
+          return mesh;
+        }), this.avatarController = new Fl(this), this.raycaster = new ta(), this.pointer = new G(), this.drag = null, this.installControls(), this.resizeObserver = new ResizeObserver(() => this.resize()), this.resizeObserver.observe(e2), this.resize(), this.clock = new ia(), this.ready = true, this.frame = this.frame.bind(this), this.raf = requestAnimationFrame(this.frame), this.renderer.domElement.addEventListener(`webglcontextlost`, (e3) => {
           e3.preventDefault(), this.showError(
             `The 3D graphics context was interrupted. Reload to restore the neighborhood. Your game is still saved.`
           );
@@ -18894,11 +18976,15 @@ MADE WITH LOVE`,
             t3 % 2 ? `#69b967` : `#409557`
           );
         }
-        Gc(e2, -10, -5.8), Rc(e2, -2.1, -7.5, { wall: `#e77d62`, roof: `#1e6a80`, width: 4.7 }), Rc(e2, 13.2, -7.6, { wall: `#2c9ab1`, roof: `#f2ba53`, width: 4.2 }), Rc(e2, -11, -14.3, { wall: `#e2b756`, roof: `#247b8b`, width: 4.8 }), Rc(e2, -2.2, -14.3, { wall: `#d8d9b6`, roof: `#e17d62`, width: 4.7 });
-        for (let t3 of [-2.1, 13.2])
-          for (let n3 = -5.4; n3 < 0.2; n3 += 0.7)
-            Q(e2, t3, 0.08, n3, 1.15, 0.13, 0.66, `#d5dccc`);
-        Lc(e2, -5.5, -3.9, 6.8), Lc(e2, -5.5, -11, 8.5), Lc(e2, -15, -11, 9), Lc(e2, -15, -11, 6, `z`), Wc(e2, -9, -2.6, 3.3), Wc(e2, 1.5, -3, 2), Wc(e2, -7, 8.9, 3.5), Wc(e2, 12, 8.9, 3), Uc(e2, -13, -1.9, 1.18), Uc(e2, 3, -6.9, 1.05), Uc(e2, 13.6, -2.5, 0.9), Uc(e2, -9, 9.1, 1.1), Uc(e2, 10.5, 10, 1.1), Fc(e2, -6.3, -9.5, 1.15), Fc(e2, 1, -11.7, 1.2, 1), Fc(e2, 14.6, -12, 1, 1);
+        Gc(e2, -10, -5.8);
+        e2.userData.houses = NEIGHBORHOOD.houses.map((house) => neighborhoodHouse(e2, house));
+        e2.userData.rivalPlot = { ...NEIGHBORHOOD.rival };
+        Wc(e2, -9, -2.6, 3.3);
+        Wc(e2, -7, 8.9, 3.5);
+        Wc(e2, 12, 8.9, 3);
+        Uc(e2, -13, -1.9, 1.18);
+        Uc(e2, -9, 9.1, 1.1);
+        Uc(e2, 10.5, 10, 1.1);
         for (let [t3, n3] of [
           [-14, -10],
           [-12, -10],
@@ -18924,20 +19010,20 @@ MADE WITH LOVE`,
             t3 % 2 ? `#f7d94f` : `#ec8797`
           );
         }
-        Q(e2, Ll.x, 0.075, Ll.z, 3.8, 0.12, 3.3, `#a5b890`);
+        Q(e2, NEIGHBORHOOD.rival.x, 0.075, NEIGHBORHOOD.rival.z, 3.8, 0.12, 3.3, `#a5b890`);
         for (let t3 = 0; t3 < 5; t3++)
           for (let n3 of [-1.65, 1.65])
             Q(
               e2,
-              Ll.x - 1.8 + t3 * 0.8,
+              NEIGHBORHOOD.rival.x - 1.8 + t3 * 0.8,
               0.15,
-              Ll.z + n3,
+              NEIGHBORHOOD.rival.z + n3,
               0.4,
               0.06,
               0.06,
               `#e6e8ca`
             );
-        let n2 = Mc(e2, `ROOM TO GROW`, Ll.x, 0.16, Ll.z, 2.5, 0.45, {
+        let n2 = Mc(e2, `ROOM TO GROW`, NEIGHBORHOOD.rival.x, 0.16, NEIGHBORHOOD.rival.z, 2.5, 0.45, {
           background: `#a5b890`,
           color: `#466746`,
           size: 70
@@ -18959,7 +19045,7 @@ MADE WITH LOVE`,
       updateState(e2, t2) {
         if (this.state = e2, !this.ready) return;
         let n2 = e2.location === `beach` ? `waterfront` : e2.location === `square` ? `downtown` : e2.location === `park` ? `park` : `neighborhood`;
-        this.rivalPosition = n2 === `waterfront` ? zl : n2 === `downtown` ? Rl : Ll, this.location !== n2 && (this.weatherEffects.clearCaps(), Pc(this.environment), this.environment = $(this.scene), this.location = n2, this.waterfront = null, n2 === `park` ? this.plotLabel = Xc(this.environment, Ll) : n2 === `downtown` ? this.plotLabel = rl(this.environment, this.rivalPosition) : n2 === `waterfront` ? (this.waterfront = ll(
+        this.rivalPosition = n2 === `waterfront` ? zl : n2 === `downtown` ? Rl : n2 === `neighborhood` ? new K(NEIGHBORHOOD.rival.x, 0, NEIGHBORHOOD.rival.z) : Ll, this.location !== n2 && (this.weatherEffects.clearCaps(), Pc(this.environment), this.environment = $(this.scene), this.location = n2, this.waterfront = null, n2 === `park` ? this.plotLabel = Xc(this.environment, Ll) : n2 === `downtown` ? this.plotLabel = rl(this.environment, this.rivalPosition) : n2 === `waterfront` ? (this.waterfront = ll(
           this.environment,
           this.rivalPosition
         ), this.plotLabel = this.waterfront.plotLabel) : this.buildNeighborhood(), this.sceneObstacles = Ml(this.environment), this.sceneGround = Nl(this.environment), Nc(this.environment), this.signature = ``, this.clearTraffic()), this.avatarController.syncLocation(), this.container.dataset.location = n2;
@@ -19031,10 +19117,10 @@ MADE WITH LOVE`,
           this.desiredTarget.set(
             -1.2,
             t2 ? 1.7 : n2 ? 1 : 1.2,
-            t2 ? -1.8 : n2 ? 0 : -1.2
+            t2 ? -1.8 : n2 ? 0 : this.location === "neighborhood" ? -6.8 : -1.2
           ), this.desiredPosition.copy(this.desiredTarget).add(
             new K(Math.sin(this.angle) * 34, 23, Math.cos(this.angle) * 34)
-          ), this.desiredSpan = Math.max(t2 || n2 ? 18 : 15.8, 26 / Math.max(e2, 0.9)) / this.zoom;
+          ), this.desiredSpan = Math.max(this.location === "neighborhood" ? 26 : t2 || n2 ? 18 : 15.8, (this.location === "neighborhood" ? 42 : 26) / Math.max(e2, this.location === "neighborhood" ? 0.7 : 0.9)) / this.zoom;
         } else {
           let e3 = this.view === `interior`, t2 = e3 ? 7 : 10;
           this.desiredTarget.copy(Il).add(new K(0, e3 ? 1 : 0.9, 0)), this.desiredPosition.copy(this.desiredTarget).add(
@@ -19051,6 +19137,14 @@ MADE WITH LOVE`,
         if (!this.renderer) return;
         let { clientWidth: e2, clientHeight: t2 } = this.container;
         e2 && t2 && (this.renderer.setSize(e2, t2, false), this.updateCameraGoal());
+      }
+      activateShopDoor() {
+        if (this.businessClosed || this.location !== "downtown" || !this.avatarController.enabled) return false;
+        const nearby = this.avatarController.nearShop();
+        const hit = this.raycaster.intersectObjects(this.shopDoors).find((hit2) => hit2.object.userData.shop === nearby);
+        if (!hit) return false;
+        this.onShop(nearby);
+        return true;
       }
       installControls() {
         let e2 = this.container;
@@ -19075,7 +19169,7 @@ MADE WITH LOVE`,
               this.pointer.set(
                 (t2.clientX - n2.left) / n2.width * 2 - 1,
                 -(t2.clientY - n2.top) / n2.height * 2 + 1
-              ), this.raycaster.setFromCamera(this.pointer, this.camera), this.raycaster.intersectObject(this.hitbox).length && this.onSelect();
+              ), this.raycaster.setFromCamera(this.pointer, this.camera), this.activateShopDoor() || this.raycaster.intersectObject(this.hitbox).length && this.onSelect();
             }
             this.drag = null;
           }
@@ -19199,7 +19293,7 @@ MADE WITH LOVE`,
         this.weatherEffects.update(this.time, this.view === `interior`, Bl()), this.waterfront && ul(this.waterfront, this.time, Bl()), this.renderer.render(this.scene, this.camera), this.raf = requestAnimationFrame(this.frame);
       }
       dispose() {
-        this.avatarController?.dispose(), this.weatherEffects?.dispose(), cancelAnimationFrame(this.raf), this.resizeObserver?.disconnect();
+        this.shopDoors?.forEach((door) => Pc(door)), this.avatarController?.dispose(), this.weatherEffects?.dispose(), cancelAnimationFrame(this.raf), this.resizeObserver?.disconnect();
         for (let e2 of [...this.scene.children]) Pc(e2);
         this.renderer?.dispose(), this.renderer?.domElement.remove();
       }
@@ -19434,7 +19528,7 @@ MADE WITH LOVE`,
           }
         }
       }
-    }, ou = 1e6, su = 5e-3, cu = (e2) => Math.round((e2 + 2 ** -52) * 100), lu = (e2) => new Intl.NumberFormat(`en-US`, {
+    }, ou = 1e6, su = 0.1, cu = (e2) => Math.round((e2 + 2 ** -52) * 100), lu = (e2) => new Intl.NumberFormat(`en-US`, {
       style: `currency`,
       currency: `USD`
     }).format(e2 / 100), uu = (e2) => new Intl.NumberFormat(`en-US`, { maximumFractionDigits: 6 }).format(
@@ -19494,10 +19588,8 @@ MADE WITH LOVE`,
       if (!Wl.includes(n2) || ![`buy`, `sell`].includes(r2) || ![`dollars`, `shares`].includes(i2))
         throw Error(`Choose a valid fund and trade type.`);
       let s2 = fu(e2);
-      if (!nu(t2, o2))
-        throw Error(
-          `Refresh prices before trading. Trades use the latest prior trading day\u2019s close.`
-        );
+      if (!(tu(t2, n2) > 0) || !Number.isFinite(tu(t2, n2)))
+        throw Error("No saved closing price is available for this fund. Refresh prices to load one.");
       if (s2.marketDate && t2.asOf < s2.marketDate)
         throw Error(
           `These quotes are older than your portfolio. Refresh prices first.`
@@ -19902,10 +19994,10 @@ MADE WITH LOVE`,
         }
       }
       render() {
-        let e2 = this.getState().bank, t2 = fu(e2), n2 = this.market.data, r2 = pu(e2, n2), i2 = nu(n2), a2 = this.isRunning() || !i2, o2 = n2?.asOf;
-        this.host.innerHTML = `<div class="invest-intro"><div><div class="invest-eyebrow">LEMONADE LANE \xB7 INVESTING</div><h3>Grow a little, learn a lot.</h3><p>Choose a fund. Build your portfolio. Follow the real market.</p></div><div class="invest-price-status"><strong>${n2 ? `Closing prices \xB7 ` + Eu(o2) : `Closing prices unavailable`}</strong><span>${this.market.loading ? `Refreshing six funds\u2026` : i2 ? `Latest prior trading day` : n2 ? `Saved prices \xB7 refresh required to trade` : `No verified market data loaded`}</span><button type="button" id="refreshMarket" ${this.market.loading ? `disabled` : ``}>${this.market.loading ? `Refreshing\u2026` : `Refresh prices \u21BB`}</button></div></div>
+        let e2 = this.getState().bank, t2 = fu(e2), n2 = this.market.data, r2 = pu(e2, n2), i2 = nu(n2), a2 = this.isRunning() || !n2, o2 = n2?.asOf;
+        this.host.innerHTML = `<div class="invest-intro"><div><div class="invest-eyebrow">LEMONADE LANE \xB7 INVESTING</div><h3>Grow a little, learn a lot.</h3><p>Choose a fund. Build your portfolio. Follow the real market.</p></div><div class="invest-price-status"><strong>${n2 ? `Closing prices \xB7 ` + Eu(o2) : `Closing prices unavailable`}</strong><span>${this.market.loading ? `Refreshing six funds\u2026` : i2 ? `Latest prior trading day` : n2 ? `Using last available closing prices` : `No verified market data loaded`}</span><button type="button" id="refreshMarket" ${this.market.loading ? `disabled` : ``}>${this.market.loading ? `Refreshing\u2026` : `Refresh prices \u21BB`}</button></div></div>
     ${this.market.error ? `<p class="invest-feed-note" role="status">` + Tu(this.market.error) + (n2 ? `` : ` Fund details are available below; trading opens once prices arrive.`) + `</p>` : ``}
-    ${n2 && !i2 ? `<p class="invest-feed-note">Expected close: ` + Eu($l()) + `. Purchases and sales are paused until current prices are available.</p>` : ``}
+    ${n2 && !i2 ? `<p class="invest-feed-note">Expected close: ` + Eu($l()) + `. Trading uses the last available close shown above; a delayed refresh does not pause trading.</p>` : ``}
     <div class="invest-summary"><div><span>PORTFOLIO VALUE</span><strong id="investValue">${lu(r2.valueCents)}</strong></div><div><span>NET GAIN / LOSS</span><strong class="${r2.profitCents < 0 ? `negative` : `positive`}" id="portfolioGain">${lu(r2.profitCents)}</strong></div><div><span>CHECKING AVAILABLE</span><strong>${lu(cu(e2.checking))}</strong></div><div><span>TRADING FEES PAID</span><strong>${lu(r2.feeCents)}</strong></div></div>
     ${t2.legacyCents ? `<div class="invest-feed-note">Your previous investment balance of ` + lu(t2.legacyCents) + ` is preserved as unallocated money. <button type="button" id="releaseLegacy" ` + (this.isRunning() ? `disabled` : ``) + `>Move it to checking</button></div>` : ``}
     <section class="invest-chart-card"><div class="invest-chart-tabs" role="tablist" aria-label="Investment chart"><button type="button" role="tab" data-chart-tab="funds" aria-selected="${this.chartTab === `funds`}">Explore funds</button><button type="button" role="tab" data-chart-tab="portfolio" aria-selected="${this.chartTab === `portfolio`}">My portfolio</button></div><div class="invest-chart-heading"><div><h4 id="investChartTitle">${this.chartTab === `funds` ? `Compare fund performance` : `Your portfolio performance`}</h4><p id="investChartCaption"></p></div><div class="invest-ranges" role="group" aria-label="Chart time period">${[`1W`, `1M`, `YTD`, `1Y`, `5Y`].map((e3) => `<button type="button" data-range="` + e3 + `" aria-pressed="` + (e3 === this.range) + `">` + e3 + `</button>`).join(``)}</div></div><div class="invest-series-select" ${this.chartTab === `portfolio` ? `hidden` : ``}>${Ul.map((e3) => `<label style="--fund-color:` + e3.color + `"><input type="checkbox" data-compare="` + e3.symbol + `" ` + (this.selected.has(e3.symbol) ? `checked` : ``) + `><span>` + e3.name + `</span></label>`).join(``)}</div><div id="investChart" class="invest-chart"></div><p class="invest-chart-note">${this.chartTab === `funds` ? `Percentage change from the start of the selected period. Adjusted fund history accounts for splits and distributions.` : `Net gain or loss after trading fees, including realized gains and credited fund distributions. Adding money is not counted as a gain. History begins with your first purchase.`}</p></section>
@@ -19916,7 +20008,7 @@ MADE WITH LOVE`,
           }
         ).join(``)}</div></section>
     <section class="invest-trade-card"><h4>Make an investment</h4><p class="invest-trade-sub">Your checking account funds every purchase.</p><div class="invest-side-picker" role="group" aria-label="Trade direction"><button type="button" data-trade-side="buy" aria-pressed="${this.form.side === `buy`}">Buy</button><button type="button" data-trade-side="sell" aria-pressed="${this.form.side === `sell`}">Sell</button></div>
-    <form id="tradeForm" novalidate><label for="tradeFund">Fund</label><select id="tradeFund">${Ul.map((e3) => `<option value="` + e3.symbol + `" ` + (e3.symbol === this.form.symbol ? `selected` : ``) + `>` + e3.name + ` \xB7 ` + e3.symbol + `</option>`).join(``)}</select><div class="invest-form-row"><div><label for="tradeMode">Enter an amount in</label><select id="tradeMode"><option value="dollars" ${this.form.mode === `dollars` ? `selected` : ``}>Dollars</option><option value="shares" ${this.form.mode === `shares` ? `selected` : ``}>Shares</option></select></div><div><label for="tradeAmount">${this.form.mode === `shares` ? `Shares` : `Dollars before fee`}</label><input id="tradeAmount" type="number" min="${this.form.mode === `shares` ? `0.000001` : `.01`}" step="${this.form.mode === `shares` ? `0.000001` : `.01`}" inputmode="decimal" placeholder="${this.form.mode === `shares` ? `0.000000` : `0.00`}" value="${Tu(this.form.amount)}" required></div></div><div id="tradeEstimate" class="invest-estimate" aria-live="polite"></div><p class="invest-fee-note">0.5% fee per buy or sell, rounded to cents; minimum $0.01. Fractional shares to 6 decimal places.</p><button type="button" id="reviewTrade" class="invest-review" ${a2 ? `disabled` : ``}>Review ${this.form.side === `buy` ? `purchase` : `sale`} \u2192</button>${a2 ? `<p class="invest-form-note">` + (this.isRunning() ? `Finish your business day before trading.` : `Current closing prices are required to trade.`) + `</p>` : ``}</form>
+    <form id="tradeForm" novalidate><label for="tradeFund">Fund</label><select id="tradeFund">${Ul.map((e3) => `<option value="` + e3.symbol + `" ` + (e3.symbol === this.form.symbol ? `selected` : ``) + `>` + e3.name + ` \xB7 ` + e3.symbol + `</option>`).join(``)}</select><div class="invest-form-row"><div><label for="tradeMode">Enter an amount in</label><select id="tradeMode"><option value="dollars" ${this.form.mode === `dollars` ? `selected` : ``}>Dollars</option><option value="shares" ${this.form.mode === `shares` ? `selected` : ``}>Shares</option></select></div><div><label for="tradeAmount">${this.form.mode === `shares` ? `Shares` : `Dollars before fee`}</label><input id="tradeAmount" type="number" min="${this.form.mode === `shares` ? `0.000001` : `.01`}" step="${this.form.mode === `shares` ? `0.000001` : `.01`}" inputmode="decimal" placeholder="${this.form.mode === `shares` ? `0.000000` : `0.00`}" value="${Tu(this.form.amount)}" required></div></div><div id="tradeEstimate" class="invest-estimate" aria-live="polite"></div><p class="invest-fee-note">10.0% fee per buy or sell, rounded to cents; minimum $0.01. Fractional shares to 6 decimal places.</p><button type="button" id="reviewTrade" class="invest-review" ${a2 ? `disabled` : ``}>Review ${this.form.side === `buy` ? `purchase` : `sale`} \u2192</button>${a2 ? `<p class="invest-form-note">` + (this.isRunning() ? `Finish your business day before trading.` : `A saved closing price is required to trade.`) + `</p>` : ``}</form>
     ${this.review ? this.reviewHTML() : ``}<div id="investNotice" tabindex="-1" role="status" class="invest-notice ${this.error ? `error` : ``}" ${this.notice ? `` : `hidden`}>${Tu(this.notice)}</div></section></div>
     <section class="invest-holdings"><div class="invest-section-heading"><h4>Your holdings</h4><span>${n2 ? `VALUED AT ` + Eu(o2).toUpperCase() : `LAST KNOWN VALUE`}</span></div>${this.holdingsHTML(t2, n2, r2)}<div class="invest-performance-detail">Realized gain / loss: ${lu(r2.realizedCents)} \xB7 Unrealized: ${lu(r2.unrealizedCents)} \xB7 Fund distributions: ${lu(r2.dividendCents)}</div></section>
     <details class="invest-activity"><summary>Trade history \xB7 ${t2.trades.length} ${t2.trades.length === 1 ? `trade` : `trades`}</summary>${t2.trades.length ? `<div class="invest-table-wrap"><table><thead><tr><th>Executed</th><th>Trade</th><th>Shares</th><th>Close date</th><th>Price</th><th>Fee</th><th>Checking movement</th></tr></thead><tbody>` + t2.trades.slice().reverse().map(
@@ -19940,7 +20032,7 @@ MADE WITH LOVE`,
         else
           try {
             let t3 = hu(this.getState().bank, this.market.data, this.form);
-            e2.innerHTML = `<div><span>` + uu(t3.units) + ` shares \xD7 ` + lu(cu(t3.price)) + `</span><b>` + lu(t3.notionalCents) + `</b></div><div><span>Trading fee \xB7 0.5%</span><b>` + lu(t3.feeCents) + `</b></div><div class="estimate-total"><span>` + (t3.side === `buy` ? `Total from checking` : `Net to checking`) + `</span><b>` + lu(t3.totalCents) + `</b></div><small>Checking after trade: ` + lu(t3.checkingAfterCents) + ` \xB7 Close ` + Eu(t3.priceDate) + `</small>`;
+            e2.innerHTML = `<div><span>` + uu(t3.units) + ` shares \xD7 ` + lu(cu(t3.price)) + `</span><b>` + lu(t3.notionalCents) + `</b></div><div><span>Trading fee \xB7 10.0%</span><b>` + lu(t3.feeCents) + `</b></div><div class="estimate-total"><span>` + (t3.side === `buy` ? `Total from checking` : `Net to checking`) + `</span><b>` + lu(t3.totalCents) + `</b></div><small>Checking after trade: ` + lu(t3.checkingAfterCents) + ` \xB7 Close ` + Eu(t3.priceDate) + `</small>`;
           } catch (t3) {
             e2.textContent = t3.message;
           }
@@ -20208,6 +20300,36 @@ MADE WITH LOVE`,
       }
     }
   }
+  function matchedRecipe(state) {
+    return RECIPES.find(
+      (recipe) => state.purchasedRecipes?.includes(recipe.id) && ["lemons", "sugar", "ice"].every(
+        (key) => Math.abs(state.recipe[key] - recipe[key]) < 1e-9
+      )
+    );
+  }
+  function satisfaction(state, temperature = 82) {
+    const recipe = matchedRecipe(state);
+    if (recipe) return { good: 7, better: 8, best: 9 }[recipe.id];
+    const mix = state.recipe;
+    const quality = 1 - (Math.abs(mix.lemons - 4) * 0.075 + Math.abs(mix.sugar - 3) * 0.09 + Math.abs(mix.ice - (temperature >= 90 ? 6 : 5)) * 0.025);
+    return Math.max(1, Math.min(10, Math.round(quality * 10)));
+  }
+  function tasteTest(state, temperature = 82) {
+    if (state.closed) throw Error("This business is closed.");
+    if (state.cash < 0.5)
+      throw Error("You need $0.50 in stand cash for an owner taste test.");
+    state.cash = round(state.cash - 0.5);
+    const rating = satisfaction(state, temperature);
+    state.lastTasteTest = { rating, recipe: { ...state.recipe }, temperature };
+    state.ledger.push({
+      day: state.day,
+      desc: "Owner taste test",
+      category: "taste test",
+      cash: -0.5,
+      expense: 0.5
+    });
+    return rating;
+  }
 
   // src/reports.js
   var sum = (rows, fn) => round(rows.reduce((s, r) => s + (fn(r) || 0), 0));
@@ -20276,13 +20398,25 @@ MADE WITH LOVE`,
       expenses: "Total expenses",
       profit: "Net income / (loss)"
     };
+    const incomeRow = (key) => [
+      labels[key],
+      ...reports.map((report) => report[key]),
+      sum(reports, (report) => report[key])
+    ];
     const income = [
-      ["Income Statement", ...days.map((d) => `Day ${d}`), "Total"],
-      ...Object.entries(labels).map(([k, label]) => [
-        label,
-        ...reports.map((r) => r[k]),
-        sum(reports, (r) => r[k])
-      ])
+      ["Income Statement", ...days.map((day) => `Day ${day}`), "Total"],
+      ...["sales", "investment", "resale", "income"].map(incomeRow),
+      [],
+      ["Expenses"],
+      ...[
+        "ingredients",
+        "permits",
+        "spoilage",
+        "interest",
+        "other",
+        "expenses",
+        "profit"
+      ].map(incomeRow)
     ];
     const inv = inventoryValue(state, supplies), equip = round(
       state.upgrades.reduce(
@@ -20292,13 +20426,16 @@ MADE WITH LOVE`,
     );
     const assets = round(state.cash + state.bank.checking + inv + equip + value), liabilities = debt(state), earnings = sum(reports, (r) => r.profit);
     const balance = [
-      ["Balance Sheet", `Day ${state.day}`],
+      ["Balance Sheet", `As of Day ${state.day}`],
+      ["Assets"],
       ["Cash at stand", state.cash],
       ["Checking", state.bank.checking],
       ["Inventory at cost", inv],
       ["Equipment at cost", equip],
       ["Investments at market value", value],
       ["Total assets", assets],
+      [],
+      ["Liabilities and equity"],
       ["Loan liabilities (including term interest)", liabilities],
       ["Reported retained earnings", earnings],
       [
@@ -20318,7 +20455,7 @@ MADE WITH LOVE`,
       "investment transfer"
     ].includes(r.category) ? "investing" : "operating";
     const flow = [
-      ["Statement of Cash Flow", "Amount"],
+      ["Statement of Cash Flow", `Totals as of Day ${state.day}`],
       ["Opening cash and checking", round(totalCash - movement)],
       ...["operating", "investing", "financing"].map((g) => [
         `Net cash from ${g}`,
@@ -20394,12 +20531,40 @@ MADE WITH LOVE`,
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
   }
+  var ACCOUNTING_FORMAT = String.raw`_("$"* #,##0.00_);[Red]_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)`;
+  function columnName(index) {
+    let result = "";
+    for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26))
+      result = String.fromCharCode(65 + (n - 1) % 26) + result;
+    return result;
+  }
+  function reportStyles() {
+    const xf = (fontId = 0, numFmtId = 0, borderId = 0, indent = 0) => `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="0" borderId="${borderId}" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${numFmtId ? "right" : "left"}" vertical="center" indent="${indent}"/></xf>`;
+    return `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="${xml(ACCOUNTING_FORMAT)}"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style="thin"><color rgb="FF223C32"/></top><bottom/><diagonal/></border><border><left/><right/><top style="thin"><color rgb="FF223C32"/></top><bottom style="double"><color rgb="FF223C32"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8">${xf()}${xf(1)}${xf(0, 164)}${xf(1, 164, 1)}${xf(1, 164, 2)}${xf(0, 0, 0, 1)}${xf(1, 0, 1)}${xf(1, 0, 2)}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  }
+  function worksheetXML(name, rows, ns) {
+    const count = Math.max(2, ...rows.map((row) => row.length)), last = columnName(count - 1);
+    const width = name === "Income Statement" ? 34 : name === "Balance Sheet" ? 58 : 40;
+    const amountWidth = name === "Income Statement" ? 16 : 25;
+    const totalLabel = (label) => /^(Total |Net change|Ending cash)/.test(label);
+    const finalLabel = (label) => label === "Net income / (loss)" || label === "Total liabilities and equity";
+    const data = rows.map((row, j) => {
+      const label = String(row[0] || ""), section = row.length === 1, final = finalLabel(label), total = totalLabel(label);
+      return `<row r="${j + 1}" ht="${j === 0 ? 24 : 18}" customHeight="1">${row.map((value, i) => {
+        const numeric = typeof value === "number" && Number.isFinite(value), header = j === 0 || section;
+        const style = header ? 1 : final ? numeric ? 4 : 7 : total ? numeric ? 3 : 6 : numeric ? 2 : i === 0 ? 5 : 0;
+        const attrs = `r="${columnName(i)}${j + 1}" s="${style}"`;
+        return numeric ? `<c ${attrs}><v>${value}</v></c>` : `<c ${attrs} t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+      }).join("")}</row>`;
+    }).join("");
+    return `<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="${ns}"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${last}${rows.length}"/><sheetViews><sheetView showGridLines="0" workbookViewId="0">${name === "Income Statement" ? '<pane xSplit="1" ySplit="1" topLeftCell="B2" activePane="bottomRight" state="frozen"/>' : ""}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols><col min="1" max="1" width="${width}" customWidth="1"/><col min="2" max="${count}" width="${amountWidth}" customWidth="1"/></cols><sheetData>${data}</sheetData><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="${name === "Income Statement" ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  }
   function workbook(sheets) {
     const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     const entries = [
       [
         "[Content_Types].xml",
-        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`
+        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`
       ],
       [
         "_rels/.rels",
@@ -20411,13 +20576,14 @@ MADE WITH LOVE`,
       ],
       [
         "xl/_rels/workbook.xml.rels",
-        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}</Relationships>`
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`
       ]
     ];
+    entries.push(["xl/styles.xml", reportStyles()]);
     sheets.forEach(
-      ([, rows], i) => entries.push([
+      ([name, rows], i) => entries.push([
         `xl/worksheets/sheet${i + 1}.xml`,
-        `<worksheet xmlns="${ns}"><sheetData>${rows.map((row, j) => `<row r="${j + 1}">${row.map((value) => typeof value === "number" && Number.isFinite(value) ? `<c><v>${value}</v></c>` : `<c t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`).join("")}</row>`).join("")}</sheetData></worksheet>`
+        worksheetXML(name, rows, ns)
       ])
     );
     return zip(entries);
@@ -20971,47 +21137,43 @@ MADE WITH LOVE`,
       );
     }
     function V() {
-      let e2 = h.recipe;
-      return f(
-        1 - (Math.abs(e2.lemons - 4) * 0.075 + Math.abs(e2.sugar - 3) * 0.09 + Math.abs(e2.ice - (ve().temp >= 90 ? 6 : 5)) * 0.025),
-        0.42,
-        1
-      );
+      return satisfaction(h, ve().temp) / 10;
     }
     function be() {
       let e2 = h.recipe;
       return e2.lemons * 0.5 + e2.sugar * 0.2 + (A() ? 0 : e2.ice * 0.1) + 1.6;
     }
+    function productionCups() {
+      return Math.min(Se(), De(h.inventory));
+    }
     function xe() {
-      return d(be() * h.pitchers);
+      return d(be() * productionCups() / 10);
     }
     function Se() {
       return h.pitchers * 10;
     }
-    function Ce() {
-      let e2 = [];
-      for (let t2 of Object.keys(h.recipe))
-        !(t2 === `ice` && A()) && h.inventory[t2] < h.recipe[t2] * h.pitchers && e2.push(r[t2].name);
-      return h.inventory.cups < 10 * h.pitchers && e2.push(`Paper cups`), e2;
+    function stockWarning() {
+      const capacity = productionCups();
+      return capacity < Se() ? `Limited supplies: you can make ${capacity} of ${Se()} planned cups. You may open anyway; sales stop when stock runs out. The full permit is still charged.` : "";
     }
     function we() {
       if (h.closed)
         return "This business is closed. Use Books to export your results.";
       if (["lemons", "sugar", "ice"].some((key) => h.recipe[key] <= 0))
         return "Enter a recipe with lemons, sugar, and ice before opening.";
-      if (h.cash === 0 && Object.values(h.inventory).every((e3) => e3 === 0))
+      if (h.cash === 0 && Object.values(h.inventory).every((e2) => e2 === 0))
         return h.bank.checking > 0 ? `Your money is in checking. Visit the Bank \u2192 Account and withdraw some cash for supplies.` : `You have $0 at the stand. Visit the Bank \u2192 Loans to borrow startup money, then withdraw it for supplies.`;
       if (h.cash < n[h.location].fee)
         return `Not enough cash to pay this location\u2019s permit.`;
-      let e2 = Ce();
-      return e2.length ? `Buy more ` + e2.join(`, `) + ` before opening.` : ``;
+      return "";
     }
     function Te() {
-      const bonus = recipeBonus(h);
-      const owned = RECIPES.filter((r2) => h.purchasedRecipes.includes(r2.id));
-      return "Recipes can be bought once at the Downtown bookstore (Good $10, Better $25, Best $50), or guess what customers enjoy. " + (bonus ? `This recipe is expected to increase number of visits by ${Math.round(bonus * 100)}%.` : "No purchased recipe matches exactly; no recipe visitor bonus.") + (owned.length ? " Owned: " + owned.map(
-        (r2) => `${r2.name}: ${r2.lemons} lemons, ${r2.sugar} sugar, ${r2.ice} ice`
-      ).join(" \xB7 ") : "");
+      const owned = RECIPES.filter(
+        (recipe) => h.purchasedRecipes.includes(recipe.id)
+      );
+      return "Recipes can be bought at the Downtown Bookstore!" + (owned.length ? " " + owned.map(
+        (recipe) => `Owned ${recipe.name}: ${recipe.lemons} Lemons, ${recipe.sugar} sugar, ${recipe.ice} ice (satisfaction ${{ good: 7, better: 8, best: 9 }[recipe.id]}/10 when matched exactly).`
+      ).join(" ") : "");
     }
     function Ee(e2) {
       return Number(e2.toFixed(2)).toLocaleString(`en-US`, {
@@ -21118,17 +21280,26 @@ MADE WITH LOVE`,
       let r2 = ve(), i2 = n[h.location];
       t(`dayPill`).textContent = `DAY ` + h.day, t(`cashHead`).textContent = u(h.cash), t(`weatherLabel`).textContent = r2.icon + ` ` + r2.name + ` \xB7 ` + r2.temp + `\xB0F`, t(`crowdLabel`).textContent = `Expected Visitors: ` + ye(), t(`scene`).classList.toggle(`rain`, r2.name === `Rainy`), t(`scene`).dataset.location = h.location, t(`standPrice`).textContent = u(h.price) + ` / CUP`, t(`feeBadge`).textContent = u(i2.fee) + ` permit`, t(`placeName`).textContent = i2.name;
       let a2 = h.location === `beach` ? `Waterfront` : h.location === `square` ? `Downtown` : h.location === `park` ? `Park` : `Neighborhood`;
-      t(`areaHeading`).textContent = a2 === `Downtown` || a2 === `Waterfront` ? a2.toUpperCase() : `THE ` + a2.toUpperCase(), e.querySelector(`[data-scene-view=outside]`).textContent = a2, t(`sceneBack`).textContent = `\u2190 Back to ` + a2.toLowerCase(), t(`locationHint`).textContent = i2.desc + (h.location === "square" ? " Walk to BOOKS (left of the bakery) to buy recipes; Maple Market is behind the bakery, across the side street. Use WASD/arrows or the on-screen pad; shops prompt at the door." : ""), t(`priceValue`).textContent = u(h.price), t(`pitcherValue`).textContent = h.pitchers;
+      t(`areaHeading`).textContent = a2 === `Downtown` || a2 === `Waterfront` ? a2.toUpperCase() : `THE ` + a2.toUpperCase(), e.querySelector(`[data-scene-view=outside]`).textContent = a2, t(`sceneBack`).textContent = `\u2190 Back to ` + a2.toLowerCase(), t(`locationHint`).textContent = i2.desc + (h.location === "square" ? " Walk to BOOKS (left of the bakery) to buy recipes; Maple Market is behind the bakery, across the side street. Use WASD/arrows or the on-screen pad; click a shop door or press E next to it to enter." : ""), t(`priceValue`).textContent = u(h.price), t(`pitcherValue`).textContent = h.pitchers;
       for (let e2 of [`lemons`, `sugar`, `ice`])
         t(`recipe` + e2[0].toUpperCase() + e2.slice(1)).textContent = h.recipe[e2].toFixed(1);
-      t(`tasteHint`).textContent = Te(), t(`planCups`).textContent = Se(), t(`planCost`).textContent = u(xe()), t(`planMax`).textContent = u(Se() * h.price - xe() - i2.fee);
+      const tasteButton = t("ownerTasteTest"), tasteResult = t("ownerTasteResult");
+      tasteButton.disabled = _ || h.closed || h.cash < 0.5;
+      const last = h.lastTasteTest;
+      const same = last && last.temperature === ve().temp && ["lemons", "sugar", "ice"].every(
+        (key) => last.recipe[key] === h.recipe[key]
+      );
+      tasteResult.textContent = same ? `Owner taste test: ${last.rating}/10 (10 is best).` : "Each taste test costs $0.50 in stand cash. Scores range from 1 (worst) to 10 (best).";
+      t(`tasteHint`).textContent = Te(), t(`planCups`).textContent = productionCups() === Se() ? Se() : `${productionCups()} / ${Se()}`, t(`planCost`).textContent = u(xe()), t(`planMax`).textContent = u(
+        productionCups() * h.price - xe() - i2.fee
+      );
       let o2 = Math.ceil((xe() + i2.fee) / h.price);
       t(`breakEven`).textContent = `Sell ` + o2 + ` cups to break even`;
       for (let t2 of e.querySelectorAll(`[data-loc]`))
         t2.classList.toggle(`active`, t2.dataset.loc === h.location);
       if (Oe(), Ae(), Fe(), _e(), j(), P(), !_) {
         let e2 = we();
-        t(`validation`).style.display = e2 ? `block` : `none`, t(`validation`).textContent = e2;
+        t(`validation`).style.display = e2 || stockWarning() ? `block` : `none`, t(`validation`).textContent = e2 || stockWarning();
         let n2 = h.history.some((e3) => e3.day === h.day);
         const insolvent = isInsolvent(h, Ke.value(), rSupplies());
         const close = insolvent && !canBorrowAnything();
@@ -21187,7 +21358,7 @@ MADE WITH LOVE`,
         turnedAway: 0,
         leftUpset: 0,
         lostCompetitor: 0,
-        capacity: Se(),
+        capacity: productionCups(),
         revenue: 0,
         cost: a2,
         permit: r2.fee,
@@ -21465,7 +21636,7 @@ MADE WITH LOVE`,
         };
       const visitors = ye(), interested = visitors * G() * (1 - N());
       const served = Math.min(
-        Se(),
+        productionCups(),
         Math.floor(interested),
         Math.floor(visitors / O())
       );
@@ -21549,6 +21720,10 @@ MADE WITH LOVE`,
       U();
     }
     function installPlayabilityUI() {
+      t("tasteHint").insertAdjacentHTML(
+        "beforebegin",
+        '<button type="button" class="buy-upgrade" id="ownerTasteTest">Owner taste test \xB7 $0.50</button><p id="ownerTasteResult" aria-live="polite"></p>'
+      );
       const header = t("areaHeading").parentElement;
       header.insertBefore(t("weatherLabel"), t("phaseLabel"));
       header.insertBefore(t("crowdLabel"), t("phaseLabel"));
@@ -21578,7 +21753,15 @@ MADE WITH LOVE`,
         ].includes(id))
           return;
         if (data.loanFull) he(data.loanFull, true);
-        else if (id === "securedApply") applySecured();
+        else if (id === "ownerTasteTest" && !_) {
+          try {
+            tasteTest(h, ve().temp);
+            L();
+            U();
+          } catch (error) {
+            t("ownerTasteResult").textContent = error.message;
+          }
+        } else if (id === "securedApply") applySecured();
         else if (id === "rescueLoan") rescueLoan();
         else if (id === "exportExcel") {
           download(workbook(exportSheets()), "lemonade-lane-financials.xlsx");

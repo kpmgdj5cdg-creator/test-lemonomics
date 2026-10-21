@@ -1,6 +1,8 @@
 import "./engine.js";
 import {
   RECIPES,
+  satisfaction,
+  tasteTest,
   recipeBonus,
   debt,
   securedLimit,
@@ -769,34 +771,30 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     );
   }
   function V() {
-    let e = h.recipe;
-    return f(
-      1 -
-        (Math.abs(e.lemons - 4) * 0.075 +
-          Math.abs(e.sugar - 3) * 0.09 +
-          Math.abs(e.ice - (ve().temp >= 90 ? 6 : 5)) * 0.025),
-      0.42,
-      1,
-    );
+    return satisfaction(h, ve().temp) / 10;
   }
+
   function be() {
     let e = h.recipe;
     return e.lemons * 0.5 + e.sugar * 0.2 + (A() ? 0 : e.ice * 0.1) + 1.6;
   }
-  function xe() {
-    return d(be() * h.pitchers);
+  function productionCups() {
+    return Math.min(Se(), De(h.inventory));
   }
+  function xe() {
+    return d((be() * productionCups()) / 10);
+  }
+
   function Se() {
     return h.pitchers * 10;
   }
-  function Ce() {
-    let e = [];
-    for (let t of Object.keys(h.recipe))
-      !(t === `ice` && A()) &&
-        h.inventory[t] < h.recipe[t] * h.pitchers &&
-        e.push(r[t].name);
-    return (h.inventory.cups < 10 * h.pitchers && e.push(`Paper cups`), e);
+  function stockWarning() {
+    const capacity = productionCups();
+    return capacity < Se()
+      ? `Limited supplies: you can make ${capacity} of ${Se()} planned cups. You may open anyway; sales stop when stock runs out. The full permit is still charged.`
+      : "";
   }
+
   function we() {
     if (h.closed)
       return "This business is closed. Use Books to export your results.";
@@ -808,26 +806,23 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
         : `You have $0 at the stand. Visit the Bank → Loans to borrow startup money, then withdraw it for supplies.`;
     if (h.cash < n[h.location].fee)
       return `Not enough cash to pay this location’s permit.`;
-    let e = Ce();
-    return e.length ? `Buy more ` + e.join(`, `) + ` before opening.` : ``;
+    return "";
   }
   // Purchased recipes affect traffic only on an exact match; free guesses retain baseline taste effects.
   function Te() {
-    const bonus = recipeBonus(h);
-    const owned = RECIPES.filter((r) => h.purchasedRecipes.includes(r.id));
+    const owned = RECIPES.filter((recipe) =>
+      h.purchasedRecipes.includes(recipe.id),
+    );
     return (
-      "Recipes can be bought once at the Downtown bookstore (Good $10, Better $25, Best $50), or guess what customers enjoy. " +
-      (bonus
-        ? `This recipe is expected to increase number of visits by ${Math.round(bonus * 100)}%.`
-        : "No purchased recipe matches exactly; no recipe visitor bonus.") +
+      "Recipes can be bought at the Downtown Bookstore!" +
       (owned.length
-        ? " Owned: " +
+        ? " " +
           owned
             .map(
-              (r) =>
-                `${r.name}: ${r.lemons} lemons, ${r.sugar} sugar, ${r.ice} ice`,
+              (recipe) =>
+                `Owned ${recipe.name}: ${recipe.lemons} Lemons, ${recipe.sugar} sugar, ${recipe.ice} ice (satisfaction ${{ good: 7, better: 8, best: 9 }[recipe.id]}/10 when matched exactly).`,
             )
-            .join(" · ")
+            .join(" ")
         : "")
     );
   }
@@ -996,25 +991,41 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       (t(`locationHint`).textContent =
         i.desc +
         (h.location === "square"
-          ? " Walk to BOOKS (left of the bakery) to buy recipes; Maple Market is behind the bakery, across the side street. Use WASD/arrows or the on-screen pad; shops prompt at the door."
+          ? " Walk to BOOKS (left of the bakery) to buy recipes; Maple Market is behind the bakery, across the side street. Use WASD/arrows or the on-screen pad; click a shop door or press E next to it to enter."
           : "")),
       (t(`priceValue`).textContent = u(h.price)),
       (t(`pitcherValue`).textContent = h.pitchers));
     for (let e of [`lemons`, `sugar`, `ice`])
       t(`recipe` + e[0].toUpperCase() + e.slice(1)).textContent =
         h.recipe[e].toFixed(1);
+    const tasteButton = t("ownerTasteTest"),
+      tasteResult = t("ownerTasteResult");
+    tasteButton.disabled = _ || h.closed || h.cash < 0.5;
+    const last = h.lastTasteTest;
+    const same =
+      last &&
+      last.temperature === ve().temp &&
+      ["lemons", "sugar", "ice"].every(
+        (key) => last.recipe[key] === h.recipe[key],
+      );
+    tasteResult.textContent = same
+      ? `Owner taste test: ${last.rating}/10 (10 is best).`
+      : "Each taste test costs $0.50 in stand cash. Scores range from 1 (worst) to 10 (best).";
     ((t(`tasteHint`).textContent = Te()),
-      (t(`planCups`).textContent = Se()),
+      (t(`planCups`).textContent =
+        productionCups() === Se() ? Se() : `${productionCups()} / ${Se()}`),
       (t(`planCost`).textContent = u(xe())),
-      (t(`planMax`).textContent = u(Se() * h.price - xe() - i.fee)));
+      (t(`planMax`).textContent = u(
+        productionCups() * h.price - xe() - i.fee,
+      )));
     let o = Math.ceil((xe() + i.fee) / h.price);
     t(`breakEven`).textContent = `Sell ` + o + ` cups to break even`;
     for (let t of e.querySelectorAll(`[data-loc]`))
       t.classList.toggle(`active`, t.dataset.loc === h.location);
     if ((Oe(), Ae(), Fe(), _e(), j(), P(), !_)) {
       let e = we();
-      ((t(`validation`).style.display = e ? `block` : `none`),
-        (t(`validation`).textContent = e));
+      ((t(`validation`).style.display = e || stockWarning() ? `block` : `none`),
+        (t(`validation`).textContent = e || stockWarning()));
       let n = h.history.some((e) => e.day === h.day);
       const insolvent = isInsolvent(h, Ke.value(), rSupplies());
       const close = insolvent && !canBorrowAnything();
@@ -1140,7 +1151,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       turnedAway: 0,
       leftUpset: 0,
       lostCompetitor: 0,
-      capacity: Se(),
+      capacity: productionCups(),
       revenue: 0,
       cost: a,
       permit: r.fee,
@@ -1587,7 +1598,7 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     const visitors = ye(),
       interested = visitors * G() * (1 - N());
     const served = Math.min(
-      Se(),
+      productionCups(),
       Math.floor(interested),
       Math.floor(visitors / O()),
     );
@@ -1694,6 +1705,10 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
     U();
   }
   function installPlayabilityUI() {
+    t("tasteHint").insertAdjacentHTML(
+      "beforebegin",
+      '<button type="button" class="buy-upgrade" id="ownerTasteTest">Owner taste test · $0.50</button><p id="ownerTasteResult" aria-live="polite"></p>',
+    );
     const header = t("areaHeading").parentElement;
     header.insertBefore(t("weatherLabel"), t("phaseLabel"));
     header.insertBefore(t("crowdLabel"), t("phaseLabel"));
@@ -1732,7 +1747,15 @@ const { World: Vl, Investments: Du, capacity: xl } = window.LemonadeEngine;
       )
         return;
       if (data.loanFull) he(data.loanFull, true);
-      else if (id === "securedApply") applySecured();
+      else if (id === "ownerTasteTest" && !_) {
+        try {
+          tasteTest(h, ve().temp);
+          L();
+          U();
+        } catch (error) {
+          t("ownerTasteResult").textContent = error.message;
+        }
+      } else if (id === "securedApply") applySecured();
       else if (id === "rescueLoan") rescueLoan();
       else if (id === "exportExcel") {
         download(workbook(exportSheets()), "lemonade-lane-financials.xlsx");

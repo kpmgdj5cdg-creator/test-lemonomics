@@ -79,13 +79,25 @@ export function statements(state, supplies, equipment, value) {
     expenses: "Total expenses",
     profit: "Net income / (loss)",
   };
+  const incomeRow = (key) => [
+    labels[key],
+    ...reports.map((report) => report[key]),
+    sum(reports, (report) => report[key]),
+  ];
   const income = [
-    ["Income Statement", ...days.map((d) => `Day ${d}`), "Total"],
-    ...Object.entries(labels).map(([k, label]) => [
-      label,
-      ...reports.map((r) => r[k]),
-      sum(reports, (r) => r[k]),
-    ]),
+    ["Income Statement", ...days.map((day) => `Day ${day}`), "Total"],
+    ...["sales", "investment", "resale", "income"].map(incomeRow),
+    [],
+    ["Expenses"],
+    ...[
+      "ingredients",
+      "permits",
+      "spoilage",
+      "interest",
+      "other",
+      "expenses",
+      "profit",
+    ].map(incomeRow),
   ];
   const inv = inventoryValue(state, supplies),
     equip = round(
@@ -98,13 +110,16 @@ export function statements(state, supplies, equipment, value) {
     liabilities = debt(state),
     earnings = sum(reports, (r) => r.profit);
   const balance = [
-    ["Balance Sheet", `Day ${state.day}`],
+    ["Balance Sheet", `As of Day ${state.day}`],
+    ["Assets"],
     ["Cash at stand", state.cash],
     ["Checking", state.bank.checking],
     ["Inventory at cost", inv],
     ["Equipment at cost", equip],
     ["Investments at market value", value],
     ["Total assets", assets],
+    [],
+    ["Liabilities and equity"],
     ["Loan liabilities (including term interest)", liabilities],
     ["Reported retained earnings", earnings],
     [
@@ -130,7 +145,7 @@ export function statements(state, supplies, equipment, value) {
         ? "investing"
         : "operating";
   const flow = [
-    ["Statement of Cash Flow", "Amount"],
+    ["Statement of Cash Flow", `Totals as of Day ${state.day}`],
     ["Opening cash and checking", round(totalCash - movement)],
     ...["operating", "investing", "financing"].map((g) => [
       `Net cash from ${g}`,
@@ -221,12 +236,68 @@ function zip(entries) {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
+const ACCOUNTING_FORMAT = String.raw`_("$"* #,##0.00_);[Red]_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)`;
+function columnName(index) {
+  let result = "";
+  for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26))
+    result = String.fromCharCode(65 + ((n - 1) % 26)) + result;
+  return result;
+}
+function reportStyles() {
+  const xf = (fontId = 0, numFmtId = 0, borderId = 0, indent = 0) =>
+    `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="0" borderId="${borderId}" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${numFmtId ? "right" : "left"}" vertical="center" indent="${indent}"/></xf>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="${xml(ACCOUNTING_FORMAT)}"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style="thin"><color rgb="FF223C32"/></top><bottom/><diagonal/></border><border><left/><right/><top style="thin"><color rgb="FF223C32"/></top><bottom style="double"><color rgb="FF223C32"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8">${xf()}${xf(1)}${xf(0, 164)}${xf(1, 164, 1)}${xf(1, 164, 2)}${xf(0, 0, 0, 1)}${xf(1, 0, 1)}${xf(1, 0, 2)}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+}
+function worksheetXML(name, rows, ns) {
+  const count = Math.max(2, ...rows.map((row) => row.length)),
+    last = columnName(count - 1);
+  const width =
+    name === "Income Statement" ? 34 : name === "Balance Sheet" ? 58 : 40;
+  const amountWidth = name === "Income Statement" ? 16 : 25;
+  const totalLabel = (label) => /^(Total |Net change|Ending cash)/.test(label);
+  const finalLabel = (label) =>
+    label === "Net income / (loss)" || label === "Total liabilities and equity";
+  const data = rows
+    .map((row, j) => {
+      const label = String(row[0] || ""),
+        section = row.length === 1,
+        final = finalLabel(label),
+        total = totalLabel(label);
+      return `<row r="${j + 1}" ht="${j === 0 ? 24 : 18}" customHeight="1">${row
+        .map((value, i) => {
+          const numeric = typeof value === "number" && Number.isFinite(value),
+            header = j === 0 || section;
+          const style = header
+            ? 1
+            : final
+              ? numeric
+                ? 4
+                : 7
+              : total
+                ? numeric
+                  ? 3
+                  : 6
+                : numeric
+                  ? 2
+                  : i === 0
+                    ? 5
+                    : 0;
+          const attrs = `r="${columnName(i)}${j + 1}" s="${style}"`;
+          return numeric
+            ? `<c ${attrs}><v>${value}</v></c>`
+            : `<c ${attrs} t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+        })
+        .join("")}</row>`;
+    })
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="${ns}"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${last}${rows.length}"/><sheetViews><sheetView showGridLines="0" workbookViewId="0">${name === "Income Statement" ? '<pane xSplit="1" ySplit="1" topLeftCell="B2" activePane="bottomRight" state="frozen"/>' : ""}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols><col min="1" max="1" width="${width}" customWidth="1"/><col min="2" max="${count}" width="${amountWidth}" customWidth="1"/></cols><sheetData>${data}</sheetData><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="${name === "Income Statement" ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+}
 export function workbook(sheets) {
   const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
   const entries = [
     [
       "[Content_Types].xml",
-      `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`,
+      `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`,
     ],
     [
       "_rels/.rels",
@@ -238,13 +309,14 @@ export function workbook(sheets) {
     ],
     [
       "xl/_rels/workbook.xml.rels",
-      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}</Relationships>`,
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
     ],
   ];
-  sheets.forEach(([, rows], i) =>
+  entries.push(["xl/styles.xml", reportStyles()]);
+  sheets.forEach(([name, rows], i) =>
     entries.push([
       `xl/worksheets/sheet${i + 1}.xml`,
-      `<worksheet xmlns="${ns}"><sheetData>${rows.map((row, j) => `<row r="${j + 1}">${row.map((value) => (typeof value === "number" && Number.isFinite(value) ? `<c><v>${value}</v></c>` : `<c t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`)).join("")}</row>`).join("")}</sheetData></worksheet>`,
+      worksheetXML(name, rows, ns),
     ]),
   );
   return zip(entries);

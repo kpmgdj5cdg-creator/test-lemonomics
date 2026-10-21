@@ -6,37 +6,7 @@ from datetime import datetime, timezone
 ROOT=Path(__file__).resolve().parents[1]
 server=subprocess.Popen(['python3','-m','http.server','8125','--bind','127.0.0.1','--directory',str(ROOT/'downloads')],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 BASE='http://127.0.0.1:8125/Lemonade-Lane.html'
-PATH_TO_SHOP='''shop => {
- const world=window.testWorld,c=world.avatarController;
- c.setEnabled(true);world.angle=0;
- const start=c.avatar.group.position,obs=c.obstacles(),bounds={minX:-24,maxX:21,minZ:-20,maxZ:12};
- const dest=shop==='books'?{x:-10,z:-3.45}:{x:1.4,z:-12.6};
- const blocked=(x,z)=>x<bounds.minX+.25||x>bounds.maxX-.25||z<bounds.minZ+.25||z>bounds.maxZ-.25||obs.some(o=>{const dx=x-Math.max(o.minX,Math.min(x,o.maxX)),dz=z-Math.max(o.minZ,Math.min(z,o.maxZ));return dx*dx+dz*dz<.0625;});
- const key=(x,z)=>`${x},${z}`,sx=Math.round(start.x*4),sz=Math.round(start.z*4),queue=[[sx,sz]],seen=new Map([[key(sx,sz),null]]);let found=null;
- for(let i=0;i<queue.length;i++){
-  const [x,z]=queue[i];
-  if(Math.hypot(x/4-dest.x,z/4-dest.z)<1.1){found=[x,z];break;}
-  for(const [dx,dz] of [[0,1],[0,-1],[1,0],[-1,0]]){
-   const nx=x+dx,nz=z+dz,k=key(nx,nz);
-   if(!seen.has(k)&&!blocked(nx/4,nz/4)&&!blocked(x/4+dx/8,z/4+dz/8)){seen.set(k,[x,z]);queue.push([nx,nz]);}
-  }
- }
- if(!found)throw Error('No traversable path to '+shop+'; visited '+seen.size);
- const path=[];for(let node=found;node;node=seen.get(key(...node)))path.unshift(node);
- for(let i=1;i<path.length;i++){
-  const [x,z]=path[i],prev=path[i-1],code=x>prev[0]?'KeyD':x<prev[0]?'KeyA':z>prev[1]?'KeyS':'KeyW';
-  c.keys.clear();c.keys.add(code);
-  c.update(.125/3.6,i,false);c.update(.125/3.6,i,false);
-  if(document.querySelector('#modal.show'))break;
- }
- c.keys.clear();return {steps:path.length,position:{x:c.avatar.group.position.x,z:c.avatar.group.position.z},near:c.nearShop(),modal:document.querySelector('#modalBody').textContent};
-}'''
-def saved(page): return page.evaluate("JSON.parse(localStorage.getItem('lemonadeLane_bank_v3'))")
-def load(page,state):
- page.evaluate('(s)=>localStorage.setItem("lemonadeLane_bank_v3",JSON.stringify(s))',state);page.reload();page.wait_for_function('window.LemonadeEngine !== undefined')
-def capture_world(page):
- page.evaluate('''()=>{const p=window.LemonadeEngine.World.prototype,original=p.updateState;p.updateState=function(...args){window.testWorld=this;return original.apply(this,args)}}''')
- page.locator('[data-loc=square]').click()
+from browser_helpers import PATH_TO_SHOP,saved,load,capture_world,enter_shop
 try:
  for _ in range(50):
   try:urllib.request.urlopen(BASE);break
@@ -49,18 +19,18 @@ try:
   fixture.update(cash=100,recipe={'lemons':4,'sugar':3,'ice':5},inventory={'lemons':30,'sugar':30,'ice':50,'cups':60},lemonLots=[{'day':1,'qty':30}],upgrades=['juicer'])
   load(page,fixture);assert saved(page)['recipe']==fixture['recipe'];assert saved(page)['upgrades']==['juicer']
   capture_world(page)
-  result=page.evaluate(PATH_TO_SHOP,'books');assert 'Downtown Bookstore' in result['modal'],result
+  result=enter_shop(page,'books');assert 'Downtown Bookstore' in page.locator('#modalBody').inner_text()
   print('PASS bookstore physically reachable:',result['steps'],'collision-safe steps',flush=True)
   before=int(page.locator('#crowdLabel').inner_text().split(': ')[1])
   page.locator('[data-buy-recipe=good]').click();assert saved(page)['cash']==90
   page.locator('[data-use-recipe=good]').click();assert saved(page)['recipe']=={'lemons':4.2,'sugar':3.1,'ice':5.3}
-  assert '10%' in page.locator('#tasteHint').inner_text()
+  assert 'satisfaction 7/10' in page.locator('#tasteHint').inner_text()
   boosted=int(page.locator('#crowdLabel').inner_text().split(': ')[1]);assert boosted>before
-  page.locator('[data-recipe=lemons][data-change="1"]').click();assert 'no recipe visitor bonus' in page.locator('#tasteHint').inner_text()
+  page.locator('[data-recipe=lemons][data-change="1"]').click()
   assert int(page.locator('#crowdLabel').inner_text().split(': ')[1])==before
   # Buying a recipe does not allow buying it again; reopening shows ownership.
   page.evaluate("testWorld.onShop('books')");assert page.locator('[data-buy-recipe=good]').is_disabled();page.locator('#leaveShop').click()
-  result=page.evaluate(PATH_TO_SHOP,'market');assert 'Sell to Maple Market?' in result['modal'],result
+  result=enter_shop(page,'market',activation='click');assert 'Sell to Maple Market?' in page.locator('#modalBody').inner_text()
   print('PASS Maple Market physically reachable:',result['steps'],'collision-safe steps',flush=True)
   page.locator('[data-sell-supply=lemons]').click();page.locator('[data-confirm-supply=lemons]').click()
   assert saved(page)['inventory']['lemons']==0;assert saved(page)['cash']==97.5
