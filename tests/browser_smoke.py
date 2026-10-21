@@ -15,6 +15,10 @@ try:
   page.goto(BASE);page.wait_for_timeout(400)
   print('initial errors',errors)
   assert page.locator('#recipeLemons').inner_text()=='0.0'
+  page.locator('[data-tab=results]').click();page.locator('#showProjection').check()
+  assert 'Estimated income $0.00' in page.locator('#dayDetails').inner_text()
+  assert 'Plan not ready' in page.locator('#dayDetails').inner_text()
+  page.locator('[data-tab=location]').click()
   for loc in ['neighborhood','park','square','beach']:
    page.locator(f'[data-loc={loc}]').click()
    assert page.locator('#world3d canvas').count()==1

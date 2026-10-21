@@ -26637,7 +26637,7 @@ MADE WITH LOVE`,
         this.publish();
       }
       setEnabled(e) {
-        ((e = e && !!El[this.world.location]),
+        ((e = e && !!El[this.world.location] && !this.world.businessClosed),
           e &&
             (this.world.onBack(),
             (this.world.zoom = 1),
@@ -26694,7 +26694,7 @@ MADE WITH LOVE`,
         );
       }
       nearShop() {
-        if (!this.enabled || this.world.location !== 'square') return null;
+        if (!this.enabled || this.world.location !== 'downtown') return null;
         const p=this.avatar.group.position;
         if (Math.hypot(p.x+10,p.z+3.45)<1.3) return 'books';
         if (Math.hypot(p.x-1.4,p.z+12.6)<1.3) return 'market';
@@ -28382,6 +28382,10 @@ MADE WITH LOVE`,
               else if (t.id === `confirmTrade`) this.confirm();
               else if (t.id === `releaseLegacy`) {
                 if (this.isRunning()) return;
+                if ((window.LemonadeLoanGuard?.(this.getState().bank)||0)>0) {
+                  this.message('Repay your investment-backed loan before moving pledged funds to checking.', true);
+                  return;
+                }
                 (yu(this.getState()),
                   this.commit(),
                   this.message(

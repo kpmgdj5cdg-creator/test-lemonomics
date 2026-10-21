@@ -11,3 +11,13 @@ You can also download [the standalone HTML](Lemonade-Lane.html) using GitHub’s
 This is the completed offline game with all four voxel locations, playable avatars, the bank and investment portfolio. The investment review button works in embedded previews. Progress saves in the same browser when browser storage is available; keep the file in the same location to continue that save.
 
 The file contains October 19, 2026 closing prices for DIA, SPY, ARKK, SGOV, GLD and SLV, plus five years of history. Offline copies cannot automatically fetch new daily prices. History remains viewable, but investment trading pauses when the included prices are stale. Daily automatic pricing requires the separately hosted game and its pricing service. This repository download is not a public hosted game.
+
+## Playability update
+
+This release preserves all four voxel worlds, avatar controls, and existing browser saves. Downtown now has a recipe bookstore and Maple Market for selling supplies/equipment at half their purchase cost. Park permits cost $6 per day.
+
+Good, Better, and Best recipes cost $10, $25, and $50 once. Their 10%, 15%, and 20% visitor bonuses require owning the recipe and matching all ingredients exactly. New games begin with a zero recipe; existing recipes remain unchanged.
+
+Books downloads a three-sheet Excel workbook. Results & Projections shows daily income and expenses, selectable day details, equipment markers, and optional estimates. All loans support early full repayment. Investment-backed loans require a $100 portfolio and are limited to 50% of portfolio value, capped at $10,000. Missed secured payments recover collateral plus a disclosed liquidation fee. Insolvent businesses can close, retain exports, and explicitly choose whether to restart.
+
+Editable source, build commands, test commands, and detailed financial rules are in the [repository README](../README.md).
