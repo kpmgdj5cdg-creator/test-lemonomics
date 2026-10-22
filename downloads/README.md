@@ -22,3 +22,6 @@ The Classic Stand purchase now installs the reference-inspired Cooler Cup storef
 
 
 The live-market integration release adds authenticated Alpaca Basic IEX quotes and charts to the hosted game, with shared request limits and virtual trades. **Activation is pending:** account Free plans, private-display rights and real Alpaca credentials still need verification. This downloaded file never contains provider credentials. Offline investment history and existing holdings remain available; new Buy/Sell actions require fresh authenticated hosted quotes during verified regular US market hours. Prior-close collateral processing retains its existing rules. See [live market setup](../docs/ALPACA-LIVE-SETUP.md).
+
+
+Bitcoin (`BTC/USD`) is now included as a seventh investment. On the private hosted game it uses Alpaca’s US crypto feed and supports virtual buying/selling 24/7, with shared updates about every 20 seconds. Historical crypto charts, holdings and trade records are saved with the existing profiles. This offline copy can show saved Bitcoin holdings but needs the private hosted service for fresh quotes and new trades. Existing six ETF choices, game saves, neighborhoods and banking remain compatible.

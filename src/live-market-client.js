@@ -1,4 +1,4 @@
-import {SYMBOLS} from './funds.js';
+import {INVESTMENT_SYMBOLS as SYMBOLS} from './funds.js';
 import {validLiveQuote,HISTORY_RANGES,localSession,marketSession,easternMinutes} from './live-market-data.js';
 export class LiveMarketClient{
  constructor({fetcher=globalThis.fetch?.bind(globalThis),clock=()=>new Date()}={}){
@@ -14,10 +14,11 @@ export class LiveMarketClient{
    if(!['http:','https:'].includes(globalThis.location?.protocol))throw Error('Live market data requires the private hosted game.');
    const response=await this.fetcher('/api/market/quotes',{cache:'no-store',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Live data is unavailable. Your last known prices and holdings are retained.');
    const data=await response.json();if(data?.version!==1||data.provider!=='Alpaca'||data.feed!=='iex'||!data.quotes||!data.session)throw Error('Invalid market response.');
-   for(const s of SYMBOLS){const q=data.quotes[s];if(q?.price!==null&&!validLiveQuote(q,this.clock()))throw Error('Invalid market quote.');const old=this.data?.quotes?.[s];if(validLiveQuote(old,this.clock())&&validLiveQuote(q,this.clock())&&Date.parse(old.timestamp)>Date.parse(q.timestamp))data.quotes[s]={...old,current:false,stale:true,unavailable:true};}
+   for(const s of SYMBOLS){const q=data.quotes[s];if(q&&q.price!==null&&!validLiveQuote(q,this.clock()))throw Error('Invalid market quote.');const old=this.data?.quotes?.[s];if(validLiveQuote(old,this.clock())&&validLiveQuote(q,this.clock())&&Date.parse(old.timestamp)>Date.parse(q.timestamp))data.quotes[s]={...old,current:false,stale:true,unavailable:true};}
    this.data=data;this.error=data.status==='ok'?'':data.message||({'configuration':'Alpaca credentials or IEX permission need attention.','rate-limited':'Provider limit reached. Cached prices are retained.','daily-limit':'Today’s safety budget is used. Quotes resume tomorrow.','disabled':'Live Alpaca data is not enabled yet.','pending':'Loading verified quotes and market calendar…'}[data.status]||'Live data is temporarily unavailable. Cached prices are retained.');
+   if(this.error&&data.crypto?.status==='ok')this.error='ETF feed: '+this.error;
    this.nextRefresh=+this.clock()+Math.max(5000,Number(data.retryAfterMs)||5000);try{localStorage.setItem('lemonomics_iex_quotes_v1',JSON.stringify(data))}catch{}
-  }catch(e){this.error=e.message;this.nextRefresh=+this.clock()+60000;if(this.data)this.data={...this.data,status:'unavailable'};}finally{this.loading=false;onChange();}})();try{await this.pending}finally{this.pending=null}
+  }catch(e){this.error=e.message;this.nextRefresh=+this.clock()+60000;if(this.data)this.data={...this.data,status:'unavailable',crypto:this.data.crypto?{...this.data.crypto,status:'unavailable'}:undefined};}finally{this.loading=false;onChange();}})();try{await this.pending}finally{this.pending=null}
  }
  async history(symbol,range,onChange=()=>{}){
   if(!SYMBOLS.includes(symbol)||!HISTORY_RANGES[range])return;

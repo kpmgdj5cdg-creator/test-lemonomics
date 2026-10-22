@@ -7,3 +7,8 @@ export const FUNDS=Object.freeze([
   {symbol:'SLV',name:'Silver',description:'A fund backed by silver',fund:'iShares Silver Trust',risk:'Metal prices can swing sharply',color:'#e07844'},
 ]);
 export const SYMBOLS=FUNDS.map(f=>f.symbol);
+
+export const BITCOIN={symbol:'BTC/USD',name:'Bitcoin',description:'Digital currency · trades 24 hours a day',fund:'Bitcoin / US Dollar',risk:'Very high risk · large price swings',color:'#dc8617',assetClass:'crypto'};
+export const INVESTMENTS=Object.freeze([...FUNDS,BITCOIN]);
+export const INVESTMENT_SYMBOLS=INVESTMENTS.map(f=>f.symbol);
+export const isCrypto=symbol=>symbol===BITCOIN.symbol;

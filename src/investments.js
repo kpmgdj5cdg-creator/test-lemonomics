@@ -1,4 +1,4 @@
-import {SYMBOLS} from './funds.js';
+import {SYMBOLS,INVESTMENT_SYMBOLS,isCrypto} from './funds.js';
 import {quotePrice,marketFresh} from './market-data.js';
 import {tradeQuote,validLiveQuote} from './live-market-data.js';
 export const SHARE_SCALE=1_000_000,FEE_RATE=.005;
@@ -22,7 +22,7 @@ export function holdingPrice(portfolio,market,symbol){
 }
 export function portfolioTotals(bank,market){
   const p=ensurePortfolio(bank);let value=p.legacyCents||0,basis=0,realized=0,fees=0,dividends=0,totalBought=0;
-  for(const symbol of SYMBOLS){const pos=p.positions[symbol];if(!pos)continue;const price=holdingPrice(p,market,symbol);value+=Math.round(pos.units/SHARE_SCALE*(price||0)*100);basis+=pos.costCents;}
+  for(const symbol of INVESTMENT_SYMBOLS){const pos=p.positions[symbol];if(!pos)continue;const price=holdingPrice(p,market,symbol);value+=Math.round(pos.units/SHARE_SCALE*(price||0)*100);basis+=pos.costCents;}
   for(const t of p.trades){realized+=t.realizedCents||0;fees+=t.feeCents;if(t.side==='buy')totalBought+=t.totalCents;}
   for(const e of p.events)dividends+=e.amountCents||0;
   const unrealized=value-(p.legacyCents||0)-basis;
@@ -33,8 +33,9 @@ function numberInput(value){
   const n=Number(value);if(!Number.isFinite(n)||n<=0||n>1e9)throw new Error('Enter an amount greater than zero.');return n;
 }
 export function quoteTrade(bank,market,{symbol,side,mode,amount,marketMode,accountId},now=new Date()){
-  if(!SYMBOLS.includes(symbol)||!['buy','sell'].includes(side)||!['dollars','shares'].includes(mode))throw new Error('Choose a valid fund and trade type.');
+  if(!INVESTMENT_SYMBOLS.includes(symbol)||!['buy','sell'].includes(side)||!['dollars','shares'].includes(mode))throw new Error('Choose a valid fund and trade type.');
   const p=ensurePortfolio(bank),live=marketMode==='live'?tradeQuote(market?.liveQuotes,symbol,now):null;
+  if(!live&&isCrypto(symbol))throw Error('Bitcoin requires a fresh live quote. Refresh Investments before trading.');
   if(!live&&!marketFresh(market,now))throw new Error('Refresh prices before trading. Trades use the latest prior trading day’s close.');
   if(!live&&p.marketDate&&market.asOf<p.marketDate)throw new Error('These quotes are older than your portfolio. Refresh prices first.');
   if(bank.loans?.some(l=>l.secured&&l.balance>0&&!l.settling)){if(side==='sell')throw new Error('These investments secure a loan. Repay the secured loan before selling.');if(bank.loans.some(l=>l.collateralDue))throw new Error('Settle the overdue secured loan before investing.');}
@@ -74,13 +75,13 @@ export function executeTrade(state,market,request,expectedSignature,now=new Date
   if(q.marketMode!=='live')position.lastPrice=q.price;
   if(position.units)p.positions[q.symbol]=position;else delete p.positions[q.symbol];
   bank.checking=q.checkingAfterCents/100;
-  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,quoteTimestamp:q.quoteTimestamp,marketMode:q.marketMode,accountId:q.accountId,costBasisCents:q.side==='buy'?q.totalCents:q.removedCost,provider:q.marketMode==='live'?'Alpaca':market.source,feed:q.marketMode==='live'?'iex':undefined,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);if(q.marketMode!=='live')p.marketDate=market.asOf;
-  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+q.symbol+' shares at '+money(cents(q.price))+'; fee '+money(q.feeCents)+(q.marketMode==='live'?'; IEX trade '+q.quoteTimestamp:'; close '+q.priceDate),category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
+  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,quoteTimestamp:q.quoteTimestamp,marketMode:q.marketMode,accountId:q.accountId,costBasisCents:q.side==='buy'?q.totalCents:q.removedCost,provider:q.marketMode==='live'?'Alpaca':market.source,feed:q.marketMode==='live'?(isCrypto(q.symbol)?'crypto-us':'iex'):undefined,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);if(q.marketMode!=='live')p.marketDate=market.asOf;
+  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+(isCrypto(q.symbol)?'BTC':q.symbol+' shares')+' at '+money(cents(q.price))+'; fee '+money(q.feeCents)+(q.marketMode==='live'?'; '+(isCrypto(q.symbol)?'Alpaca crypto':'IEX')+' trade '+q.quoteTimestamp:'; close '+q.priceDate),category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
   if(q.marketMode==='live')applyLiveMarks(state,market.liveQuotes,now);else recordSnapshot(bank,market);return trade;
 }
 export function applyLiveMarks(state,data,now=new Date()){
  const p=ensurePortfolio(state.bank);p.marks??={};
- for(const symbol of SYMBOLS){const q=data?.quotes?.[symbol];if(!validLiveQuote(q,now)||p.marks[symbol]&&Date.parse(p.marks[symbol].timestamp)>Date.parse(q.timestamp))continue;p.marks[symbol]={symbol,price:q.price,timestamp:q.timestamp,provider:'Alpaca',feed:'iex'};}
+ for(const symbol of INVESTMENT_SYMBOLS){const q=data?.quotes?.[symbol];if(!validLiveQuote(q,now)||p.marks[symbol]&&Date.parse(p.marks[symbol].timestamp)>Date.parse(q.timestamp))continue;p.marks[symbol]={symbol,price:q.price,timestamp:q.timestamp,provider:'Alpaca',feed:q.feed};}
  const t=portfolioTotals(state.bank,{liveQuotes:data});state.bank.investments=t.valueCents/100;
  if(p.trades.length){p.liveSnapshots??=[];const snapshot={timestamp:now.toISOString(),valueCents:t.valueCents,profitCents:t.profitCents};const last=p.liveSnapshots.at(-1);if(last?.timestamp.slice(0,16)===snapshot.timestamp.slice(0,16))p.liveSnapshots[p.liveSnapshots.length-1]=snapshot;else p.liveSnapshots.push(snapshot);p.liveSnapshots=p.liveSnapshots.slice(-1500);}
  return t;
@@ -121,8 +122,8 @@ export function portfolioHistory(bank,market){
   const p=ensurePortfolio(bank);if(!p.trades.length)return [];
   if(!market||(p.marketDate&&market.asOf<p.marketDate))return p.snapshots;
   const first=p.trades[0].priceDate,priceMaps={},currentPrice={},futureFactor={},units={},eventMap=new Map();
-  for(const symbol of SYMBOLS){priceMaps[symbol]=new Map(market.funds[symbol].history.map(x=>[x[0],x[1]]));futureFactor[symbol]=1;
-    for(const e of market.funds[symbol].events)if(e.date>=first)eventMap.set(symbol+':'+e.type+':'+e.date,{...e,symbol});
+  for(const symbol of INVESTMENT_SYMBOLS){priceMaps[symbol]=new Map((market.funds[symbol]?.history||[]).map(x=>[x[0],x[1]]));futureFactor[symbol]=1;
+    for(const e of market.funds[symbol]?.events||[])if(e.date>=first)eventMap.set(symbol+':'+e.type+':'+e.date,{...e,symbol});
   }
   // Preserve older corporate events if they eventually fall outside the provider's window.
   for(const e of p.events)if(e.date>=first&&!eventMap.has(e.id))eventMap.set(e.id,{...e,value:e.ratio,recorded:true});
@@ -140,9 +141,9 @@ export function portfolioHistory(bank,market){
       if(t.side==='buy')purchases+=t.totalCents;else sales+=t.totalCents;
       currentPrice[t.symbol]=t.price;
     }
-    for(const symbol of SYMBOLS)if(priceMaps[symbol].has(day))currentPrice[symbol]=priceMaps[symbol].get(day)*futureFactor[symbol];
+    for(const symbol of INVESTMENT_SYMBOLS)if(priceMaps[symbol].has(day))currentPrice[symbol]=priceMaps[symbol].get(day)*futureFactor[symbol];
     if(day<earliest)continue;
-    let value=0;for(const symbol of SYMBOLS)value+=Math.round((units[symbol]||0)/SHARE_SCALE*(currentPrice[symbol]||0)*100);
+    let value=0;for(const symbol of INVESTMENT_SYMBOLS)value+=Math.round((units[symbol]||0)/SHARE_SCALE*(currentPrice[symbol]||0)*100);
     result.push({date:day,valueCents:value+(p.legacyCents||0),profitCents:value+sales+distributions-purchases});
   }
   return result;

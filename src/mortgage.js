@@ -1,3 +1,4 @@
+import {isCrypto} from './funds.js';
 import {round} from './business.js';
 import {portfolioTotals,ensurePortfolio,holdingPrice,quoteTrade,executeTrade,SHARE_SCALE} from './investments.js';
 export const HOUSE_PRICE=400000,DOWN_PAYMENT=8000,MORTGAGE_PERIOD=10,MORTGAGE_MONTHS=360;
@@ -30,7 +31,7 @@ function raiseDownPayment(s,market,now){
   const price=holdingPrice(p,market,symbol),net=u=>{const g=Math.round(u/SHARE_SCALE*price*100);return g-Math.max(1,Math.round(g*.005))};
   let lo=1,hi=pos.units;if(net(hi)<=0)continue;
   if(net(hi)>=Math.round(missing*100)){while(lo<hi){const mid=Math.floor((lo+hi)/2);if(net(mid)>=Math.round(missing*100))hi=mid;else lo=mid+1}}
-  const request={symbol,side:'sell',mode:'shares',amount:(hi/SHARE_SCALE).toFixed(6)},q=quoteTrade(s.bank,market,request,now);
+  const request={symbol,side:'sell',mode:'shares',amount:(hi/SHARE_SCALE).toFixed(6),...(isCrypto(symbol)?{marketMode:'live'}:{})},q=quoteTrade(s.bank,market,request,now);
   executeTrade(s,market,request,q.signature,now);missing=round(DOWN_PAYMENT-s.cash-s.bank.checking);
  }
  if(missing>0)throw Error('Your available investments do not cover the down payment and trading fees.');

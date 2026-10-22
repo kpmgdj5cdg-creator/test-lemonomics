@@ -2,7 +2,7 @@ const NS='http://www.w3.org/2000/svg';
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pointTime=date=>Date.parse(date.includes('T')?date:date+'T12:00:00Z');
 const dateLabel=date=>new Date(pointTime(date)).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',...(date.includes('T')?{hour:'numeric',minute:'2-digit',timeZoneName:'short'}:{})});
-export function drawChart(host,series,{portfolio=false,empty='Select a fund to compare its performance.',costBasis=null}={}){
+export function drawChart(host,series,{portfolio=false,empty='Select a fund to compare its performance.',costBasis=null,costBasisUnit='share'}={}){
   const all=series.flatMap(s=>s.points);host.innerHTML='';
   if(!all.length){host.innerHTML='<div class="invest-chart-empty">'+escape(empty)+'</div>';return}
   const width=Math.max(300,host.clientWidth||1000),height=width<600?250:300,pad={left:58,right:24,top:24,bottom:43};
@@ -27,7 +27,7 @@ export function drawChart(host,series,{portfolio=false,empty='Select a fund to c
   const tooltip=document.createElement('div');tooltip.className='chart-tooltip';tooltip.hidden=true;tooltip.setAttribute('aria-live','polite');host.append(tooltip);
   let index=dates.length-1;
   function show(i){index=Math.max(0,Math.min(dates.length-1,i));const date=dates[index],cursor=svg.querySelector('.chart-cursor');cursor.setAttribute('x1',x(date));cursor.setAttribute('x2',x(date));cursor.setAttribute('visibility','visible');
-    tooltip.innerHTML='<strong>'+dateLabel(date)+'</strong>'+series.map(s=>{const p=s.points.find(p=>p.date===date);return p?'<span style="color:'+s.color+'">'+escape(s.name)+': '+escape(valueLabel(p.value))+(Number.isFinite(p.price)?' · $'+p.price.toFixed(2)+' / share':'')+'</span>':''}).join('')+(costBasis!==null?'<span>Your average purchase cost: $'+costBasis.toFixed(2)+' / share (includes fees)</span>':'');tooltip.hidden=false;
+    tooltip.innerHTML='<strong>'+dateLabel(date)+'</strong>'+series.map(s=>{const p=s.points.find(p=>p.date===date);return p?'<span style="color:'+s.color+'">'+escape(s.name)+': '+escape(valueLabel(p.value))+(Number.isFinite(p.price)?' · $'+p.price.toFixed(2)+' / '+escape(s.unit||'share'):'')+'</span>':''}).join('')+(costBasis!==null?'<span>Your average purchase cost: $'+costBasis.toFixed(2)+' / '+escape(costBasisUnit)+' (includes fees)</span>':'');tooltip.hidden=false;
   }
   svg.addEventListener('pointermove',e=>{const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse());const target=minDate+(local.x-pad.left)/(width-pad.left-pad.right)*(maxDate-minDate);let nearest=0;for(let i=1;i<dates.length;i++)if(Math.abs(pointTime(dates[i])-target)<Math.abs(pointTime(dates[nearest])-target))nearest=i;show(nearest);});
   svg.addEventListener('pointerleave',()=>{tooltip.hidden=true;svg.querySelector('.chart-cursor').setAttribute('visibility','hidden')});

@@ -22,21 +22,21 @@ function fixture(){let time=Date.parse('2026-10-22T15:00:00Z'),calls=[],mode='ok
  const fetcher=async(url,options)=>{calls.push({url,options});if(mode==='network')throw Error('offline');if(mode==='401'||mode==='403'||mode==='429')return new Response('{}',{status:+mode,headers:{'Retry-After':'120'}});if(url.includes('/calendar?'))return Response.json(calendar().days);if(url.includes('/snapshots?'))return Response.json(snapshots(clock()));return Response.json({bars:[{t:new Date(time-3600000).toISOString(),c:180},{t:new Date(time-1800000).toISOString(),c:200}]})};
  return {env,calls,clock,service:()=>new LiveMarketService(env,{clock,fetcher}),advance:n=>time+=n,setMode:m=>mode=m};
 }
-async function warmed(f){await f.service().quotes();f.advance(5000);return f.service().quotes()}
+async function warmed(f){await f.service().stockQuotes();f.advance(5000);return f.service().stockQuotes()}
 test('three players share one global five-second snapshot cache for all six funds, with original timestamps and no public credentials',async()=>{
  const f=fixture();const first=await warmed(f);assert.equal(first.session.verified,true);assert.equal(first.session.open,true);for(const s of SYMBOLS){assert.equal(first.quotes[s].price,200);assert.equal(first.quotes[s].previousClose,190);assert.equal(first.quotes[s].change,10)}
- const count=f.calls.length;await Promise.all(Array.from({length:3},()=>f.service().quotes()));assert.equal(f.calls.length,count);f.advance(5000);await Promise.all(Array.from({length:3},()=>f.service().quotes()));assert.equal(f.calls.length,count+1);
- for(const r of f.calls){assert.equal(r.options.method,'GET');assert.ok(!r.url.includes('orders'));if(!r.url.includes('calendar'))assert.equal(new URL(r.url).searchParams.get('feed'),'iex');assert.equal(r.options.headers['APCA-API-KEY-ID'],'TEST_ONLY_KEY')}
+ const count=f.calls.length;await Promise.all(Array.from({length:3},()=>f.service().stockQuotes()));assert.equal(f.calls.length,count);f.advance(5000);await Promise.all(Array.from({length:3},()=>f.service().stockQuotes()));assert.equal(f.calls.length,count+1);
+ for(const r of f.calls){assert.equal(r.options.method,'GET');assert.ok(!r.url.includes('orders'));if(!r.url.includes('calendar')&&!r.url.includes('/crypto/'))assert.equal(new URL(r.url).searchParams.get('feed'),'iex');assert.equal(r.options.headers['APCA-API-KEY-ID'],'TEST_ONLY_KEY')}
  assert.ok(!JSON.stringify(first).includes('TEST_ONLY'));assert.ok(f.calls.filter(c=>c.url.includes('snapshots')).every(c=>new URL(c.url).searchParams.get('symbols')===SYMBOLS.join(',')));
 });
 test('provider 429 backoff, network errors and missing quotes retain timestamps without invented prices',async()=>{
- const f=fixture(),old=await warmed(f);f.advance(5000);f.setMode('429');const failed=await f.service().quotes(),count=f.calls.length;assert.equal(failed.status,'rate-limited');assert.ok(failed.retryAfterMs>=120000);assert.equal(failed.quotes.SPY.timestamp,old.quotes.SPY.timestamp);for(let i=0;i<20;i++)await f.service().quotes();assert.equal(f.calls.length,count);
- f.advance(125000);f.setMode('network');const offline=await f.service().quotes();assert.equal(offline.quotes.SPY.price,200);assert.equal(offline.quotes.SPY.current,false);
+ const f=fixture(),old=await warmed(f);f.advance(5000);f.setMode('429');const failed=await f.service().stockQuotes(),count=f.calls.length;assert.equal(failed.status,'rate-limited');assert.ok(failed.retryAfterMs>=120000);assert.equal(failed.quotes.SPY.timestamp,old.quotes.SPY.timestamp);for(let i=0;i<20;i++)await f.service().stockQuotes();assert.equal(f.calls.length,count);
+ f.advance(125000);f.setMode('network');const offline=await f.service().stockQuotes();assert.equal(offline.quotes.SPY.price,200);assert.equal(offline.quotes.SPY.current,false);
  const raw=snapshots();raw.SPY.latestTrade.p=-1;const missing=normalizeSnapshots(raw,{quotes:old.quotes},f.clock());assert.equal(missing.quotes.SPY.price,200);assert.equal(missing.quotes.SPY.unavailable,true);assert.equal(missing.quotes.DIA.price,200);
 });
 test('401/403 stop requests until credential rotation, and clicks cannot bypass global daily/minute ceilings',async()=>{
- for(const mode of ['401','403']){const f=fixture();await warmed(f);f.advance(5000);f.setMode(mode);assert.equal((await f.service().quotes()).status,'configuration');const count=f.calls.length;f.advance(2*86400000);await f.service().quotes();assert.equal(f.calls.length,count);f.env.ALPACA_API_SECRET_KEY='ROTATED_TEST_SECRET';f.setMode('ok');await f.service().quotes();assert.ok(f.calls.length>count)}
- const f=fixture();await warmed(f);await f.env.DB.prepare('UPDATE live_market_guard SET daily_calls=?,day=? WHERE id=1').bind(LIVE_LIMITS.dailyCalls,'2026-10-22').run();const count=f.calls.length;f.advance(5000);assert.equal((await f.service().quotes()).status,'daily-limit');await f.service().history('SPY','1D');assert.equal(f.calls.length,count);
+ for(const mode of ['401','403']){const f=fixture();await warmed(f);f.advance(5000);f.setMode(mode);assert.equal((await f.service().stockQuotes()).status,'configuration');const count=f.calls.length;f.advance(2*86400000);await f.service().stockQuotes();assert.equal(f.calls.length,count);f.env.ALPACA_API_SECRET_KEY='ROTATED_TEST_SECRET';f.setMode('ok');await f.service().stockQuotes();assert.ok(f.calls.length>count)}
+ const f=fixture();await warmed(f);await f.env.DB.prepare('UPDATE live_market_guard SET daily_calls=?,day=? WHERE id=1').bind(LIVE_LIMITS.dailyCalls,'2026-10-22').run();const count=f.calls.length;f.advance(5000);assert.equal((await f.service().stockQuotes()).status,'daily-limit');await f.service().history('SPY','1D');assert.equal(f.calls.length,count);
  const g=fixture();await g.service().init();await g.env.DB.prepare('UPDATE live_market_guard SET minute=?,minute_calls=? WHERE id=1').bind(Math.floor(+g.clock()/60000),LIVE_LIMITS.minuteCalls).run();assert.equal(await g.service().reserve(),false);
 });
 test('verified calendar respects Eastern DST, holidays and early close; fallback never authorizes a trade',()=>{
@@ -82,7 +82,7 @@ test('malformed trade timestamps and expired snapshots are safely rejected',()=>
 
 test('authenticated diagnostics identify failures without secrets, raw errors, retries or budget mutations',async()=>{
  for(const mode of ['401','403','429','network']){
-  const f=fixture();f.setMode(mode);await f.service().quotes();const count=f.calls.length,g=await f.service().guard(),d=await f.service().diagnostics();
+  const f=fixture();f.setMode(mode);await f.service().stockQuotes();const count=f.calls.length,g=await f.service().guard(),d=await f.service().diagnostics();
   assert.equal(d.lastFailure.operation,'calendar');assert.equal(d.lastFailure.httpStatus,mode==='network'?null:+mode);assert.equal(d.configuration.keyIdPresent,true);assert.equal(d.configuration.secretKeyPresent,true);
   assert.equal(d.failures,1,'one failed provider call is counted once');assert.equal(f.calls.length,count);assert.deepEqual(await f.service().guard(),g);assert.doesNotMatch(JSON.stringify(d),/TEST_ONLY|fingerprint|offline|APCA-API/);
  }
@@ -92,8 +92,8 @@ test('authenticated diagnostics identify failures without secrets, raw errors, r
 
 test('one-time runtime fix releases only cold calendar failures while preserving budgets and authorization stops',async()=>{
  const migrate=env=>env.DB.prepare(readFileSync(new URL('../cloud/migrations/0006_calendar_runtime_fix.sql',import.meta.url),'utf8')).run();
- const f=fixture();f.setMode('network');await f.service().quotes();const before=await f.service().guard();await migrate(f.env);const after=await f.service().guard();
+ const f=fixture();f.setMode('network');await f.service().stockQuotes();const before=await f.service().guard();await migrate(f.env);const after=await f.service().guard();
  assert.equal(after.paused_until,0);assert.equal(after.failures,0);assert.equal(after.status,'ok');for(const field of ['day','daily_calls','minute','minute_calls','next_call','fingerprint'])assert.equal(after[field],before[field]);
- const denied=fixture();denied.setMode('401');await denied.service().quotes();const guard=await denied.service().guard();await migrate(denied.env);assert.deepEqual(await denied.service().guard(),guard);
- const warm=fixture();await warmed(warm);warm.advance(5000);warm.setMode('network');await warm.service().quotes();const paused=await warm.service().guard();await migrate(warm.env);assert.deepEqual(await warm.service().guard(),paused);
+ const denied=fixture();denied.setMode('401');await denied.service().stockQuotes();const guard=await denied.service().guard();await migrate(denied.env);assert.deepEqual(await denied.service().guard(),guard);
+ const warm=fixture();await warmed(warm);warm.advance(5000);warm.setMode('network');await warm.service().stockQuotes();const paused=await warm.service().guard();await migrate(warm.env);assert.deepEqual(await warm.service().guard(),paused);
 });

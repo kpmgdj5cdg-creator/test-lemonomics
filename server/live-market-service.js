@@ -1,6 +1,6 @@
-import {SYMBOLS} from '../src/funds.js';
-import {LIVE_LIMITS,HISTORY_RANGES,decorateQuotes,marketSession} from '../src/live-market-data.js';
-import {alpacaJSON,normalizeSnapshots,calendarRequest,normalizeCalendar,historyRequest,normalizeBars,boundedHistory} from './alpaca-provider.js';
+import {SYMBOLS,INVESTMENT_SYMBOLS,isCrypto} from '../src/funds.js';
+import {LIVE_LIMITS,HISTORY_RANGES,decorateQuotes,decorateBitcoin,marketSession} from '../src/live-market-data.js';
+import {alpacaJSON,normalizeSnapshots,normalizeBitcoin,calendarRequest,normalizeCalendar,historyRequest,normalizeBars,boundedHistory} from './alpaca-provider.js';
 const load=row=>{try{return row?.payload?JSON.parse(row.payload):null}catch{return null}};
 export async function credentialFingerprint(env){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(env.ALPACA_API_KEY_ID+'\0'+env.ALPACA_API_SECRET_KEY));return [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('')}
 export class LiveMarketService{
@@ -19,40 +19,43 @@ export class LiveMarketService{
   return !!r.meta.changes;
  }
  async failure(error,operation='unknown'){
-  const now=+this.clock(),g=await this.guard(),status=[401,403].includes(error.status)?'configuration':error.status===429?'rate-limited':'unavailable';
+  const now=+this.clock(),crypto=operation==='bitcoin'||operation==='bitcoin-history',g=(crypto?await this.cryptoHealth():null)||await this.guard(),status=[401,403].includes(error.status)?'configuration':error.status===429?'rate-limited':'unavailable';
   const delay=status==='configuration'?365*86400000:Math.max(status==='rate-limited'?60000:30000,Math.min(365*86400000,Number.isFinite(error.retry)?error.retry:0),Math.min(3600000,30000*2**Math.min(6,g.failures)));
-  await this.db.prepare('UPDATE live_market_guard SET paused_until=?,failures=failures+1,status=? WHERE id=1').bind(now+delay,status).run();
-  const diagnosis={at:this.clock().toISOString(),operation:['calendar','quotes','history'].includes(operation)?operation:'unknown',httpStatus:Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,reason:error.status?'http-error':error.name==='TimeoutError'||error.name==='AbortError'?'timeout':error.name==='SyntaxError'?'invalid-response':'network-or-invalid-response'};
+  if(crypto){const fp=(await this.guard()).fingerprint;await this.db.prepare("INSERT INTO live_market_cache (cache_key,payload,fetched) VALUES ('bitcoin-health',?,?) ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload,fetched=excluded.fetched").bind(JSON.stringify({fingerprint:fp,status,paused_until:now+delay,failures:g.failures+1}),now).run()}
+  else await this.db.prepare('UPDATE live_market_guard SET paused_until=?,failures=failures+1,status=? WHERE id=1').bind(now+delay,status).run();
+  const diagnosis={at:this.clock().toISOString(),operation:['calendar','quotes','bitcoin','bitcoin-history','history'].includes(operation)?operation:'unknown',httpStatus:Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,reason:error.status?'http-error':error.name==='TimeoutError'||error.name==='AbortError'?'timeout':error.name==='SyntaxError'?'invalid-response':'network-or-invalid-response'};
   // Store only explicitly selected safe fields: never provider bodies, messages,
   // URLs, request headers, credentials or account identifiers.
   await this.db.prepare("INSERT INTO live_market_cache (cache_key,payload,fetched) VALUES ('diagnostic',?,?) ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload,fetched=excluded.fetched").bind(JSON.stringify(diagnosis),now).run();
  }
  async request(path){
   if(!await this.reserve())return null;
-  try{const result=await alpacaJSON(this.env,path,{fetcher:this.fetcher,now:this.clock()});await this.db.prepare("UPDATE live_market_guard SET failures=0,status='ok' WHERE id=1 AND status<>'configuration'").run();return result}catch(e){await this.failure(e,path.startsWith('/v2/calendar?')?'calendar':path.startsWith('/v2/stocks/snapshots?')?'quotes':'history');e.marketFailureRecorded=true;throw e}
+  try{const result=await alpacaJSON(this.env,path,{fetcher:this.fetcher,now:this.clock()});await this.db.prepare("UPDATE live_market_guard SET failures=0,status='ok' WHERE id=1 AND status<>'configuration'").run();if(path.startsWith('/v1beta3/crypto/'))await this.db.prepare("DELETE FROM live_market_cache WHERE cache_key='bitcoin-health'").run();return result}catch(e){await this.failure(e,path.startsWith('/v2/calendar?')?'calendar':path.startsWith('/v2/stocks/snapshots?')?'quotes':path.startsWith('/v1beta3/crypto/us/snapshots?')?'bitcoin':path.startsWith('/v1beta3/crypto/')?'bitcoin-history':'history');e.marketFailureRecorded=true;throw e}
  }
+ async cryptoHealth(){const h=load(await this.cache('bitcoin-health'));return h?.fingerprint===(await this.guard())?.fingerprint?h:null}
  async resource(key,ttl,refresh){
   let row=await this.cache(key);const now=+this.clock();if(row?.fetched>now-ttl)return {data:load(row),cached:true};
+  const health=key==='bitcoin'||key.startsWith('history:BTC/USD:')?await this.cryptoHealth():null;if(health&&(health.paused_until>now||health.status==='configuration'))return {data:load(row),retained:true};
   const guard=await this.guard();if(guard.paused_until>now||guard.status==='configuration'||(guard.day===this.clock().toISOString().slice(0,10)&&guard.daily_calls>=LIVE_LIMITS.dailyCalls))return {data:load(row),retained:true};
   await this.db.prepare('INSERT OR IGNORE INTO live_market_cache (cache_key) VALUES (?)').bind(key).run();
   const lease=now+15000,claim=await this.db.prepare('UPDATE live_market_cache SET lease=? WHERE cache_key=? AND lease<=? AND fetched<=?').bind(lease,key,now,now-ttl).run();
   if(!claim.meta.changes)return {data:load(await this.cache(key)),pending:true};
   try{
    const data=await refresh(load(row));if(data!==null){await this.db.prepare('UPDATE live_market_cache SET payload=?,fetched=?,lease=0 WHERE cache_key=? AND lease=?').bind(JSON.stringify(data),+this.clock(),key,lease).run();return {data,cached:false};}
-  }catch(e){if(!e.marketFailureRecorded)await this.failure(e,key==='calendar'?'calendar':key==='quotes'?'quotes':'history')}finally{await this.db.prepare('UPDATE live_market_cache SET lease=0 WHERE cache_key=? AND lease=?').bind(key,lease).run()}
+  }catch(e){if(!e.marketFailureRecorded)await this.failure(e,key==='calendar'?'calendar':key==='quotes'?'quotes':key==='bitcoin'?'bitcoin':key.startsWith('history:BTC/USD:')?'bitcoin-history':'history')}finally{await this.db.prepare('UPDATE live_market_cache SET lease=0 WHERE cache_key=? AND lease=?').bind(key,lease).run()}
   return {data:load(await this.cache(key)),retained:true};
  }
  async diagnostics(){
   const configuration={activationEnabled:this.env.ALPACA_LIVE_ENABLED==='true',keyIdPresent:!!this.env.ALPACA_API_KEY_ID,secretKeyPresent:!!this.env.ALPACA_API_SECRET_KEY};
   try{
-   const g=await this.guard(),lastFailure=load(await this.cache('diagnostic')),calendar=load(await this.cache('calendar')),quotes=load(await this.cache('quotes'));
-   return {configuration,storage:'ok',status:g?.status||'not-started',pausedUntil:g?.paused_until?new Date(g.paused_until).toISOString():null,failures:g?.failures||0,dailyCalls:g?.daily_calls||0,budgetDate:g?.day||null,lastFailure:lastFailure?{at:lastFailure.at,operation:lastFailure.operation,httpStatus:lastFailure.httpStatus,reason:lastFailure.reason}:null,calendarCached:!!calendar,quotesCached:!!quotes,note:'Read-only diagnostic. Open Investments and refresh prices once after any current backoff ends to record a new failure. No keys or provider response bodies are returned.'};
+   const g=await this.guard(),lastFailure=load(await this.cache('diagnostic')),calendar=load(await this.cache('calendar')),quotes=load(await this.cache('quotes')),bitcoin=load(await this.cache('bitcoin')),bitcoinHealth=await this.cryptoHealth();
+   return {configuration,storage:'ok',status:g?.status||'not-started',pausedUntil:g?.paused_until?new Date(g.paused_until).toISOString():null,failures:g?.failures||0,dailyCalls:g?.daily_calls||0,budgetDate:g?.day||null,lastFailure:lastFailure?{at:lastFailure.at,operation:lastFailure.operation,httpStatus:lastFailure.httpStatus,reason:lastFailure.reason}:null,calendarCached:!!calendar,quotesCached:!!quotes,bitcoinCached:!!bitcoin,bitcoinStatus:bitcoinHealth?.status||(bitcoin?'ok':'not-started'),bitcoinPausedUntil:bitcoinHealth?.paused_until?new Date(bitcoinHealth.paused_until).toISOString():null,note:'Read-only diagnostic. Open Investments and refresh prices once after any current backoff ends to record a new failure. No keys or provider response bodies are returned.'};
   }catch{return {configuration,storage:'unavailable',message:'Market cache tables or the D1 binding are unavailable. Check the deployment migration result.'}}
  }
  async calendar(){
   const spec=calendarRequest(this.clock());return this.resource('calendar',86400000,async()=>{const raw=await this.request(spec.path);return raw?normalizeCalendar(raw,spec.start,spec.end):null});
  }
- async quotes(){
+ async stockQuotes(){
   const now=this.clock();if(!this.enabled())return {...decorateQuotes(null,null,'disabled',now,300000),message:'Live Alpaca data is not enabled. Holdings are preserved; ask the family administrator to complete the free-plan setup.'};
   await this.init();
   // Verify the calendar first. Cold starts fetch snapshots on a later poll,
@@ -70,20 +73,38 @@ export class LiveMarketService{
   const retry=budget?86400000-(+now%86400000):activePause?g.paused_until-(+now):marketSession(calendar,now).open?5000:300000;
   return decorateQuotes(result.data,calendar,status,this.clock(),retry);
  }
+ async bitcoinQuotes(){
+  const now=this.clock();if(!this.enabled())return decorateBitcoin(null,'disabled',now,300000);
+  const result=await this.resource('bitcoin',LIVE_LIMITS.cryptoQuoteCacheMs,async old=>{const raw=await this.request('/v1beta3/crypto/us/snapshots?'+new URLSearchParams({symbols:'BTC/USD'}));return raw?normalizeBitcoin(raw,old,this.clock()):null});
+  const g=await this.guard(),health=await this.cryptoHealth(),budget=g.day===now.toISOString().slice(0,10)&&g.daily_calls>=LIVE_LIMITS.dailyCalls,paused=g.paused_until>+now||g.status==='configuration',cryptoPaused=health&&(health.paused_until>+now||health.status==='configuration');
+  const status=budget?'daily-limit':paused?g.status:cryptoPaused?health.status:result.data?'ok':'pending';
+  const retry=budget?86400000-(+now%86400000):paused?g.paused_until-(+now):cryptoPaused?health.paused_until-(+now):result.data?LIVE_LIMITS.cryptoQuoteCacheMs:5000;
+  return decorateBitcoin(result.data,status,this.clock(),retry);
+ }
+ async quotes(){
+  if(!this.enabled()){const stocks=await this.stockQuotes(),btc=await this.bitcoinQuotes();return {...stocks,crypto:btc.market,quotes:{...stocks.quotes,'BTC/USD':btc.quote}}}
+  await this.init();
+  const now=+this.clock(),calendar=await this.cache('calendar'),stocks=await this.cache('quotes'),bitcoin=await this.cache('bitcoin');
+  // One provider call per normal poll: favor the oldest due resource, so the
+  // five-second ETF refresh cannot starve Bitcoin and vice versa.
+  const cryptoFirst=calendar?.fetched>now-86400000&&stocks?.fetched>0&&(!bitcoin?.fetched||bitcoin.fetched<=now-LIVE_LIMITS.cryptoQuoteCacheMs)&&stocks.fetched>(bitcoin?.fetched||0);
+  let stockData,btc;if(cryptoFirst){btc=await this.bitcoinQuotes();stockData=await this.stockQuotes()}else{stockData=await this.stockQuotes();btc=await this.bitcoinQuotes()}
+  return {...stockData,crypto:btc.market,quotes:{...stockData.quotes,'BTC/USD':btc.quote},retryAfterMs:Math.min(stockData.retryAfterMs,btc.market.retryAfterMs)};
+ }
  async history(symbol,range){
-  if(!SYMBOLS.includes(symbol)||!HISTORY_RANGES[range])return {status:'invalid',message:'Choose one of the six funds and a supported time range.'};
+  if(!INVESTMENT_SYMBOLS.includes(symbol)||!HISTORY_RANGES[range])return {status:'invalid',message:'Choose a supported investment and a supported time range.'};
   if(!this.enabled())return {status:'disabled',symbol,range,points:[],message:'Alpaca history is not enabled. Existing records are preserved.'};
   await this.init();const key='history:'+symbol+':'+range,spec=HISTORY_RANGES[range],now=this.clock();
   const result=await this.resource(key,spec.cacheMs,async old=>{
    const raw=await this.request(historyRequest(symbol,range,now,old?.nextPageToken||null));if(!raw)return null;
-   const continuation=!!old?.nextPageToken,points=normalizeBars(raw,continuation?old.points:[],now),pages=continuation?(old.pages||1)+1:1;
+   const continuation=!!old?.nextPageToken,points=normalizeBars(raw,continuation?old.points:[],now,symbol),pages=continuation?(old.pages||1)+1:1;
    const next=typeof raw.next_page_token==='string'&&raw.next_page_token.length<=1024&&pages<LIVE_LIMITS.maxHistoryPages?raw.next_page_token:null;
-   return {symbol,range,points:boundedHistory(points,range),pages,nextPageToken:next,truncated:!!raw.next_page_token&&!next,fetchedAt:now.toISOString(),provider:'Alpaca',feed:'iex',adjustment:'split',delayedMinutes:16};
+   return {symbol,range,points:boundedHistory(points,isCrypto(symbol)&&range==='1D'?'1W':range),pages,nextPageToken:next,truncated:!!raw.next_page_token&&!next,fetchedAt:now.toISOString(),provider:'Alpaca',feed:isCrypto(symbol)?'crypto-us':'iex',adjustment:isCrypto(symbol)?'none':'split',delayedMinutes:isCrypto(symbol)?0:16};
   });
   // A bounded continuation is fetched on a later on-demand call, never a tight
   // server loop or extra subrequests hidden inside one client request.
   if(result.data?.nextPageToken&&!result.retained)await this.db.prepare('UPDATE live_market_cache SET fetched=0 WHERE cache_key=?').bind(key).run();
-  const g=await this.guard(),blocked=g.paused_until>+now||g.status==='configuration';
+  const guard=await this.guard(),health=isCrypto(symbol)?await this.cryptoHealth():null,g=health&&(health.paused_until>+now||health.status==='configuration')?health:guard,blocked=g.paused_until>+now||g.status==='configuration';
   return {...result.data,symbol,range,status:blocked?g.status:result.retained?'retained':result.data?.nextPageToken?'partial':result.data?'ok':'pending',points:result.data?.points||[],retryAfterMs:Math.max(5000,g.paused_until-(+now)),stale:!!result.retained||blocked};
  }
 }
