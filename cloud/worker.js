@@ -3,6 +3,8 @@ import {downloadFund} from '../server/market-provider.js';
 import {previousSession} from '../src/market-data.js';
 import {SYMBOLS} from '../src/funds.js';
 import {validName,PROFILE_SLOTS,emptySlots} from '../src/profiles.js';
+import {downloadMortgageRate} from '../server/mortgage-rate.js';
+import {validMortgageRate} from '../src/mortgage.js';
 
 const encoder=new TextEncoder(),COOKIE='__Host-lemonomics',MAX_BODY=2_000_000;
 const security={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow, noarchive','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY','Content-Security-Policy':"frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"};
@@ -66,6 +68,16 @@ export async function market(env,now){
   const data=JSON.parse(row.payload),stale=data.asOf!==target;
   return json({data,status:stale?'stale':'current',refreshFunds:stale});
 }
+export async function mortgageRate(env,now,fetcher=fetch){
+ await env.DB.prepare('INSERT OR IGNORE INTO mortgage_rate_cache (id) VALUES (1)').run();
+ let row=await env.DB.prepare('SELECT * FROM mortgage_rate_cache WHERE id=1').first();
+ if(row.refreshed<now-3600000&&row.lease<=now){
+  const lease=now+30000,claimed=await env.DB.prepare('UPDATE mortgage_rate_cache SET lease=? WHERE id=1 AND lease<=?').bind(lease,now).run();
+  if(claimed.meta.changes){try{const data=await downloadMortgageRate({fetcher,now:new Date(now)});await env.DB.prepare('UPDATE mortgage_rate_cache SET payload=?,refreshed=? WHERE id=1 AND lease=?').bind(JSON.stringify(data),now,lease).run()}catch{await env.DB.prepare('UPDATE mortgage_rate_cache SET refreshed=? WHERE id=1 AND lease=?').bind(now-55*60000,lease).run()}row=await env.DB.prepare('SELECT * FROM mortgage_rate_cache WHERE id=1').first();}
+ }
+ const data=row.payload?JSON.parse(row.payload):null;
+ return json({data:validMortgageRate(data,new Date(now))?data:null},validMortgageRate(data,new Date(now))?200:503);
+}
 export default {
  async fetch(request,env){
   try{
@@ -92,6 +104,7 @@ export default {
    if(path==='/logout'&&request.method==='POST')return new Response(null,{status:303,headers:{...security,Location:'/login','Set-Cookie':COOKIE+'=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'}});
    if(path==='/api/config'&&request.method==='GET')return json({onlineProfiles:true,version:1});
    if(path==='/api/market'&&request.method==='GET')return market(env,now);
+   if(path==='/api/mortgage-rate'&&request.method==='GET')return mortgageRate(env,now);
    if(path.startsWith('/api/market/fund/')&&request.method==='GET')return refreshFund(env,path.slice('/api/market/fund/'.length),now);
    if(path==='/api/profiles'&&request.method==='GET'){
     const rows=await env.DB.prepare('SELECT slot,revision,profile FROM profiles ORDER BY slot').all(),slots=emptySlots();

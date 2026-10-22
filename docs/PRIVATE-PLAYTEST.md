@@ -64,3 +64,5 @@ Provider access must be checked on the deployed Worker: local tests can verify f
 - Losing connectivity during Save keeps the game open with an error and browser backup; reconnect and retry.
 - Re-deploying code retains the same five slots. Locking the game removes access to profile APIs.
 - Confirm the investment price date and complete one reviewed purchase with fresh prior-close data. Fresh upstream pricing and real account deployment are final live checks, not guaranteed by the local test run.
+
+The house/mortgage update adds migration `0004_mortgage_rate.sql`, applied by the existing publish script. It adds only a mortgage-rate cache; existing profile records and passwords remain unchanged. `/api/mortgage-rate` is protected by the same family login. The Worker fetches the public FRED `MORTGAGE30US` CSV without an API key; the hourly cache and retry lease keep provider requests bounded. A failed provider fetch retains the most recent quote, while stale or absent quotes disable new mortgages until refresh succeeds. Existing mortgages retain their original fixed rate.

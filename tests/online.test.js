@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import worker,{refreshFund,market} from '../cloud/worker.js';
+import worker,{refreshFund,market,mortgageRate} from '../cloud/worker.js';
 import {OnlineProfileStore,CLOUD_BACKUP_KEY} from '../src/online-profiles.js';
 import {PROFILE_KEY} from '../src/profiles.js';
 const state=()=>({day:1,inventory:{lemons:0},ledger:[],bank:{checking:0}});
 function environment(){
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../cloud/migrations/0002_fund_refresh.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../cloud/migrations/0003_five_profiles.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../cloud/migrations/0004_mortgage_rate.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){
    let args=[];
    return {
@@ -109,4 +110,14 @@ test('three-slot database migration preserves saved ids, revisions and payloads'
  db.exec(readFileSync(new URL('../cloud/migrations/0003_five_profiles.sql',import.meta.url),'utf8'));
  assert.deepEqual({...db.prepare('SELECT * FROM profiles WHERE slot=2').get()},{slot:2,id:'existing',revision:42,profile:'saved business'});
  db.prepare('INSERT INTO profiles VALUES (?,?,?,?)').run(4,'new',1,'new business');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM profiles').get().n,2);
+});
+
+test('mortgage rate endpoint caches verified published rates and retains the last known quote through provider failures',async()=>{
+ const env=environment(),now=Date.parse('2026-10-22T18:00:00Z');let calls=0;
+ const fetcher=async()=>{calls++;return new Response('DATE,MORTGAGE30US\n2026-10-15,6.3\n2026-10-22,6.5\n')};
+ let response=await mortgageRate(env,now,fetcher);assert.equal(response.status,200);assert.equal((await response.json()).data.rate,6.5);
+ await mortgageRate(env,now+1000,fetcher);assert.equal(calls,1);
+ response=await mortgageRate(env,now+2*3600000,async()=>{throw Error('offline')});assert.equal(response.status,200);assert.equal((await response.json()).data.asOf,'2026-10-22');
+ response=await mortgageRate(env,now+40*86400000,async()=>{throw Error('offline')});assert.equal(response.status,503);
+ const anonymous=await worker.fetch(new Request('https://game.example/api/mortgage-rate'),env);assert.equal(anonymous.status,401);
 });

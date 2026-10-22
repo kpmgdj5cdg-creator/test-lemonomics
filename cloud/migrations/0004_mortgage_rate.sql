@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS mortgage_rate_cache (
+ id INTEGER PRIMARY KEY CHECK(id = 1),
+ payload TEXT,
+ refreshed INTEGER NOT NULL DEFAULT 0,
+ lease INTEGER NOT NULL DEFAULT 0
+);

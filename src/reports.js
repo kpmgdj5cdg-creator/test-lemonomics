@@ -13,6 +13,7 @@ export function statements(state,equipment=[],market=null){
  if(c==='recipes')d.recipes-=l.cash||0;
  if(c==='resale')d.loss+=l.loss||0;
  if(c==='collateral fee')d.interest+=l.expense||0;
+ if(c==='mortgage interest')d.interest+=l.expense||0;
  if(c==='investment dividend')d.investment+=l.bankChange||0;
  }
  const portfolio=state.bank.portfolio;
@@ -21,11 +22,11 @@ export function statements(state,equipment=[],market=null){
  const income=[['Income Statement',...days.map(d=>'Day '+d),'Totals']];
  const rows=[['Lemonade sales','sales',1],['Investment income / (loss), including unrealized','investment',1],['Ingredients, cups and spoilage','cost',-1],['Permits','permit',-1],['Loan interest and collateral fees','interest',-1],['Recipe books','recipes',-1],['Loss on resale','loss',-1]];
  const totals=days.map(()=>0);for(const [label,key,sign] of rows){const values=days.map((d,i)=>{const v=round(profits[d][key]*sign);totals[i]=round(totals[i]+v);return v});income.push([label,...values,round(values.reduce((a,b)=>a+b,0))]);}income.push(['Net income / (loss)',...totals,round(totals.reduce((a,b)=>a+b,0))]);
- const inventory=round(Object.entries(state.inventory).reduce((sum,[k,v])=>sum+v*rates[k],0)),equip=round(state.upgrades.reduce((sum,id)=>sum+(state.equipmentCosts?.[id]??equipment.find(u=>u.id===id)?.price??0),0));
- const investments=portfolioTotals(state.bank,market).valueCents/100,debt=round(state.bank.loans.reduce((s,l)=>s+l.balance,0)),assets=round(state.cash+state.bank.checking+inventory+equip+investments),net=income.at(-1).at(-1),opening=round(assets-debt-net);
- const balance=[['Balance Sheet','Aggregate'],['Stand cash',state.cash],['Checking',state.bank.checking],['Inventory at cost',inventory],['Equipment at cost',equip],['Investments at latest available close',investments],['Total assets',assets],['Loans payable',debt],['Opening / imported equity',opening],['Retained earnings',net],['Total liabilities and equity',round(debt+opening+net)]];
+ const inventory=round(Object.entries(state.inventory).reduce((sum,[k,v])=>sum+v*rates[k],0)),equip=round(state.upgrades.filter(id=>id!=='house').reduce((sum,id)=>sum+(state.equipmentCosts?.[id]??equipment.find(u=>u.id===id)?.price??0),0)),house=state.upgrades.includes('house')?400000:0;
+ const investments=portfolioTotals(state.bank,market).valueCents/100,debt=round(state.bank.loans.reduce((s,l)=>s+l.balance,0)+(state.bank.mortgage?.balance||0)),assets=round(state.cash+state.bank.checking+inventory+equip+investments+house),net=income.at(-1).at(-1),opening=round(assets-debt-net);
+ const balance=[['Balance Sheet','Aggregate'],['Stand cash',state.cash],['Checking',state.bank.checking],['Inventory at cost',inventory],['Equipment at cost',equip],['House at cost',house],['Investments at latest available close',investments],['Total assets',assets],['Loans payable',debt],['Opening / imported equity',opening],['Retained earnings',net],['Total liabilities and equity',round(debt+opening+net)]];
  const flow=[['Cash Flow',...days.map(d=>'Day '+d),'Totals']];const buckets={Operating:days.map(()=>0),Investing:days.map(()=>0),Financing:days.map(()=>0)};
- for(const l of state.ledger){const i=days.indexOf(l.day);if(i<0)continue;const amount=(l.cash||0)+(l.bankChange||0);const bucket=['loan','loan payment'].includes(l.category)?'Financing':['equipment','investment buy','investment sell','investment transfer'].includes(l.category)||(l.category==='resale'&&l.asset==='equipment')?'Investing':'Operating';buckets[bucket][i]=round(buckets[bucket][i]+amount)}
+ for(const l of state.ledger){const i=days.indexOf(l.day);if(i<0)continue;const amount=(l.cash||0)+(l.bankChange||0);const bucket=['loan','loan payment','mortgage payment'].includes(l.category)?'Financing':['equipment','house purchase','investment buy','investment sell','investment transfer'].includes(l.category)||(l.category==='resale'&&l.asset==='equipment')?'Investing':'Operating';buckets[bucket][i]=round(buckets[bucket][i]+amount)}
  for(const [key,values]of Object.entries(buckets))flow.push([key+' cash flow',...values,round(values.reduce((a,b)=>a+b,0))]);const movement=days.map((_,i)=>round(Object.values(buckets).reduce((s,v)=>s+v[i],0)));flow.push(['Net change in cash + checking',...movement,round(movement.reduce((a,b)=>a+b,0))]);flow.push(['Opening / imported cash + checking',round(state.cash+state.bank.checking-flow.at(-1).at(-1))]);flow.push(['Ending cash + checking',round(state.cash+state.bank.checking)]);
  return {income,balance,flow,days,profits};
 }

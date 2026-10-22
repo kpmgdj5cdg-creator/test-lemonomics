@@ -49,7 +49,7 @@ export class WeatherEffects{
     const t=reduced?0:time,attribute=this.mode==='rain'?this.rainGeometry.attributes.position:this.snowGeometry.attributes.position;
     const count=this.mode==='rain'?420:320;
     for(let i=0;i<count;i++){
-      const x=((i*79)%440)/10-22,z=((i*113)%380)/10-21,rawY=1+((i*.718-t*(this.mode==='rain'?15:1.1))%14+14)%14;
+      const x=((i*79)%440)/10-22+(this.offsetX||0),z=((i*113)%380)/10-21,rawY=1+((i*.718-t*(this.mode==='rain'?15:1.1))%14+14)%14;
       const cover=this.shelter,sx=this.mode==='snow'?x+Math.sin(t*.7+i)*.3:x,sz=this.mode==='snow'?z+Math.cos(t*.5+i)*.2:z;
       const y=cover&&sx>cover.minX&&sx<cover.maxX&&sz>cover.minZ&&sz<cover.maxZ&&rawY-(this.mode==='rain'?.55:0)<cover.maxY?rawY+8:rawY;
       if(this.mode==='rain'){attribute.setXYZ(i*2,x,y,z);attribute.setXYZ(i*2+1,x+.07,y-.52,z+.04)}

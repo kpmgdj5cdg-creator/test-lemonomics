@@ -173,3 +173,9 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 @media(max-width:620px){#scene[data-stand-style=classic] #sceneBack{display:none!important}.classic-move-pad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,36px)}}
 
 #scene[data-view=firstperson] .scene-orbit{display:none!important}
+
+.home-sale-tag{position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:6;max-width:85%;padding:10px 14px;border:2px solid #27673e;border-radius:8px;background:#fff6ce;color:#285235;font-weight:800;box-shadow:0 4px 0 #27673e33;cursor:pointer}
+#scene[data-view="home"] #sceneBack,#scene[data-view="home"] #sceneInventory,#scene[data-view="home"] #worldLiveStats,#scene[data-view="home"] .scene-controls,#scene[data-view="home"] #classicEntryBtn,#scene[data-view="home"] #classicExitBtn,#scene[data-view="home"] #classicDoorBtn{display:none!important}
+.upgrade-equip{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:8px;background:#ecf4dc;color:#245733;font-weight:800}.upgrade-equip input{width:20px;height:20px;accent-color:#237240}.mortgage-summary{line-height:1.6}
+
+#scene[data-view="home"] #neighborhoodEvent{display:none!important}

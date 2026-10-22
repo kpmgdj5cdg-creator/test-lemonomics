@@ -1,4 +1,5 @@
 import {box,group,fence,tree,bush,bench} from './models.js';
+import {buildPlayerHome,HOME_LOT} from './home-model.js';
 
 // Doors face local +Z. Keep each home and its landscaping inside one spacious lot.
 // Local backyards run from the back wall (-2) to the rear fence (-10.8).
@@ -128,7 +129,7 @@ export function buildNeighborhoodHomes(parent){
     box(plot,0,-.015,-6.3,8.2,.025,8.9,lot.style%2?'#74b866':'#6db15f');
     fence(plot,-4.2,-10.8,8.4);
     fence(plot,-4.2,-10.8,9.1,'z');fence(plot,4.2,-10.8,9.1,'z');
-    const home=modernHome(plot,lot.style);homes.push(home);
+    const home=lot.x===HOME_LOT.x&&lot.z===HOME_LOT.z?buildPlayerHome(plot):modernHome(plot,lot.style);homes.push(home);
     const yard=index%4;plot.userData.yardStyle=['seating','round-tree','tree-and-table','garden'][yard];
     if(yard===0){
       const yardTree=group(plot,-2.5,-.1225,-7.7);tree(yardTree,0,0,.78,lot.style%2);yardTree.userData.kind='yard-tree';
@@ -145,7 +146,7 @@ export function buildNeighborhoodHomes(parent){
         for(let i=0;i<4;i++){box(garden,x,.49,-.65+i*.43,.1,.32,.1,'#538247');box(garden,x,.68,-.65+i*.43,.25,.16,.25,i%2?'#efb2b9':'#f3ce73')}
       }
     }
-    bush(plot,3.35,1.05,.65);
+    bush(plot,3.35,home.userData.purchasable?3.4:1.05,.65);
     // Front paths finish at the street sidewalk; the stand's house uses a clear side exit.
     if(lot.standNeighbor){
       path(plot,{x:0,z:3.05},{x:0,z:3.45});
