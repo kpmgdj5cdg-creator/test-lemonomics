@@ -18,14 +18,18 @@ export class LiveMarketService{
   const r=await this.db.prepare(`UPDATE live_market_guard SET day=?,daily_calls=CASE WHEN day=? THEN daily_calls+1 ELSE 1 END,minute=?,minute_calls=CASE WHEN minute=? THEN minute_calls+1 ELSE 1 END,next_call=? WHERE id=1 AND status<>'configuration' AND paused_until<=? AND next_call<=? AND (day<>? OR daily_calls<?) AND (minute<>? OR minute_calls<?)`).bind(day,day,minute,minute,now+LIVE_LIMITS.minCallGapMs,now,now,day,LIVE_LIMITS.dailyCalls,minute,LIVE_LIMITS.minuteCalls).run();
   return !!r.meta.changes;
  }
- async failure(error){
+ async failure(error,operation='unknown'){
   const now=+this.clock(),g=await this.guard(),status=[401,403].includes(error.status)?'configuration':error.status===429?'rate-limited':'unavailable';
   const delay=status==='configuration'?365*86400000:Math.max(status==='rate-limited'?60000:30000,Math.min(365*86400000,Number.isFinite(error.retry)?error.retry:0),Math.min(3600000,30000*2**Math.min(6,g.failures)));
   await this.db.prepare('UPDATE live_market_guard SET paused_until=?,failures=failures+1,status=? WHERE id=1').bind(now+delay,status).run();
+  const diagnosis={at:this.clock().toISOString(),operation:['calendar','quotes','history'].includes(operation)?operation:'unknown',httpStatus:Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,reason:error.status?'http-error':error.name==='TimeoutError'||error.name==='AbortError'?'timeout':error.name==='SyntaxError'?'invalid-response':'network-or-invalid-response'};
+  // Store only explicitly selected safe fields: never provider bodies, messages,
+  // URLs, request headers, credentials or account identifiers.
+  await this.db.prepare("INSERT INTO live_market_cache (cache_key,payload,fetched) VALUES ('diagnostic',?,?) ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload,fetched=excluded.fetched").bind(JSON.stringify(diagnosis),now).run();
  }
  async request(path){
   if(!await this.reserve())return null;
-  try{const result=await alpacaJSON(this.env,path,{fetcher:this.fetcher,now:this.clock()});await this.db.prepare("UPDATE live_market_guard SET failures=0,status='ok' WHERE id=1 AND status<>'configuration'").run();return result}catch(e){await this.failure(e);throw e}
+  try{const result=await alpacaJSON(this.env,path,{fetcher:this.fetcher,now:this.clock()});await this.db.prepare("UPDATE live_market_guard SET failures=0,status='ok' WHERE id=1 AND status<>'configuration'").run();return result}catch(e){await this.failure(e,path.startsWith('/v2/calendar?')?'calendar':path.startsWith('/v2/stocks/snapshots?')?'quotes':'history');e.marketFailureRecorded=true;throw e}
  }
  async resource(key,ttl,refresh){
   let row=await this.cache(key);const now=+this.clock();if(row?.fetched>now-ttl)return {data:load(row),cached:true};
@@ -35,8 +39,15 @@ export class LiveMarketService{
   if(!claim.meta.changes)return {data:load(await this.cache(key)),pending:true};
   try{
    const data=await refresh(load(row));if(data!==null){await this.db.prepare('UPDATE live_market_cache SET payload=?,fetched=?,lease=0 WHERE cache_key=? AND lease=?').bind(JSON.stringify(data),+this.clock(),key,lease).run();return {data,cached:false};}
-  }catch(e){if(!e.status)await this.failure(e)}finally{await this.db.prepare('UPDATE live_market_cache SET lease=0 WHERE cache_key=? AND lease=?').bind(key,lease).run()}
+  }catch(e){if(!e.marketFailureRecorded)await this.failure(e,key==='calendar'?'calendar':key==='quotes'?'quotes':'history')}finally{await this.db.prepare('UPDATE live_market_cache SET lease=0 WHERE cache_key=? AND lease=?').bind(key,lease).run()}
   return {data:load(await this.cache(key)),retained:true};
+ }
+ async diagnostics(){
+  const configuration={activationEnabled:this.env.ALPACA_LIVE_ENABLED==='true',keyIdPresent:!!this.env.ALPACA_API_KEY_ID,secretKeyPresent:!!this.env.ALPACA_API_SECRET_KEY};
+  try{
+   const g=await this.guard(),lastFailure=load(await this.cache('diagnostic')),calendar=load(await this.cache('calendar')),quotes=load(await this.cache('quotes'));
+   return {configuration,storage:'ok',status:g?.status||'not-started',pausedUntil:g?.paused_until?new Date(g.paused_until).toISOString():null,failures:g?.failures||0,dailyCalls:g?.daily_calls||0,budgetDate:g?.day||null,lastFailure:lastFailure?{at:lastFailure.at,operation:lastFailure.operation,httpStatus:lastFailure.httpStatus,reason:lastFailure.reason}:null,calendarCached:!!calendar,quotesCached:!!quotes,note:'Read-only diagnostic. Open Investments and refresh prices once after any current backoff ends to record a new failure. No keys or provider response bodies are returned.'};
+  }catch{return {configuration,storage:'unavailable',message:'Market cache tables or the D1 binding are unavailable. Check the deployment migration result.'}}
  }
  async calendar(){
   const spec=calendarRequest(this.clock());return this.resource('calendar',86400000,async()=>{const raw=await this.request(spec.path);return raw?normalizeCalendar(raw,spec.start,spec.end):null});
@@ -44,8 +55,8 @@ export class LiveMarketService{
  async quotes(){
   const now=this.clock();if(!this.enabled())return {...decorateQuotes(null,null,'disabled',now,300000),message:'Live Alpaca data is not enabled. Holdings are preserved; ask the family administrator to complete the free-plan setup.'};
   await this.init();
-  // Quotes take priority over refreshing the calendar. A first request may show
-  // latest prices while the globally budgeted calendar request follows later.
+  // Verify the calendar first. Cold starts fetch snapshots on a later poll,
+  // respecting the shared request gap.
   const calendarRow=await this.cache('calendar');if(!calendarRow||calendarRow.fetched<+now-86400000){const refresh=await this.calendar();if(!calendarRow&&refresh.data)return decorateQuotes(load(await this.cache('quotes')),refresh.data,'pending',this.clock(),5000);}
   const cachedCalendar=load(await this.cache('calendar')),session=marketSession(cachedCalendar,now);
   const result=await this.resource('quotes',session.open?LIVE_LIMITS.quoteCacheMs:LIVE_LIMITS.closedCacheMs,async old=>{

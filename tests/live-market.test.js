@@ -79,3 +79,13 @@ test('malformed trade timestamps and expired snapshots are safely rejected',()=>
  for(const timestamp of ['bad date',null,'2026-10-23T15:00:00Z']){const invalid=structuredClone(batch);invalid.quotes.SPY.timestamp=timestamp;assert.throws(()=>tradeQuote(invalid,'SPY',now),/expired or unavailable/);}
  const expired=decorateQuotes({...raw,fetchedAt:'2026-10-22T14:59:40Z'},calendar,'ok',now);assert.equal(expired.quotes.SPY.stale,true);assert.equal(expired.quotes.SPY.current,false);assert.throws(()=>tradeQuote(expired,'SPY',now),/expired or unavailable/);
 });
+
+test('authenticated diagnostics identify failures without secrets, raw errors, retries or budget mutations',async()=>{
+ for(const mode of ['401','403','429','network']){
+  const f=fixture();f.setMode(mode);await f.service().quotes();const count=f.calls.length,g=await f.service().guard(),d=await f.service().diagnostics();
+  assert.equal(d.lastFailure.operation,'calendar');assert.equal(d.lastFailure.httpStatus,mode==='network'?null:+mode);assert.equal(d.configuration.keyIdPresent,true);assert.equal(d.configuration.secretKeyPresent,true);
+  assert.equal(d.failures,1,'one failed provider call is counted once');assert.equal(f.calls.length,count);assert.deepEqual(await f.service().guard(),g);assert.doesNotMatch(JSON.stringify(d),/TEST_ONLY|fingerprint|offline|APCA-API/);
+ }
+ const env=liveEnvironment(),service=new LiveMarketService(env,{fetcher:()=>{throw Error('must not request')}});const first=await service.diagnostics();assert.equal(first.status,'not-started');assert.equal(first.lastFailure,null);
+ await service.init();await service.resource('calendar',1000,async()=>{throw Error('PRIVATE_TEST_PROVIDER_BODY')});const safe=await service.diagnostics();assert.equal(safe.lastFailure.reason,'network-or-invalid-response');assert.doesNotMatch(JSON.stringify(safe),/PRIVATE_TEST/);
+});

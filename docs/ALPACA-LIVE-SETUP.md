@@ -80,3 +80,8 @@ The existing YTD selection is retained in addition to the six requested periods.
 Tests use explicitly labeled synthetic Alpaca fixtures and in-memory SQLite D1 adapters. They cover global cache sharing, quotas, pagination, all funds/ranges, stale/missing/invalid data, failures, market sessions, fractional-share accounting, account records, quote changes and expiry, legacy holdings, independent game days, browser polling pauses, interactive charts and phone layout. No live-provider success or account billing verification is claimed by these tests.
 
 Official API references: [market data](https://docs.alpaca.markets/us/docs/about-market-data-api), [historical bars](https://docs.alpaca.markets/us/reference/stockbars-1), and [market calendar](https://docs.alpaca.markets/reference/getcalendar-1). The endpoint shapes were also checked against Alpaca's official `alpacahq/alpaca-py` SDK. Access to the hosted documentation from the implementation workspace was restricted; verify current entitlements and terms in the provider account before activation.
+
+
+## Private connection diagnosis
+
+After signing in to the game, open `/api/market/diagnostics` on the same host. This authenticated read-only route reports whether the two Runtime secrets are present (never their values), whether activation is enabled, D1 cache availability, current backoff, and the most recently recorded failure's operation and HTTP status. It makes no Alpaca calls and does not reset quotas or backoff. Diagnostics only record failures after this diagnostic release; an earlier failure can have `lastFailure: null` until the next normally permitted retry. Provider response bodies, raw error messages, URLs, headers and credentials are never stored in diagnostics.

@@ -125,6 +125,7 @@ test('mortgage rate endpoint caches verified published rates and retains the las
 
 test('live market routes require family authentication and keep disabled configuration private',async()=>{
  const env=environment();env.ALPACA_API_KEY_ID='TEST_PRIVATE_ID';env.ALPACA_API_SECRET_KEY='TEST_PRIVATE_SECRET';
+ const diagnostic=await worker.fetch(new Request('https://game.example/api/market/diagnostics'),env);assert.equal(diagnostic.status,401);
  const paths=['/api/market/quotes','/api/market/history?symbol=SPY&range=1D'];
  for(const path of paths)assert.equal((await worker.fetch(new Request('https://game.example'+path),env)).status,401);
  const api=await family(env);
@@ -133,5 +134,6 @@ test('live market routes require family authentication and keep disabled configu
   const body=await response.text();assert.equal(JSON.parse(body).status,'disabled');assert.doesNotMatch(body,/TEST_PRIVATE|APCA-API/);
   assert.equal((await api(path,{method:'POST',body:'{}'})).status,404);
  }
+ const diagnosis=await api('/api/market/diagnostics');assert.equal(diagnosis.status,200);const safe=await diagnosis.text();assert.doesNotMatch(safe,/TEST_PRIVATE|fingerprint|APCA-API/);assert.equal(JSON.parse(safe).configuration.activationEnabled,false);
  assert.equal((await api('/api/orders',{method:'POST',body:'{}'})).status,404);
 });

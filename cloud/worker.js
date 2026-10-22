@@ -105,6 +105,7 @@ export default {
    if(path==='/logout'&&request.method==='POST')return new Response(null,{status:303,headers:{...security,Location:'/login','Set-Cookie':COOKIE+'=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'}});
    if(path==='/api/config'&&request.method==='GET')return json({onlineProfiles:true,version:1});
    if(path==='/api/market'&&request.method==='GET')return market(env,now);
+   if(path==='/api/market/diagnostics'&&request.method==='GET')return json(await new LiveMarketService(env).diagnostics());
    if(path==='/api/market/quotes'&&request.method==='GET')return json(await new LiveMarketService(env).quotes());
    if(path==='/api/market/history'&&request.method==='GET')return json(await new LiveMarketService(env).history(url.searchParams.get('symbol'),url.searchParams.get('range')));
    if(path==='/api/mortgage-rate'&&request.method==='GET')return mortgageRate(env,now);
