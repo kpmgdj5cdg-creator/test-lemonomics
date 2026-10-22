@@ -9,14 +9,16 @@ import {planArrivals,pointOnRoute,walkElevation} from './traffic.js';
 import {WeatherEffects} from './weather.js';
 import { availableCups } from './capacity.js';
 import {PlayerController,sceneColliders,sceneGround} from './player-controller.js';
+import {ClassicInterior} from './classic-interior.js';
+import {gameAudio} from './game-audio.js';
 
 const PLAYER=new THREE.Vector3(-3,0,-.8),RIVAL=new THREE.Vector3(11.3,0,-.7),DOWNTOWN_RIVAL=new THREE.Vector3(13.3,0,-.7),WATERFRONT_RIVAL=new THREE.Vector3(11.8,0,-.8);
 const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Renderer consumes the game's state and events; it never creates sales or edits money. */
 export class Neighborhood{
-  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{}}={}){
-    this.container=container;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
+  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{},onFirstPerson=()=>{}}={}){
+    this.container=container;this.audio=gameAudio;this.onFirstPerson=onFirstPerson;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#8bd8e0');
     this.scene.fog=new THREE.Fog('#92d8df',70,140);
     this.camera=new THREE.OrthographicCamera(-20,20,16,-16,.1,150);this.camera.position.set(25,30,34);this.target=new THREE.Vector3(0,0,0);
@@ -28,7 +30,7 @@ export class Neighborhood{
     this.sun=new THREE.DirectionalLight('#fff4d4',3.2);this.sun.position.set(-15,22,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:22,bottom:-22,near:1,far:70});this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.00015;this.sun.shadow.radius=3;this.scene.add(this.sun);
     this.environment=group(this.scene);this.location='neighborhood';this.buildNeighborhood();this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);batch(this.environment);this.weatherEffects=new WeatherEffects(this.scene);this.arrivals=[];
     this.actorRoot=group(this.scene);this.hitbox=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,3.4),new THREE.MeshBasicMaterial({visible:false}));this.hitbox.position.copy(PLAYER).add(new THREE.Vector3(0,1.7,0));this.scene.add(this.hitbox);
-    this.avatarController=new PlayerController(this);
+    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.installAudioControls();
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.drag=null;this.installControls();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);this.resize();
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
@@ -79,6 +81,7 @@ export class Neighborhood{
     const location=state.location==='beach'?'waterfront':state.location==='square'?'downtown':state.location==='park'?'park':'neighborhood';
     this.rivalPosition=location==='waterfront'?WATERFRONT_RIVAL:location==='downtown'?DOWNTOWN_RIVAL:RIVAL;
     if(this.location!==location){
+      this.classicInterior.reset();
       this.weatherEffects.clearCaps();disposeGroup(this.environment);this.environment=group(this.scene);
       this.location=location;this.waterfront=null;
       if(location==='park')this.plotLabel=buildPark(this.environment,RIVAL);
@@ -92,9 +95,13 @@ export class Neighborhood{
     this.container.dataset.location=location;
     const signature=JSON.stringify([state.upgrades,state.price,state.day>=4,state.location]);
     if(this.signature!==signature){
+      const oldDoorAmount=this.player?.doors?.amount||0;
       this.signature=signature;if(this.player)disposeGroup(this.player.group);if(this.rival)disposeGroup(this.rival.group);
       this.player=stand(this.scene,state);this.player.group.position.copy(PLAYER);
-      this.container.dataset.standStyle=this.player.style;
+      if(this.player.doors)this.player.doors.amount=oldDoorAmount;
+      this.classicInterior.sync();
+      if(!this.player.speaker)this.audio.stopMusic();
+      this.container.dataset.standStyle=this.player.style;this.container.parentElement.dataset.standStyle=this.player.style;
       if(!this.avatarController.enabled){this.avatarController.parkAtStand();this.avatarController.publish()}
       const bounds=new THREE.Box3().setFromObject(this.player.group),size=bounds.getSize(new THREE.Vector3());
       this.hitbox.position.copy(bounds.getCenter(new THREE.Vector3()));this.hitbox.scale.set(size.x/4,size.y/3.4,size.z/3.4);
@@ -102,6 +109,7 @@ export class Neighborhood{
       if(this.rival)this.rival.group.position.copy(this.rivalPosition);this.plotLabel.visible=!this.rival;
       this.player.roof.visible=this.view!=='interior';this.stockSignature='';this.updateCameraGoal();this.weatherEffects.register(this.environment,this.player.roof,this.rival?.roof);
     }
+    this.classicInterior.sync();this.publishAudio();
     const stockSig=JSON.stringify(state.inventory);
     if(this.stockSignature!==stockSig){this.stockSignature=stockSig;this.updateStock(state.inventory)}
     const weatherMode=weather.name==='Snowy'?'snow':weather.name==='Rainy'?'rain':'sunny';
@@ -118,22 +126,25 @@ export class Neighborhood{
     const root=this.player.stock;for(const child of [...root.children])disposeGroup(child);
     // Empty storage remains visibly empty until supplies have actually been bought.
     for(const [i,key] of ['lemons','sugar','ice','cups'].entries()){
-      const x=-1.12+i*.73;box(root,x,.47,-.84,.58,.29,.42,'#b18a56');box(root,x,.65,-1.05,.58,.11,.05,'#cfaa70');
+      const x=this.player.style==='classic'?-1.6+i*.7:-1.12+i*.73;box(root,x,.47,-.84,.58,.29,.42,'#b18a56');box(root,x,.65,-1.05,.58,.11,.05,'#cfaa70');
       const count=Math.min(6,Math.ceil(inventory[key]/(key==='cups'?4:3)));
       for(let j=0;j<count;j++)box(root,x-.14+(j%2)*.26,.7+Math.floor(j/4)*.16,-.8-Math.floor((j%4)/2)*.16,key==='cups'?.13:.16,key==='cups'?.23:.13,.13,{lemons:'#ecc64b',sugar:'#f2e7cc',ice:'#b3d9d5',cups:'#fff0c8'}[key]);
     }batch(root);
   }
   setView(view){
-    if(!['neighborhood','exterior','interior'].includes(view))return;
+    if(!['neighborhood','exterior','interior','firstperson'].includes(view))return;
+    if(view==='firstperson'){if(this.player?.style!=='classic')return;if(!this.classicInterior.active)this.classicInterior.enterInstant();this.view=view;this.container.dataset.view=view;return}
+    if(this.classicInterior.active||this.classicInterior.entering){this.classicInterior.deactivate();this.avatarController.parkAtStand();this.classicInterior.sync();}
     if(view!=='neighborhood'&&this.avatarController?.enabled)this.avatarController.setEnabled(false);
     const changed=this.view!==view;this.view=view;
     if(changed){this.zoom=1;this.angle=view==='interior'?.2:.55}
     if(this.player)this.player.roof.visible=view!=='interior';
     this.container.dataset.view=view;this.updateCameraGoal();
   }
-  rotate(delta){this.angle=THREE.MathUtils.clamp(this.angle+delta,-.9,1.2);this.updateCameraGoal()}
+  rotate(delta){if(this.classicInterior.active){this.classicInterior.look(-delta*160,0);return}this.angle=THREE.MathUtils.clamp(this.angle+delta,-.9,1.2);this.updateCameraGoal()}
   updateCameraGoal(){
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);
+    if(this.classicInterior?.active){this.classicInterior.updateCamera();return}
     if(this.avatarController?.enabled){
       this.desiredTarget.copy(this.avatarController.avatar.group.position).add(new THREE.Vector3(0,.8,0));
       this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*16,13,Math.cos(this.angle)*16));
@@ -150,14 +161,44 @@ export class Neighborhood{
     if(reducedMotion()){this.camera.position.copy(this.desiredPosition);this.target.copy(this.desiredTarget);this.span=this.desiredSpan}
   }
   resize(){if(!this.renderer)return;const {clientWidth:w,clientHeight:h}=this.container;if(!w||!h)return;this.renderer.setSize(w,h,false);this.updateCameraGoal()}
+  installAudioControls(){
+    const nav=this.container.parentElement.querySelector('.scene-nav');
+    this.soundButton=document.createElement('button');this.soundButton.type='button';this.soundButton.className='scene-chip';this.soundButton.id='gameSoundBtn';
+    this.musicButton=document.createElement('button');this.musicButton.type='button';this.musicButton.className='scene-chip';this.musicButton.id='speakerToggleBtn';this.musicButton.hidden=true;
+    nav.append(this.soundButton,this.musicButton);this.soundButton.onclick=()=>{this.audio.unlock();this.audio.setMuted(!this.audio.muted);this.publishAudio();if(this.classicInterior.active)this.container.focus({preventScroll:true})};this.musicButton.onclick=()=>this.toggleSpeaker();
+    this.audioAbort=new AbortController();document.addEventListener('pointerdown',e=>{if(e.target.closest('button,canvas'))this.audio.unlock().then(()=>{if(e.target.closest('button'))this.audio.effect('click')})},{capture:true,signal:this.audioAbort.signal});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.audio.setAudible(false)},{signal:this.audioAbort.signal});this.publishAudio();
+  }
+  async toggleSpeaker(){if(!this.player?.speaker)return;await this.audio.toggleMusic();this.publishAudio();if(this.classicInterior.active)this.container.focus({preventScroll:true})}
+  publishAudio(){
+    const playing=!!this.audio.musicPlaying;
+    this.soundButton.textContent=this.audio.muted?'Sound off':'Sound on';this.soundButton.setAttribute('aria-pressed',String(!this.audio.muted));
+    this.musicButton.hidden=!this.player?.speaker;this.musicButton.textContent=playing?'Speaker: Stop':'Speaker: Play';this.musicButton.setAttribute('aria-pressed',String(playing));
+    this.container.dataset.musicPlaying=String(playing);this.container.dataset.audioState=this.audio.context?.state||'locked';this.container.dataset.audioNotes=String(this.audio.noteCount);this.container.dataset.audioLevel=String(+this.audio.level().toFixed(4));
+  }
+  currentCamera(){return this.classicInterior.active?this.classicInterior.camera:this.camera}
+  interactAt(x,y){
+    if(this.paused||this.classicInterior.modalOpen())return;
+    const visible=o=>{for(let p=o;p;p=p.parent)if(!p.visible)return false;return true};
+    const r=this.container.getBoundingClientRect();this.pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.currentCamera());
+    const candidates=[];
+    for(const [kind,object] of [['door',this.player?.doors?.group],['speaker',this.player?.speaker?.group]])if(object&&visible(object)){const hit=this.raycaster.intersectObject(object,true)[0];if(hit)candidates.push({...hit,kind})}
+    candidates.sort((a,b)=>a.distance-b.distance);
+    for(const target of candidates){
+      const blocker=this.raycaster.intersectObject(this.player.group,true).find(h=>visible(h.object)&&h.object.material.visible!==false&&!(h.object.material.transparent&&h.object.material.opacity<.5));
+      if(blocker&&blocker.distance<target.distance-.10)continue;
+      if(target.kind==='speaker')this.toggleSpeaker();else if(this.classicInterior.active)this.classicInterior.toggleDoors();else this.classicInterior.beginEntry();return;
+    }
+    if(!this.classicInterior.active&&!this.classicInterior.entering&&this.raycaster.intersectObject(this.hitbox).length)this.onSelect();
+  }
   installControls(){
     const c=this.container;
-    c.addEventListener('pointerdown',e=>{if(e.button!==0)return;this.drag={x:e.clientX,y:e.clientY,last:e.clientX,moved:0};c.setPointerCapture(e.pointerId)});
-    c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.last;this.drag.last=e.clientX;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5)this.rotate(-dx*.008)});
-    c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6){const r=c.getBoundingClientRect();this.pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);if(this.raycaster.intersectObject(this.hitbox).length)this.onSelect()}this.drag=null});
+    c.addEventListener('pointerdown',e=>{if(e.button!==0)return;c.focus({preventScroll:true});this.audio.unlock();this.drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:0};c.setPointerCapture(e.pointerId)});
+    c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
+    c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6&&!this.classicInterior.entering)this.interactAt(e.clientX,e.clientY);this.drag=null});
     c.addEventListener('pointercancel',()=>{this.drag=null});
-    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
-    c.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
+    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.classicInterior.active)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
+    c.addEventListener('keydown',e=>{if(this.classicInterior.active||this.classicInterior.entering)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
   }
   clearTraffic(){for(const a of this.people.values())disposeGroup(a.group);this.people.clear();this.arrivals=[];this.queue=[];}
   beginDay(visitors,tickSeconds){
@@ -177,14 +218,14 @@ export class Neighborhood{
   setQueue(queue){
     if(!this.ready)return;this.queue=queue;
     const ids=new Set(queue.map(p=>this.idFor(p)));
-    for(const [index,p] of queue.entries()){const x=PLAYER.x+.55+index*.63,a=this.actor(p);a.arrival=null;a.destination.set(x,0,1.05);a.mode='queue'}
+    for(const [index,p] of queue.entries()){const x=PLAYER.x+(this.player?.style==='classic'?.95:.55)+index*.63,a=this.actor(p);a.arrival=null;a.destination.set(x,0,1.05);a.mode='queue'}
     for(const a of this.people.values())if(a.mode==='queue'&&!ids.has(a.id)){a.mode='upset';a.destination.set(-23,0,1.6)}
     this.container.dataset.queue=String(queue.length);
   }
   customerEvent(type,person){
     if(!this.ready)return;
     const a=this.actor(person);a.arrival=null;a.route=[];
-    if(type==='sale'){a.mode='sale';a.cup.visible=true;a.route=[new THREE.Vector3(a.group.position.x,0,1.6),new THREE.Vector3(22,0,1.6)];this.metrics.sales++}
+    if(type==='sale'){this.audio.effect('sale');a.mode='sale';a.cup.visible=true;a.route=[new THREE.Vector3(a.group.position.x,0,1.6),new THREE.Vector3(22,0,1.6)];this.metrics.sales++}
     else if(type==='rival'){
       a.mode='rival';a.route=this.location==='park'||this.location==='waterfront'?[new THREE.Vector3(this.rivalPosition.x,0,1.05),new THREE.Vector3(this.rivalPosition.x,0,1.4)]:[new THREE.Vector3(4.8,0,.92),new THREE.Vector3(8,0,.92),new THREE.Vector3(11.05,0,.92),new THREE.Vector3(this.rivalPosition.x,0,1.4)];this.metrics.rival++;
     }
@@ -196,8 +237,10 @@ export class Neighborhood{
   frame(){
     const elapsed=this.clock.getDelta(),dt=Math.min(elapsed,.05),moveDt=Math.min(elapsed,.2);this.time=performance.now()/1000;
     // The bank and title screen need no off-screen shadow-map rendering.
-    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
-    this.avatarController.update(dt,this.time,reducedMotion());
+    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.audio.setAudible(false);if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
+    const suspended=!!this.container.closest('#ll-app')?.querySelector('#modal.show')||document.hidden;this.audio.setAudible(!suspended);
+    this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());
+    this.player?.speaker?.update(reducedMotion()?0:this.audio.beat());this.publishAudio();
     const ease=1-Math.exp(-dt*7);this.camera.position.lerp(this.desiredPosition,ease);this.target.lerp(this.desiredTarget,ease);this.span=THREE.MathUtils.lerp(this.span,this.desiredSpan,ease);
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);this.camera.left=-this.span*aspect/2;this.camera.right=this.span*aspect/2;this.camera.top=this.span/2;this.camera.bottom=-this.span/2;this.camera.updateProjectionMatrix();this.camera.lookAt(this.target);
     for(const entry of this.arrivals){
@@ -216,8 +259,10 @@ export class Neighborhood{
     }
     this.weatherEffects.update(this.time,this.view==='interior',reducedMotion());
     if(this.waterfront)animateWaterfront(this.waterfront,this.time,reducedMotion());
-    this.renderer.render(this.scene,this.camera);this.raf=requestAnimationFrame(this.frame);
+    const camera=this.currentCamera();camera.updateMatrixWorld(true);this.classicInterior.projectTargets(camera);
+    if(this.player?.speaker){const p=this.player.speaker.group.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.55,.2)).project(camera);this.container.dataset.speakerScreen=JSON.stringify({x:(p.x+1)/2,y:(1-p.y)/2});this.container.dataset.speakerPulse=String(+this.player.speaker.cone.scale.z.toFixed(3));}
+    this.renderer.render(this.scene,camera);this.raf=requestAnimationFrame(this.frame);
   }
-  dispose(){this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
+  dispose(){this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
 }
 function fmt(v){return Number(v.toFixed(1))}

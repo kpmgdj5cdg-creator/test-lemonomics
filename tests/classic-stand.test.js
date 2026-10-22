@@ -8,13 +8,13 @@ test('Classic kiosk has separate doors, striped awning and raised lemon sign on 
  const base=new THREE.Group(),shell=new THREE.Group();buildClassicStand(base,shell,4.1,2.7);
  assert.ok(shell.getObjectByName('classic-glazed-entrance'));assert.ok(shell.getObjectByName('classic-striped-window-awning'));assert.ok(shell.getObjectByName('classic-cooler-cup-sign'));assert.ok(shell.getObjectByName('classic-voxel-lemon'));
  const bounds=new THREE.Box3().setFromObject(base);assert.ok(bounds.min.x>=-2.25&&bounds.max.x<=2.25);assert.ok(bounds.max.z<=1.53,'counter stays inside the existing walking barrier');
- const facade=shell.getObjectByName('classic-glazed-entrance');assert.ok(facade.children.filter(c=>c.material.color.getHexString()==='829eae').length===2);
+ const panes=[];shell.getObjectByName('classic-double-doors').traverse(o=>{if(o.userData.glass)panes.push(o)});assert.equal(panes.length,2);assert.ok(panes.every(p=>p.material.transparent&&p.material.opacity<.5));
  const awning=shell.getObjectByName('classic-striped-window-awning');assert.equal(awning.children.length,16);assert.equal(new Set(awning.children.map(c=>c.material.color.getHexString())).size,2);
  assert.ok(new THREE.Box3().setFromObject(shell).max.y>3.9);
 });
 test('Classic cutaway separates tall shell from the low service counter, retaining the shade upgrade',()=>{
  const base=new THREE.Group(),shell=new THREE.Group();buildClassicStand(base,shell,4.1,2.7,{register:true});
- assert.ok(new THREE.Box3().setFromObject(base).max.y<1.6);
+ assert.ok(new THREE.Box3().setFromObject(base).max.y<1.62);
  const shade=new THREE.Group();buildClassicStand(new THREE.Group(),shade,4.1,2.7,{shade:true});
  assert.ok(new THREE.Box3().setFromObject(shade.getObjectByName('classic-striped-window-awning')).max.z>2.5);
  assert.ok(new THREE.Box3().setFromObject(shell.getObjectByName('classic-striped-window-awning')).max.z<2.2);

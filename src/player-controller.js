@@ -73,6 +73,7 @@ export class PlayerController{
     this.world.updateCameraGoal();this.publish();
   }
   parkAtStand(){
+    if(this.world.classicInterior?.active||this.world.classicInterior?.entering){this.avatar.group.visible=false;this.stool.visible=false;return;}
     // Feet rest on a step inside the stand, behind the front counter.
     const anchor=this.world.player?.avatarAnchor||{x:0,y:.75,z:.42};
     this.avatar.group.position.set(-3+anchor.x,anchor.y,-.8+anchor.z);this.avatar.group.rotation.y=0;
@@ -80,9 +81,10 @@ export class PlayerController{
     this.avatar.group.visible=!!WALKING_AREAS[this.world.location];this.stool.visible=this.avatar.group.visible;
     this.avatar.animate(0,false,true);
   }
-  snapshot(sceneView){return {location:this.world.location,walking:this.enabled,position:this.avatar.group.position.toArray(),rotation:this.avatar.group.rotation.y,angle:this.world.angle,zoom:this.world.zoom,sceneView};}
+  snapshot(sceneView){return {firstPerson:this.world.classicInterior?.snapshot(),location:this.world.location,walking:this.enabled,position:this.avatar.group.position.toArray(),rotation:this.avatar.group.rotation.y,angle:this.world.angle,zoom:this.world.zoom,sceneView};}
   restore(view){
     if(!view||view.location!==this.world.location)return;
+    if(view.firstPerson&&this.world.player?.style==='classic'){this.world.classicInterior.enterInstant(view.firstPerson);return}
     if(Number.isFinite(view.angle))this.world.angle=THREE.MathUtils.clamp(view.angle,-.9,1.25);
     if(view.walking){
       this.setEnabled(true);
@@ -118,9 +120,10 @@ export class PlayerController{
     const next=movePlayer(p,input,this.world.angle,dt,obstacles,bounds),moving=Math.hypot(next.x-p.x,next.z-p.z)>.0001;
     if(moving)this.avatar.group.rotation.y=Math.atan2(next.x-p.x,next.z-p.z);
     p.set(next.x,groundElevation(this.world.sceneGround,next.x,next.z),next.z);
+    if(moving&&time-(this.lastStep||0)>.31){this.world.audio?.effect('step');this.lastStep=time}
     this.avatar.animate(time,moving,reducedMotion);const shop=this.nearShop();this.interact.hidden=!shop&&!nearStand(p);this.interact.textContent=shop?'Visit '+shop.name+' · E':'Visit my stand · E';if(shop&&this.lastShop!==shop.id){this.lastShop=shop.id;this.keys.clear();this.touch.clear();this.world.onShop(shop.id)}else if(!shop)this.lastShop=null;
     this.world.updateCameraGoal();this.publish();
   }
-  publish(){const c=this.world.container,p=this.avatar.group.position;c.dataset.walking=String(this.enabled);c.dataset.avatarState=this.avatar.group.visible?(this.enabled?'walking':'at-stand'):'unavailable';c.dataset.avatarPosition=JSON.stringify({x:+p.x.toFixed(3),z:+p.z.toFixed(3)});c.dataset.nearStand=String(nearStand(p));c.dataset.nearShop=this.nearShop()?.id||'';}
+  publish(){const c=this.world.container,p=this.avatar.group.position;c.dataset.walking=String(this.enabled);c.dataset.avatarState=this.avatar.group.visible?(this.enabled?'walking':'at-stand'):'unavailable';c.dataset.avatarPosition=JSON.stringify({x:+p.x.toFixed(3),z:+p.z.toFixed(3)});c.dataset.nearStand=String(nearStand(p));c.dataset.nearShop=this.nearShop()?.id||'';if(this.world.classicInterior?.active)this.world.classicInterior.publish();}
   dispose(){this.abort.abort();this.avatar.dispose();disposeGroup(this.stool);this.toggle.remove();this.panel.remove()}
 }

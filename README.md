@@ -133,3 +133,11 @@ Title-screen and avatar-picker portraits are rendered from the same `PlayerAvata
 ### Classic Stand storefront
 
 The Classic Stand upgrade now replaces the starter cart with a cream-and-yellow Cooler Cup kiosk: double glazed doors, an open serving window, a striped awning, flat parapet roof, extruded lettering and voxel lemon sign. Its footprint fits the existing plot in all four locations. Purchased shade extends the window awning; powered equipment remains separately owned and appears in the workspace. The cashier position moves behind the service window, and the roof, upper walls and doors lift away in Inside stand view. Snow collects on the flat roof and awning. Saved Classic ownership is sufficient to restore the new geometry; Lemon and Castle remain higher-priority builds.
+
+### Classic Stand first-person room and audio
+
+With Classic Stand equipped, click its double doors or **Enter stand**. The doors swing open and your avatar walks inside. Use WASD or arrow keys to move, drag to look, **E** or the door button to open/close the doors, and **Escape** or **Exit stand** to leave. Phones also have directional buttons. Movement respects counters, walls and the purchased fridge. Save and Quit preserves your interior viewpoint. Other stand styles retain their existing views.
+
+The lime-walled room shares the actual world, weather and live customers outside its windows. Purchased juicers, dispensers and ice maker appear separately on the back counter; Mr. Fridge occupies the back-right corner. The inward-facing EZserve register occupies less than a fifth of the serving counter.
+
+Original synthesized effects accompany controls, purchases, doors, footsteps and sales. The purchased High-Five speaker sits outside on the front-right: click it or **Speaker: Play/Stop** to toggle an original upbeat techno loop. **Sound on/off** mutes audio; music pauses while the game is hidden or a modal is open. Speaker vibration respects reduced-motion preferences. No external music downloads or audio assets are required.
