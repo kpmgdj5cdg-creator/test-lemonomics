@@ -17,3 +17,5 @@ The October 21, 2026 release expands the Neighborhood to 23 colorful modern home
 The file contains October 19, 2026 closing prices for DIA, SPY, ARKK, SGOV, GLD and SLV, plus five years of history. Offline copies cannot automatically fetch new daily prices. History remains viewable, but investment trading and collateral sales pause when prices are stale. Daily automatic pricing requires running the editable project and its pricing service. This download is not a public hosted game.
 
 The editable source, setup instructions and automated checks are included in the repository; see the [project README](../README.md).
+
+The Classic Stand purchase now installs the reference-inspired Cooler Cup storefront: cream walls, yellow trim, glazed doors, a striped serving awning and a raised lemon sign. Existing Classic ownership restores the new model automatically. Interior equipment, walking and snow remain supported in all four locations.
