@@ -8,7 +8,9 @@ export async function alpacaJSON(env,path,{fetcher=fetch,now=new Date()}={}){
  if(!calendar&&!path.startsWith('/v2/stocks/snapshots?')&&!/^\/v2\/stocks\/(DIA|SPY|ARKK|SGOV|GLD|SLV)\/bars\?/.test(path))throw Error('Unsupported market-data route.');
  const url=new URL(path,calendar?'https://paper-api.alpaca.markets':'https://data.alpaca.markets');
  if(!calendar&&url.searchParams.get('feed')!=='iex')throw Error('Only the free IEX feed is supported.');
- const r=await fetcher(url.href,{method:'GET',headers:{'APCA-API-KEY-ID':env.ALPACA_API_KEY_ID,'APCA-API-SECRET-KEY':env.ALPACA_API_SECRET_KEY},signal:AbortSignal.timeout(8000),redirect:'error'});
+ // Workers supports manual/follow, not redirect:error. Manual preserves the
+ // no-redirect policy: 3xx is rejected below, so secrets never follow Location.
+ const r=await fetcher(url.href,{method:'GET',headers:{'APCA-API-KEY-ID':env.ALPACA_API_KEY_ID,'APCA-API-SECRET-KEY':env.ALPACA_API_SECRET_KEY},signal:AbortSignal.timeout(8000),redirect:'manual'});
  if(!r.ok){const retry=r.headers.get('Retry-After');throw new AlpacaError(r.status,retry?Math.max(0,Number(retry)*1000||Date.parse(retry)-+now):0)}
  return r.json();
 }

@@ -89,3 +89,11 @@ test('authenticated diagnostics identify failures without secrets, raw errors, r
  const env=liveEnvironment(),service=new LiveMarketService(env,{fetcher:()=>{throw Error('must not request')}});const first=await service.diagnostics();assert.equal(first.status,'not-started');assert.equal(first.lastFailure,null);
  await service.init();await service.resource('calendar',1000,async()=>{throw Error('PRIVATE_TEST_PROVIDER_BODY')});const safe=await service.diagnostics();assert.equal(safe.lastFailure.reason,'network-or-invalid-response');assert.doesNotMatch(JSON.stringify(safe),/PRIVATE_TEST/);
 });
+
+test('one-time runtime fix releases only cold calendar failures while preserving budgets and authorization stops',async()=>{
+ const migrate=env=>env.DB.prepare(readFileSync(new URL('../cloud/migrations/0006_calendar_runtime_fix.sql',import.meta.url),'utf8')).run();
+ const f=fixture();f.setMode('network');await f.service().quotes();const before=await f.service().guard();await migrate(f.env);const after=await f.service().guard();
+ assert.equal(after.paused_until,0);assert.equal(after.failures,0);assert.equal(after.status,'ok');for(const field of ['day','daily_calls','minute','minute_calls','next_call','fingerprint'])assert.equal(after[field],before[field]);
+ const denied=fixture();denied.setMode('401');await denied.service().quotes();const guard=await denied.service().guard();await migrate(denied.env);assert.deepEqual(await denied.service().guard(),guard);
+ const warm=fixture();await warmed(warm);warm.advance(5000);warm.setMode('network');await warm.service().quotes();const paused=await warm.service().guard();await migrate(warm.env);assert.deepEqual(await warm.service().guard(),paused);
+});
