@@ -94,6 +94,10 @@ export class Neighborhood{
     if(this.signature!==signature){
       this.signature=signature;if(this.player)disposeGroup(this.player.group);if(this.rival)disposeGroup(this.rival.group);
       this.player=stand(this.scene,state);this.player.group.position.copy(PLAYER);
+      this.container.dataset.standStyle=this.player.style;
+      if(!this.avatarController.enabled){this.avatarController.parkAtStand();this.avatarController.publish()}
+      const bounds=new THREE.Box3().setFromObject(this.player.group),size=bounds.getSize(new THREE.Vector3());
+      this.hitbox.position.copy(bounds.getCenter(new THREE.Vector3()));this.hitbox.scale.set(size.x/4,size.y/3.4,size.z/3.4);
       this.rival=state.day>=4?stand(this.scene,{price:state.location==='beach'?2.75:state.location==='square'?2.5:2,upgrades:[]},{rival:true}):null;
       if(this.rival)this.rival.group.position.copy(this.rivalPosition);this.plotLabel.visible=!this.rival;
       this.player.roof.visible=this.view!=='interior';this.stockSignature='';this.updateCameraGoal();this.weatherEffects.register(this.environment,this.player.roof,this.rival?.roof);

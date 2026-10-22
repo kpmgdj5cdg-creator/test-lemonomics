@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { voxelText } from './voxel-text.js';
+import {buildClassicStand} from './classic-stand.js';
 
 const materials=new Map();
 export function material(color){
@@ -61,7 +62,11 @@ export function lamp(parent,x,z){box(parent,x,1.8,z,.11,3.6,.11,'#506352');box(p
 
 export function stand(parent,state,{rival=false}={}){
   const g=group(parent),s=state.upgrades||[],owns=id=>s.includes(id),premium=owns('classic')||owns('lemonstand')||owns('castle');
-  const w=owns('castle')?4.8:premium?4.1:3.5,d=2.7;
+  const style=rival?'rival':owns('castle')?'castle':owns('lemonstand')?'lemon':owns('classic')?'classic':'starter';
+  const classic=style==='classic',w=owns('castle')?4.8:premium?4.1:3.5,d=2.7,roof=group(g);
+  g.name=style+'-stand';g.userData.style=style;
+  if(classic)buildClassicStand(g,roof,w,d,{shade:owns('shade'),register:owns('register')});
+  else{
   box(g,0,.12,0,w+.35,.24,d+.35,'#98794f');for(let i=0;i<12;i++)box(g,-w/2+w/24+i*w/12,.27,0,w/12-.025,.12,d,'#c69c64');
   const timber=rival?'#2879a2':premium?'#d18a36':'#bd7c35';
   // The walls and counter stay physical in cutaway view.
@@ -69,6 +74,7 @@ export function stand(parent,state,{rival=false}={}){
   for(const x of [-w/2+.1,w/2-.1])for(const z of [-d/2+.1,d/2-.1])box(g,x,1.57,z,.14,2.55,.14,'#795f41');
   box(g,0,.87,1.07,w-.1,1.05,.16,timber);for(let i=0;i<12;i++)box(g,-w/2+.2+i*(w-.4)/11,.87,1.17,.035,.99,.02,'#9d774b');
   box(g,0,1.44,1.03,w+.22,.17,.74,'#efd6a0');box(g,0,1.54,1.03,w+.3,.06,.8,'#f8e4b8');
+  }
   const shelfOffset=owns('fridge')?-.4:0,shelfWidth=w-.3-(owns('fridge')?.8:0);
   box(g,shelfOffset,1.04,-1.05,shelfWidth,.14,.5,'#edcf94');box(g,shelfOffset,.68,-1.09,shelfWidth-.1,.12,.43,'#c09b64');
   // Physical prep workspace, even before buying powered equipment.
@@ -76,13 +82,16 @@ export function stand(parent,state,{rival=false}={}){
   box(g,-.02,1.18,-.92,.31,.025,.04,'#d5d9c4');box(g,-.23,1.18,-.92,.15,.04,.06,'#6f7d60');
   box(g,.51,1.14,-1.0,.46,.07,.36,'#b2c3b8');box(g,.51,1.18,-1,.31,.01,.22,'#6e8980');box(g,.51,1.38,-1.19,.05,.35,.05,'#9aaea3');box(g,.51,1.54,-1.1,.05,.05,.2,'#9aaea3');
   box(g,-1.0,1.94,-1.32,.72,.65,.06,'#87734c');label(g,'TODAY\nFRESHLY SQUEEZED',-1,1.94,-1.28,.63,.55,{background:'#3e5c45',color:'#f7e5ab',size:61});
+  if(!classic){
   for(const x of [-.42,.42]){box(g,x,.63,1.0,.66,.6,.06,'#c5a16a');box(g,x,.8,.955,.18,.04,.03,'#7e7755')}
   box(g,0,.98,1.19,w*.86,.55,.08,rival?'#edf4de':'#fff0b7');
   voxelText(g,rival?'COOL CUP':'LEMONADE',0,.98,1.25,w*.77/6.7,rival?'#216089':'#265841');
-  const price=label(g,`$${Number(state.price||2.25).toFixed(2)} / CUP`,0,.61,1.19,1.5,.2,{size:58,background:rival?'#e0eff2':'#fff1a8'});
+  }
+  const price=label(g,`$${Number(state.price||2.25).toFixed(2)} / CUP`,classic?.95:0,classic?.87:.61,classic?1.375:1.19,1.5,.2,{size:58,background:rival?'#e0eff2':'#fff1a8'});
   // Empty pitcher is a basic utensil, not free inventory.
-  box(g,-.77,1.81,1.05,.35,.48,.34,'#bbd6cc');box(g,-.77,2.07,1.05,.38,.07,.36,'#f2e6c8');box(g,-.54,1.83,1.05,.12,.3,.12,'#bbd6cc');
-  const roof=group(g);const stripe=rival?'#248cc0':premium?'#f6b61c':'#f2bc25';
+  box(g,classic?.16:-.77,1.81,1.05,.35,.48,.34,'#bbd6cc');box(g,classic?.16:-.77,2.07,1.05,.38,.07,.36,'#f2e6c8');box(g,classic?.39:-.54,1.83,1.05,.12,.3,.12,'#bbd6cc');
+  if(!classic){
+  const stripe=rival?'#248cc0':premium?'#f6b61c':'#f2bc25';
   for(let i=0;i<10;i++){const x=-w/2-.25+(i+.5)*(w+.5)/10;for(const z of [-.77,.77]){const m=box(roof,x,2.99-Math.abs(z)*.18,z,(w+.5)/10+.01,.13,1.61,i%2?'#fff0c5':stripe);m.rotation.x=z>0?.18:-.18}box(roof,x,2.68,1.57,(w+.5)/10,.27,.1,i%2?'#fff0c5':stripe)}
   // Chunky freestanding lettering and a sculpted lemon distinguish the new voxel build.
   box(roof,0,3.27,-.1,w+.25,.62,.23,rival?'#16527a':'#17573f');
@@ -90,21 +99,22 @@ export function stand(parent,state,{rival=false}={}){
   box(roof,0,3.88,-.1,.65,.38,.35,'#ffcd2c');box(roof,-.36,3.88,-.1,.14,.2,.24,'#edaa15');box(roof,.36,3.88,-.1,.14,.2,.24,'#ffdb3b');box(roof,.12,4.15,-.1,.34,.14,.16,'#3b9147');
   if(premium){box(roof,0,3.17,0,w*.65,.55,.16,'#f9e5ad');label(roof,'LEMONADE',0,3.17,.09,w*.6,.4,{background:'#f9e5ad',size:74})}
   if(owns('lemonstand')){box(roof,0,3.75,0,.8,.64,.35,'#f3cc3d');box(roof,.42,4.08,0,.38,.12,.2,'#70934b')}
-  if(owns('shade')){for(const x of [-w/2,w/2])box(g,x,2.4,2.1,.1,1.4,.1,'#7b7351');for(let i=0;i<8;i++)box(roof,-w/2+(i+.5)*w/8,2.78,2.15,w/8,.11,1.2,i%2?'#fff1c4':'#e8ba43')}
+  }
+  if(owns('shade')&&!classic){for(const x of [-w/2,w/2])box(g,x,2.4,2.1,.1,1.4,.1,'#7b7351');for(let i=0;i<8;i++)box(roof,-w/2+(i+.5)*w/8,2.78,2.15,w/8,.11,1.2,i%2?'#fff1c4':'#e8ba43')}
   if(owns('castle')){for(const x of [-w/2,w/2]){box(g,x,1.5,0,.5,2.8,2.4,'#c1c7a2');box(roof,x,3.15,0,.7,.25,2.6,'#dbe0b9');for(let z=-1;z<=1;z+=.5)box(roof,x,3.43,z,.7,.35,.26,'#dbe0b9')}}
   const equipment=group(g);equipment.userData.ids=[];
   const equip=(id,build)=>{if(owns(id)){const item=group(equipment);item.name=id;build(item);equipment.userData.ids.push(id)}};
   equip('juicer',e=>{box(e,-1.1,1.3,-.9,.38,.44,.35,'#e3c15a');box(e,-1.1,1.58,-.9,.18,.16,.18,'#eee5cc');box(e,-1.1,1.69,-.9,.08,.1,.08,'#d9ac38')});
   equip('powerjuicer',e=>{box(e,-.5,1.35,-.95,.42,.53,.38,'#c5d5c6');box(e,-.5,1.75,-.95,.28,.3,.3,'#e9cb54');box(e,-.5,1.97,-.95,.35,.1,.35,'#708475');box(e,-.5,1.4,-.72,.09,.1,.05,'#577c5a')});
-  equip('register',e=>{box(e,1.1,1.7,1.02,.52,.26,.4,'#66877a');box(e,1.1,1.91,1.02,.44,.18,.15,'#3e6154');box(e,1.1,1.94,1.11,.31,.09,.02,'#cbdeac');for(let j=0;j<3;j++)box(e,.96+j*.13,1.85,1.2,.07,.03,.07,'#f6e6bf')});
+  equip('register',e=>{const x=classic?1.5:1.1;box(e,x,1.7,1.02,.52,.26,.4,'#66877a');box(e,x,1.91,1.02,.44,.18,.15,'#3e6154');box(e,x,1.94,1.11,.31,.09,.02,'#cbdeac');for(let j=0;j<3;j++)box(e,x-.14+j*.13,1.85,1.2,.07,.03,.07,'#f6e6bf')});
   equip('fridge',e=>{box(e,w/2-.49,1.07,-.75,.65,1.48,.68,'#d4e4da');box(e,w/2-.49,1.09,-.39,.6,1.36,.06,'#e8eedc');box(e,w/2-.49,1.4,-.345,.59,.035,.03,'#9db8aa');box(e,w/2-.68,1.13,-.32,.045,.28,.05,'#678f83')});
   for(const id of ['icedispenser','icemaker'])equip(id,e=>{const x=id==='icemaker'?-w/2+.48:.25;box(e,x,.87,-.42,.62,1.04,.53,'#c5dbd4');box(e,x,1.22,-.13,.45,.28,.04,'#618b92');box(e,x,1.43,-.4,.66,.1,.58,'#e9ead9');label(e,id==='icemaker'?'ICE':'CHILL',x,.86,-.145,.4,.17,{background:'#c5dbd4',color:'#3c6f79',size:72})});
-  equip('dispenser',e=>{box(e,.14,1.7,1,.45,.28,.42,'#6c8b75');box(e,.14,2.03,1,.4,.44,.36,'#e8cf68');box(e,.14,2.28,1,.45,.08,.4,'#547863');box(e,.14,1.73,1.25,.07,.08,.12,'#536e60')});
+  equip('dispenser',e=>{const x=classic?.72:.14;box(e,x,1.7,1,.45,.28,.42,'#6c8b75');box(e,x,2.03,1,.4,.44,.36,'#e8cf68');box(e,x,2.28,1,.45,.08,.4,'#547863');box(e,x,1.73,1.25,.07,.08,.12,'#536e60')});
   equip('music',e=>{for(const x of [-w/2+.38,w/2-.38]){box(e,x,2.28,-1.22,.36,.55,.27,'#4a6359');box(e,x,2.27,-1.07,.21,.22,.035,'#253f38');box(e,x,2.47,-1.07,.09,.07,.035,'#baad78')}});
   equip('lights',e=>{box(e,0,2.37,-1.29,2.3,.39,.1,'#355847');label(e,'F R E S H',0,2.37,-1.22,2.1,.28,{background:'#355847',color:'#fcde64',size:78});for(const x of [-w/2+.1,w/2-.1])box(e,x,2.12,1.32,.045,.85,.035,'#ffe989')});
   const stock=group(g);stock.name='stock';
   g.remove(roof,equipment,stock);batch(g);batch(roof);batch(equipment);g.add(roof,equipment,stock);
-  return {group:g,roof,equipment,stock,price,width:w};
+  return {group:g,roof,equipment,stock,price,width:w,style,avatarAnchor:{x:classic?.95:0,y:.75,z:.42}};
 }
 
 export function character(parent,index=0,appearance={}){

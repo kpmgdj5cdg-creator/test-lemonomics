@@ -74,7 +74,9 @@ export class PlayerController{
   }
   parkAtStand(){
     // Feet rest on a step inside the stand, behind the front counter.
-    this.avatar.group.position.set(-3,.75,-.38);this.avatar.group.rotation.y=0;
+    const anchor=this.world.player?.avatarAnchor||{x:0,y:.75,z:.42};
+    this.avatar.group.position.set(-3+anchor.x,anchor.y,-.8+anchor.z);this.avatar.group.rotation.y=0;
+    this.stool.position.set(-3+anchor.x,0,-.8+anchor.z);
     this.avatar.group.visible=!!WALKING_AREAS[this.world.location];this.stool.visible=this.avatar.group.visible;
     this.avatar.animate(0,false,true);
   }
