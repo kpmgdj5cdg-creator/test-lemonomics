@@ -155,3 +155,7 @@ Mortgage principal and interest amortize over 360 installments, **due every 10 g
 Walk to the house's front door. Before ownership, a nearby **For Sale! See your bank for details!** tag opens the bank. After purchase, click its door or use **E** nearby to enter. WASD/arrows, drag-to-look, touch movement and Escape/Exit match the stand controls. The furnished living/dining room, rear-right U-shaped kitchen and bedroom use the same outdoor world and weather through actual window openings. The house viewpoint restores with the profile's save.
 
 `tests/house.test.js`, `tests/house.spec.js` and the rate-cache tests cover ownership/equipment migration, financial eligibility and atomicity, 360-payment amortization, investment funding, dated rate validation, door interaction, room collisions, saving and phone layout.
+
+### Customer price sensitivity
+
+The live sales loop and projections now share the table-based price model in `src/demand.js`, tuned in `src/demand-config.js`. Price sensitivity varies by cold/average/hot weather, location, recipe quality and cumulative purchased branding, with exact weather-specific price cutoffs. Discounts increase interest without guaranteeing more profit. Existing traffic, queues, service, inventory and financial systems remain authoritative; saved active days keep their frozen rules. End-of-day reports explain the actual pricing effects without revealing the curve. See [the demand implementation notes](docs/PRICE-DEMAND.md) for calibration, save compatibility and tests.

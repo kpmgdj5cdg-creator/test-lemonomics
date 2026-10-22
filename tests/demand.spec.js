@@ -1,0 +1,22 @@
+import {test,expect} from '@playwright/test';
+import {enterGame} from './fixtures/profile-ui.js';
+import {gameWithChecking,marketFixture} from './fixtures/market.js';
+const key='lemonadeLane_bank_v3';
+async function ready(page,state){
+ await page.addInitScript(({key,state})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(state));let seed=32817;Math.random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296}},{key,state});
+ await page.route('**/api/market',r=>r.fulfill({json:{data:marketFixture(),status:'current'}}));await page.goto('/');await enterGame(page);
+}
+const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+function supplied(){const s=gameWithChecking(1000);s.cash=200;s.inventory={lemons:100,sugar:100,ice:200,cups:200};s.lemonLots=[{day:1,qty:100}];s.pitchers=10;return s}
+test('average-weather hard cutoff produces zero sales even with all purchased branding and keeps books and bank intact',async({page})=>{
+ const s=supplied();s.price=4;s.upgrades=['classic','shade','music','lemonstand','lights','castle'];await ready(page,s);await page.locator('#startBtn').click();await expect(page.locator('#nextDay')).toBeVisible({timeout:45000});
+ const r=await saved(page),d=r.history[0];expect(d.priceDemand.baseFactor).toBe(0);expect(d.priceDemand.probability).toBe(0);expect(d.visitors).toBe(53);expect(d.sold).toBe(0);expect(d.revenue).toBe(0);expect(r.cash).toBe(196);expect(r.bank).toMatchObject(s.bank);expect(r.inventory).toEqual({lemons:60,sugar:70,ice:150,cups:100});expect(r.ledger.filter(l=>l.category==='sales')).toHaveLength(1);expect(r.ledger.find(l=>l.category==='sales').cash).toBe(0);expect(d.profit).toBeCloseTo(-d.cost-4,2);await expect(page.locator('.pricing-feedback')).toContainText('nobody wanted to buy');
+});
+test('hot-day pricing persists through Save & Quit and real service reconciles inventory, receipts, queues and accounts',async({page})=>{
+ const s=supplied();s.day=3;s.recipe.ice=6;s.price=3;s.upgrades=['juicer','powerjuicer','register','dispenser'];await ready(page,s);await page.locator('#startBtn').click();await expect.poll(async()=>Number(await page.locator('#scoreVisitors').textContent())).toBeGreaterThan(0);
+ await page.locator('#saveMenuBtn').click();await page.locator('#saveAndQuit').click();const checkpoint=await saved(page);expect(checkpoint.session.demandVersion).toBe(1);expect(checkpoint.session.chance).toBeCloseTo(.6*.65*1.07,8);expect(checkpoint.session.dayRun.priceDemand.category).toBe('hot');
+ await page.locator('[data-load-slot="0"]').click();await expect(page.locator('#nextDay')).toBeVisible({timeout:45000});const r=await saved(page),d=r.history[0];expect(d.sold).toBeGreaterThan(0);expect(d.sold).toBeLessThanOrEqual(d.visitors);expect(d.sold).toBeLessThanOrEqual(d.capacity);expect(d.queue).toEqual([]);expect(d.serviceSteps).toBe(1);expect(d.revenue).toBeCloseTo(d.sold*3,2);expect(d.unsold+d.sold).toBe(d.capacity);expect(r.cash).toBeCloseTo(200-4+d.revenue,2);expect(r.bank).toMatchObject(s.bank);expect(r.inventory).toEqual({lemons:60,sugar:70,ice:140,cups:100});expect(r.ledger.filter(l=>l.category==='permit')).toHaveLength(1);expect(r.ledger.filter(l=>l.category==='sales')).toHaveLength(1);expect(r.session).toBeUndefined();expect(d.profit).toBeCloseTo(d.revenue-d.cost-4,2);await expect(page.locator('#world3d')).toHaveAttribute('data-sales',String(d.sold));await expect(page.locator('.pricing-feedback')).toContainText('heat');await page.locator('#modalBody').screenshot({path:'artifacts/hot-day-pricing-report.png'});
+});
+test('legacy saved active day retains its frozen old probability until completion and does not alter the bank',async({page})=>{
+ const s=supplied();s.price=1;s.session={visitors:8,chance:0,rivalChance:0,stage:'serving',dayRun:{day:1,location:'neighborhood',weather:'Sunny',visitors:0,sold:0,turnedAway:0,leftUpset:0,lostCompetitor:0,capacity:10,revenue:0,cost:4.7,permit:4,profit:0,unsold:0,queue:[],stepsUntilSale:0,serviceSteps:5,recipe:{...s.recipe},recipeBonus:0,upgrades:[],price:1,spoilCost:0,spoiledLemons:0}};await ready(page,s);await expect(page.locator('#nextDay')).toBeVisible({timeout:30000});const r=await saved(page);expect(r.history[0].sold).toBe(0);expect(r.history[0].priceDemand).toBeUndefined();expect(r.bank).toMatchObject(s.bank);expect(r.ledger.filter(l=>l.category==='permit')).toHaveLength(0);await expect(page.locator('.pricing-feedback')).toHaveCount(0);
+});
