@@ -18,5 +18,8 @@
   ],
   "observability": {
     "enabled": false
+  },
+  "vars": {
+    "ALPACA_LIVE_ENABLED": "true"
   }
 }
