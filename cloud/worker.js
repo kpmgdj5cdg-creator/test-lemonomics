@@ -5,6 +5,7 @@ import {SYMBOLS} from '../src/funds.js';
 import {validName,PROFILE_SLOTS,emptySlots} from '../src/profiles.js';
 import {downloadMortgageRate} from '../server/mortgage-rate.js';
 import {validMortgageRate} from '../src/mortgage.js';
+import {LiveMarketService} from '../server/live-market-service.js';
 
 const encoder=new TextEncoder(),COOKIE='__Host-lemonomics',MAX_BODY=2_000_000;
 const security={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow, noarchive','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY','Content-Security-Policy':"frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"};
@@ -104,6 +105,8 @@ export default {
    if(path==='/logout'&&request.method==='POST')return new Response(null,{status:303,headers:{...security,Location:'/login','Set-Cookie':COOKIE+'=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'}});
    if(path==='/api/config'&&request.method==='GET')return json({onlineProfiles:true,version:1});
    if(path==='/api/market'&&request.method==='GET')return market(env,now);
+   if(path==='/api/market/quotes'&&request.method==='GET')return json(await new LiveMarketService(env).quotes());
+   if(path==='/api/market/history'&&request.method==='GET')return json(await new LiveMarketService(env).history(url.searchParams.get('symbol'),url.searchParams.get('range')));
    if(path==='/api/mortgage-rate'&&request.method==='GET')return mortgageRate(env,now);
    if(path.startsWith('/api/market/fund/')&&request.method==='GET')return refreshFund(env,path.slice('/api/market/fund/'.length),now);
    if(path==='/api/profiles'&&request.method==='GET'){

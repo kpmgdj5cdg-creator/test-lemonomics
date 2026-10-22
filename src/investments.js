@@ -1,5 +1,6 @@
 import {SYMBOLS} from './funds.js';
 import {quotePrice,marketFresh} from './market-data.js';
+import {tradeQuote,validLiveQuote} from './live-market-data.js';
 export const SHARE_SCALE=1_000_000,FEE_RATE=.005;
 export const cents=value=>Math.round((value+Number.EPSILON)*100);
 export const money=c=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c/100);
@@ -12,6 +13,10 @@ export function ensurePortfolio(bank){
   return p;
 }
 export function holdingPrice(portfolio,market,symbol){
+  const saved=portfolio.marks?.[symbol],incoming=market?.liveQuotes?.quotes?.[symbol];
+  const live=validLiveQuote(incoming)&&(!saved||Date.parse(incoming.timestamp)>=Date.parse(saved.timestamp))?incoming:saved;
+  const closeDate=[portfolio.marketDate,market?.asOf].filter(Boolean).sort().at(-1);
+  if(!market?.closingOnly&&validLiveQuote(live)&&(!closeDate||live.timestamp.slice(0,10)>=closeDate))return live.price;
   const current=market&&(!portfolio.marketDate||market.asOf>=portfolio.marketDate);
   return (current?quotePrice(market,symbol):null)??portfolio.positions[symbol]?.lastPrice??null;
 }
@@ -27,13 +32,19 @@ function numberInput(value){
   if(typeof value==='string'&&!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value.trim()))throw new Error('Enter a positive number without commas.');
   const n=Number(value);if(!Number.isFinite(n)||n<=0||n>1e9)throw new Error('Enter an amount greater than zero.');return n;
 }
-export function quoteTrade(bank,market,{symbol,side,mode,amount},now=new Date()){
+export function quoteTrade(bank,market,{symbol,side,mode,amount,marketMode,accountId},now=new Date()){
   if(!SYMBOLS.includes(symbol)||!['buy','sell'].includes(side)||!['dollars','shares'].includes(mode))throw new Error('Choose a valid fund and trade type.');
-  const p=ensurePortfolio(bank);if(!marketFresh(market,now))throw new Error('Refresh prices before trading. Trades use the latest prior trading day’s close.');
-  if(p.marketDate&&market.asOf<p.marketDate)throw new Error('These quotes are older than your portfolio. Refresh prices first.');
+  const p=ensurePortfolio(bank),live=marketMode==='live'?tradeQuote(market?.liveQuotes,symbol,now):null;
+  if(!live&&!marketFresh(market,now))throw new Error('Refresh prices before trading. Trades use the latest prior trading day’s close.');
+  if(!live&&p.marketDate&&market.asOf<p.marketDate)throw new Error('These quotes are older than your portfolio. Refresh prices first.');
   if(bank.loans?.some(l=>l.secured&&l.balance>0&&!l.settling)){if(side==='sell')throw new Error('These investments secure a loan. Repay the secured loan before selling.');if(bank.loans.some(l=>l.collateralDue))throw new Error('Settle the overdue secured loan before investing.');}
-  const n=numberInput(amount),price=quotePrice(market,symbol);
-  const units=Math.floor((mode==='shares'?n:n/price)*SHARE_SCALE+1e-7);
+  const n=numberInput(amount),price=live?.price??quotePrice(market,symbol);
+  let units=Math.floor((mode==='shares'?n:n/price)*SHARE_SCALE+1e-7);
+  // Existing 0.5% virtual fees remain. A live dollar buy is a total budget, so
+  // even a child with exactly $20 can invest without needing extra fee money.
+  if(live&&side==='buy'&&mode==='dollars'){
+    let lo=0,hi=units;while(lo<hi){const mid=Math.ceil((lo+hi)/2),gross=Math.round(mid/SHARE_SCALE*price*100),total=gross+Math.max(1,Math.round(gross*FEE_RATE));if(total<=cents(n))lo=mid;else hi=mid-1}units=lo;
+  }
   if(!Number.isSafeInteger(units)||units<1)throw new Error('The smallest trade is 0.000001 share.');
   const notionalCents=Math.round(units/SHARE_SCALE*price*100);
   if(notionalCents<1)throw new Error('The trade must be worth at least $0.01.');
@@ -43,12 +54,14 @@ export function quoteTrade(bank,market,{symbol,side,mode,amount},now=new Date())
   if(side==='sell'&&(!position||units>position.units))throw new Error('You do not own enough shares for this sale.');
   if(side==='sell'&&totalCents<0)throw new Error('Choose a larger sale so the proceeds cover the fee.');
   const removedCost=side==='sell'?(units===position.units?position.costCents:Math.round(position.costCents*units/position.units)):0;
-  return {symbol,side,mode,units,price,priceDate:market.asOf,notionalCents,feeCents,totalCents,removedCost,realizedCents:side==='sell'?totalCents-removedCost:0,checkingAfterCents:cents(bank.checking)+(side==='buy'?-totalCents:totalCents),signature:JSON.stringify([symbol,side,units,price,market.asOf,feeCents,cents(bank.checking),position?.units||0,position?.costCents||0,p.sequence])};
+  const priceDate=live?live.timestamp.slice(0,10):market.asOf;
+  return {symbol,side,mode,units,price,priceDate,quoteTimestamp:live?.timestamp,marketMode,accountId,notionalCents,feeCents,totalCents,removedCost,realizedCents:side==='sell'?totalCents-removedCost:0,checkingAfterCents:cents(bank.checking)+(side==='buy'?-totalCents:totalCents),signature:JSON.stringify([symbol,side,units,price,live?.timestamp||market.asOf,feeCents,cents(bank.checking),position?.units||0,position?.costCents||0,p.sequence,accountId||null])};
 }
 export function recordSnapshot(bank,market){
   if(!market)return;const p=ensurePortfolio(bank),t=portfolioTotals(bank,market);bank.investments=t.valueCents/100;
-  if(!p.trades.length)return;
-  const snapshot={date:market.asOf,valueCents:t.valueCents,profitCents:t.profitCents};
+  if(!p.trades.length||p.trades.some(t=>t.priceDate>market.asOf))return;
+  const daily=portfolioTotals(bank,{...market,closingOnly:true});
+  const snapshot={date:market.asOf,valueCents:daily.valueCents,profitCents:daily.profitCents};
   const previous=p.snapshots.findIndex(s=>s.date===snapshot.date);
   if(previous>=0)p.snapshots[previous]=snapshot;else p.snapshots.push(snapshot);
   p.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
@@ -58,12 +71,19 @@ export function executeTrade(state,market,request,expectedSignature,now=new Date
   const bank=state.bank,p=ensurePortfolio(bank),position=p.positions[q.symbol]||{units:0,costCents:0,lastPrice:q.price};
   if(q.side==='buy'){position.units+=q.units;position.costCents+=q.totalCents;}
   else {position.units-=q.units;position.costCents-=q.removedCost;}
-  position.lastPrice=q.price;
+  if(q.marketMode!=='live')position.lastPrice=q.price;
   if(position.units)p.positions[q.symbol]=position;else delete p.positions[q.symbol];
   bank.checking=q.checkingAfterCents/100;
-  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);p.marketDate=market.asOf;
-  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+q.symbol+' shares at '+money(cents(q.price))+'; fee '+money(q.feeCents)+'; close '+q.priceDate,category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
-  recordSnapshot(bank,market);return trade;
+  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,quoteTimestamp:q.quoteTimestamp,marketMode:q.marketMode,accountId:q.accountId,costBasisCents:q.side==='buy'?q.totalCents:q.removedCost,provider:q.marketMode==='live'?'Alpaca':market.source,feed:q.marketMode==='live'?'iex':undefined,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);if(q.marketMode!=='live')p.marketDate=market.asOf;
+  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+q.symbol+' shares at '+money(cents(q.price))+'; fee '+money(q.feeCents)+(q.marketMode==='live'?'; IEX trade '+q.quoteTimestamp:'; close '+q.priceDate),category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
+  if(q.marketMode==='live')applyLiveMarks(state,market.liveQuotes,now);else recordSnapshot(bank,market);return trade;
+}
+export function applyLiveMarks(state,data,now=new Date()){
+ const p=ensurePortfolio(state.bank);p.marks??={};
+ for(const symbol of SYMBOLS){const q=data?.quotes?.[symbol];if(!validLiveQuote(q,now)||p.marks[symbol]&&Date.parse(p.marks[symbol].timestamp)>Date.parse(q.timestamp))continue;p.marks[symbol]={symbol,price:q.price,timestamp:q.timestamp,provider:'Alpaca',feed:'iex'};}
+ const t=portfolioTotals(state.bank,{liveQuotes:data});state.bank.investments=t.valueCents/100;
+ if(p.trades.length){p.liveSnapshots??=[];const snapshot={timestamp:now.toISOString(),valueCents:t.valueCents,profitCents:t.profitCents};const last=p.liveSnapshots.at(-1);if(last?.timestamp.slice(0,16)===snapshot.timestamp.slice(0,16))p.liveSnapshots[p.liveSnapshots.length-1]=snapshot;else p.liveSnapshots.push(snapshot);p.liveSnapshots=p.liveSnapshots.slice(-1500);}
+ return t;
 }
 export function applyMarket(state,market){
   const p=ensurePortfolio(state.bank);if(p.marketDate&&market.asOf<p.marketDate)return false;
@@ -74,6 +94,7 @@ export function applyMarket(state,market){
       const id=e.symbol+':'+e.type+':'+e.date;if(p.events.some(x=>x.id===id))continue;
       if(e.type==='split'){
         const old=position.units;position.units=Math.round(position.units*e.value);position.lastPrice/=e.value;
+        if(p.marks?.[e.symbol]&&p.marks[e.symbol].timestamp.slice(0,10)<e.date)delete p.marks[e.symbol];
         p.events.push({id,type:'split',symbol:e.symbol,date:e.date,ratio:e.value});
         state.ledger.push({day:state.day,category:'investment split',cash:0,desc:e.symbol+' share split ×'+e.value+' ('+shares(old)+' → '+shares(position.units)+')'});
       }else{

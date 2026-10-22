@@ -9,7 +9,7 @@ function goodFriday(year){
   const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=(h+l-7*m+114)%31+1;
   return iso(new Date(Date.UTC(year,month-1,day-2)));
 }
-function holidays(year){
+export function holidays(year){
   const memorial=new Date(Date.UTC(year,5,0));while(memorial.getUTCDay()!==1)memorial.setUTCDate(memorial.getUTCDate()-1);
   return new Set([observed(year,0,1,true),nth(year,0,1,3),nth(year,1,1,3),goodFriday(year),iso(memorial),...(year>=2022?[observed(year,5,19)]:[]),observed(year,6,4),nth(year,8,1,1),nth(year,10,4,4),observed(year,11,25),'2025-01-09','2018-12-05']);
 }
@@ -43,7 +43,7 @@ export function marketFresh(market,now=new Date()){return market?.asOf===previou
 export function rangeStart(range,end){
   const d=new Date(end+'T12:00:00Z');
   if(range==='1W')d.setUTCDate(d.getUTCDate()-7);
-  else if(range==='1M'){const day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);d.setUTCDate(Math.min(day,new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()));}
+  else if(range==='1M'||range==='3M'){const day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-(range==='3M'?3:1));d.setUTCDate(Math.min(day,new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()));}
   else if(range==='YTD')return end.slice(0,4)+'-01-01';
   else {const month=d.getUTCMonth();d.setUTCFullYear(d.getUTCFullYear()-(range==='5Y'?5:1));if(d.getUTCMonth()!==month)d.setUTCDate(0);}
   return iso(d);

@@ -19,3 +19,6 @@ The file contains October 19, 2026 closing prices for DIA, SPY, ARKK, SGOV, GLD 
 The editable source, setup instructions and automated checks are included in the repository; see the [project README](../README.md).
 
 The Classic Stand purchase now installs the reference-inspired Cooler Cup storefront: cream walls, yellow trim, glazed doors, a striped serving awning and a raised lemon sign. Existing Classic ownership restores the new model automatically. Interior equipment, walking and snow remain supported in all four locations.
+
+
+The live-market integration release adds authenticated Alpaca Basic IEX quotes and charts to the hosted game, with shared request limits and virtual trades. **Activation is pending:** account Free plans, private-display rights and real Alpaca credentials still need verification. This downloaded file never contains provider credentials. Offline investment history and existing holdings remain available; new Buy/Sell actions require fresh authenticated hosted quotes during verified regular US market hours. Prior-close collateral processing retains its existing rules. See [live market setup](../docs/ALPACA-LIVE-SETUP.md).

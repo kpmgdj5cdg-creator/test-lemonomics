@@ -179,3 +179,7 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 .upgrade-equip{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:8px;background:#ecf4dc;color:#245733;font-weight:800}.upgrade-equip input{width:20px;height:20px;accent-color:#237240}.mortgage-summary{line-height:1.6}
 
 #scene[data-view="home"] #neighborhoodEvent{display:none!important}
+
+.fund-quote-time{display:block;margin-top:6px;font-size:11px;line-height:1.5;color:#546853}.invest-price-status span{max-width:260px}.invest-performance-detail{line-height:1.7}
+
+.invest-history-refresh{margin:8px 24px 14px;padding:8px 12px;border:1px solid #a2b896;border-radius:7px;background:#eff6e3;color:#245f3d;font:inherit;font-size:12px;font-weight:700;cursor:pointer}

@@ -159,3 +159,9 @@ Walk to the house's front door. Before ownership, a nearby **For Sale! See your 
 ### Customer price sensitivity
 
 The live sales loop and projections now share the table-based price model in `src/demand.js`, tuned in `src/demand-config.js`. Price sensitivity varies by cold/average/hot weather, location, recipe quality and cumulative purchased branding, with exact weather-specific price cutoffs. Discounts increase interest without guaranteeing more profit. Existing traffic, queues, service, inventory and financial systems remain authoritative; saved active days keep their frozen rules. End-of-day reports explain the actual pricing effects without revealing the curve. See [the demand implementation notes](docs/PRICE-DEMAND.md) for calibration, save compatibility and tests.
+
+### Alpaca IEX live investment integration (activation pending)
+
+The Investments screen now has private server-backed IEX quotes, approximately five-second active-session updates, actual market-calendar hours, fractional virtual trading, timestamped valuations and Alpaca historical charts. Existing holdings, trades, game accounts, mortgages and prior-close collateral processing are retained. The Worker shares caches and an atomic upstream request budget through the existing D1 database; credentials stay in server secrets. No brokerage order or billing API is used.
+
+**Not yet activated or live-verified:** Alpaca keys and current Free account plans were unavailable for verification. The live flag defaults off. Follow [the setup, limits and verification instructions](docs/ALPACA-LIVE-SETUP.md) before deploying or enabling it. Unit/browser tests use clearly labeled mocked provider responses; no artificial prices are used as a production fallback. Offline games retain their saved holdings and business/banking features, while immediate investment trades require fresh quotes during verified regular market hours.

@@ -10,6 +10,7 @@ function environment(){
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../cloud/migrations/0001_family.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../cloud/migrations/0002_fund_refresh.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../cloud/migrations/0003_five_profiles.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../cloud/migrations/0004_mortgage_rate.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../cloud/migrations/0005_live_market.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){
    let args=[];
    return {
@@ -120,4 +121,17 @@ test('mortgage rate endpoint caches verified published rates and retains the las
  response=await mortgageRate(env,now+2*3600000,async()=>{throw Error('offline')});assert.equal(response.status,200);assert.equal((await response.json()).data.asOf,'2026-10-22');
  response=await mortgageRate(env,now+40*86400000,async()=>{throw Error('offline')});assert.equal(response.status,503);
  const anonymous=await worker.fetch(new Request('https://game.example/api/mortgage-rate'),env);assert.equal(anonymous.status,401);
+});
+
+test('live market routes require family authentication and keep disabled configuration private',async()=>{
+ const env=environment();env.ALPACA_API_KEY_ID='TEST_PRIVATE_ID';env.ALPACA_API_SECRET_KEY='TEST_PRIVATE_SECRET';
+ const paths=['/api/market/quotes','/api/market/history?symbol=SPY&range=1D'];
+ for(const path of paths)assert.equal((await worker.fetch(new Request('https://game.example'+path),env)).status,401);
+ const api=await family(env);
+ for(const path of paths){
+  const response=await api(path);assert.equal(response.status,200);assert.equal(response.headers.get('Access-Control-Allow-Origin'),null);assert.match(response.headers.get('Cache-Control'),/no-store/);
+  const body=await response.text();assert.equal(JSON.parse(body).status,'disabled');assert.doesNotMatch(body,/TEST_PRIVATE|APCA-API/);
+  assert.equal((await api(path,{method:'POST',body:'{}'})).status,404);
+ }
+ assert.equal((await api('/api/orders',{method:'POST',body:'{}'})).status,404);
 });

@@ -1,0 +1,6 @@
+# Local Wrangler only. Copy to ignored .dev.vars; never commit real values.
+FAMILY_PASSWORD=replace-with-a-private-local-password
+# Keep false until Free plans, IEX entitlement and private display rights are verified.
+ALPACA_LIVE_ENABLED=false
+ALPACA_API_KEY_ID=
+ALPACA_API_SECRET_KEY=
