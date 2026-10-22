@@ -544,7 +544,7 @@ button:focus-visible{outline:3px solid #ffd14d;outline-offset:3px}
 <div class="modal-scrim" id="modal" role="dialog" aria-modal="true" aria-label="Game report or information"><div class="modal"><button class="close" id="modalClose" type="button">✕</button><div id="modalBody"></div></div></div>
 </div><script>
 (function(){
-  function failed(){var el=document.getElementById('scene3dError');if(el&&el.hidden&&!document.querySelector('#world3d[data-ready="true"]')){el.hidden=false;el.textContent='The 3D scene could not start. Open the bundled lemonade-lane.html file, or run this project with npm run dev. Your business controls and save data are separate from the graphics.';}}
+  function failed(){var el=document.getElementById('scene3dError');if(el&&el.hidden&&!document.querySelector('#world3d[data-ready="true"]')){el.hidden=false;el.dataset.startupWarning='true';el.textContent='The 3D scene could not start. Open the bundled lemonade-lane.html file, or run this project with npm run dev. Your business controls and save data are separate from the graphics.';}}
   window.addEventListener('error',failed);window.addEventListener('unhandledrejection',failed);
   window.setTimeout(failed,12000);
 })();

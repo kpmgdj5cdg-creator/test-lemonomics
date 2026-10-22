@@ -39,7 +39,7 @@ export class Neighborhood{
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
     this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.showError('The 3D graphics context was interrupted. Reload to restore the neighborhood. Your game is still saved.');});
   }
-  showError(text){const e=document.getElementById('scene3dError');if(e){e.textContent=text;e.hidden=false}}
+  showError(text){const e=document.getElementById('scene3dError');if(e){delete e.dataset.startupWarning;e.textContent=text;e.hidden=false}}
   buildNeighborhood(){
     const g=this.environment;
     // An inhabited street that fills the viewport, rather than a distant floating diorama.
@@ -126,6 +126,7 @@ export class Neighborhood{
     const iceFree=active.includes('icemaker')||active.includes('icedispenser');
     const capacity=availableCups(state.inventory,state.recipe,iceFree);
     const info=document.getElementById('sceneInventory');if(info){info.textContent=`WORKSPACE · ${capacity} cups available   |   Lemons ${fmt(state.inventory.lemons)} · Sugar ${fmt(state.inventory.sugar)} · Ice ${fmt(state.inventory.ice)} · Cups ${fmt(state.inventory.cups)}`}
+    const startupError=document.getElementById('scene3dError');if(startupError?.dataset.startupWarning==='true'){startupError.hidden=true;delete startupError.dataset.startupWarning;}
     this.container.dataset.ready='true';this.container.dataset.upgrades=this.player.equipment.userData.ids.join(',');this.container.dataset.competitor=String(!!this.rival);
   }
   updateStock(inventory){
