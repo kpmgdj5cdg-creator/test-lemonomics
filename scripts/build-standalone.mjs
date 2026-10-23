@@ -4,7 +4,9 @@ import {resolve} from 'node:path';
 
 // A single-file deliverable with app, CSS and dated market history inlined.
 // A hosted copy can refresh prices from the optional same-origin /api/market service.
-const result=await build({configFile:false,logLevel:'warn',build:{write:false,minify:true,target:'es2020',lib:{entry:resolve('src/game.js'),name:'LemonadeLane',formats:['iife']}}});
+const trackData='data:audio/mpeg;base64,'+(await readFile('src/audio/afterglow-drive.mp3')).toString('base64');
+const inlineTrack={name:'standalone-radio-track',enforce:'pre',transform(code,id){if(id===resolve('src/game-audio.js'))return code.replace("new URL('./audio/afterglow-drive.mp3',import.meta.url).href",JSON.stringify(trackData));}};
+const result=await build({configFile:false,logLevel:'warn',plugins:[inlineTrack],build:{assetsInlineLimit:Infinity,write:false,minify:true,target:'es2020',lib:{entry:resolve('src/game.js'),name:'LemonadeLane',formats:['iife']}}});
 const chunks=(Array.isArray(result)?result:[result]).flatMap(r=>r.output).filter(o=>o.type==='chunk');
 if(chunks.length!==1)throw new Error('Standalone build must contain exactly one script.');
 const css=await readFile('src/scene.css','utf8');

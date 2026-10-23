@@ -1,0 +1,45 @@
+{
+  "title": "Afterglow Drive",
+  "durationSeconds": 192.0,
+  "bpm": 100,
+  "key": "E minor",
+  "vocals": false,
+  "originalComposition": true,
+  "sections": [
+    {
+      "startSeconds": 0.0,
+      "endSeconds": 19.2,
+      "name": "Dusk / intro"
+    },
+    {
+      "startSeconds": 19.2,
+      "endSeconds": 57.599999999999994,
+      "name": "Open road"
+    },
+    {
+      "startSeconds": 57.599999999999994,
+      "endSeconds": 96.0,
+      "name": "Afterglow / chorus"
+    },
+    {
+      "startSeconds": 96.0,
+      "endSeconds": 115.19999999999999,
+      "name": "Skyline / breakdown"
+    },
+    {
+      "startSeconds": 115.19999999999999,
+      "endSeconds": 134.4,
+      "name": "Return"
+    },
+    {
+      "startSeconds": 134.4,
+      "endSeconds": 172.79999999999998,
+      "name": "Afterglow / final chorus"
+    },
+    {
+      "startSeconds": 172.79999999999998,
+      "endSeconds": 192.0,
+      "name": "Dawn / outro"
+    }
+  ]
+}

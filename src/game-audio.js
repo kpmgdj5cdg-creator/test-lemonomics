@@ -1,9 +1,9 @@
-import {NEON_VOCALS,NEON_LYRICS} from './radio-vocals.js';
-// Original synthesized music and generated vocoder vocals, bundled offline.
+const instrumentalUrl=new URL('./audio/afterglow-drive.mp3',import.meta.url).href;
+// Original techno synthesis and the full bundled Afterglow Drive instrumental.
 export class GameAudio{
  constructor(){
   this.muted=false;try{this.muted=localStorage.getItem('lemonomics_sound_v1')==='off'}catch{}
-  this.musicPlaying=false;this.station=0;this.audible=true;this.voices=new Set();this.musicVoices=new Set();this.step=0;this.nextNote=0;this.noteCount=0;this.vocalCount=0;this.noiseSeed=0x1234567;
+  this.musicPlaying=false;this.station=0;this.audible=true;this.voices=new Set();this.musicVoices=new Set();this.step=0;this.nextNote=0;this.noteCount=0;this.trackOffset=0;this.trackPlayCount=0;this.noiseSeed=0x1234567;
  }
  async unlock(){
   try{
@@ -40,19 +40,18 @@ export class GameAudio{
  async toggleMusic(){
   const next=(this.station+1)%3;this.stopMusic();if(!next)return false;
   this.station=next;const version=(this.startVersion||0)+1;this.startVersion=version;this.starting=true;
-  const ready=await this.unlock();if(version!==this.startVersion)return false;this.starting=false;if(!ready){this.station=0;return false;}
-  if(next===2){try{await this.loadVocals()}catch{if(version===this.startVersion)this.stopMusic();return false}if(version!==this.startVersion)return false;}
-  if(this.muted)this.setMuted(false);
+  const ready=await this.unlock();if(version!==this.startVersion)return false;if(!ready){this.stopMusic();return false;}
+  if(next===2){try{await this.loadTrack()}catch{if(version===this.startVersion)this.stopMusic();return false}if(version!==this.startVersion)return false;}
+  this.starting=false;if(this.muted)this.setMuted(false);
   this.musicPlaying=true;this.epoch=this.context.currentTime+.03;this.nextNote=this.epoch;this.step=0;
-  this.music.gain.setValueAtTime(this.audible?.42:0,this.context.currentTime);this.sequence();this.timer=setInterval(()=>this.sequence(),25);return true;
+  this.music.gain.setValueAtTime(this.audible?.42:0,this.context.currentTime);if(next===2)this.startTrack();else{this.sequence();this.timer=setInterval(()=>this.sequence(),25)}return true;
  }
  sequence(){
-  const c=this.context;if(!c||!this.musicPlaying||!this.audible)return;
+  const c=this.context;if(!c||!this.musicPlaying||!this.audible||this.station!==1)return;
   if(this.nextNote<c.currentTime-.15)this.nextNote=c.currentTime+.02;
   const eighth=60/(this.station===2?100:124)/2,arp=[0,7,12,3,10,7,15,12],bass=[130.81,130.81,155.56,116.54];
   while(this.nextNote<c.currentTime+.12){
    const s=this.step%32,t=this.nextNote;
-   if(this.station===2){this.synthwave(this.step%64,t);this.nextNote+=eighth;this.step++;continue;}
    if(s%2===0)this.tone(140,t,.17,'sine',.8,this.music,42);
    this.noise(t,.035,s%2?.15:.07,this.music);
    if(s%8===4)this.noise(t,.11,.3,this.music);
@@ -61,24 +60,34 @@ export class GameAudio{
    this.nextNote+=eighth;this.step++;
   }
  }
- async loadVocals(){
-  this.vocalPromise??=this.context.decodeAudioData(Uint8Array.from(atob(NEON_VOCALS),c=>c.charCodeAt(0)).buffer).then(buffer=>this.vocalBuffer=buffer).catch(error=>{this.vocalPromise=null;throw error});return this.vocalPromise;
+ async loadTrack(){
+  this.trackPromise??=(async()=>{
+   const response=await fetch(instrumentalUrl);if(!response.ok)throw new Error('Instrumental unavailable');
+   this.trackBuffer=await this.context.decodeAudioData(await response.arrayBuffer());return this.trackBuffer;
+  })().catch(error=>{this.trackPromise=null;throw error});return this.trackPromise;
  }
- synthwave(s,t){
-  const roots=[110,87.307,130.813,97.999],chords=[[220,261.626,329.628],[174.614,220,261.626],[261.626,329.628,391.995],[195.998,246.942,293.665]],chord=Math.floor(s/8)%4;
-  if(s%8===0){for(const f of chords[chord]){this.tone(f*.996,t,2.5,'sawtooth',.025,this.music);this.tone(f*1.004,t,2.6,'triangle',.045,this.music)}}
-  if(s%2===0)this.tone(125,t,.22,'sine',.8,this.music,40);
-  if(s%8===2||s%8===6){this.noise(t,.14,.26,this.music);this.tone(185,t,.09,'triangle',.14,this.music,110)}
-  this.noise(t,.04,s%2?.10:.05,this.music);
-  this.tone(roots[chord]*(s%8===7?2:1),t,.22,'sawtooth',.09,this.music);
-  const melody=chords[chord][[0,1,2,1,0,2,1,2][s%8]]*(s%4===3?2:1);
-  this.tone(melody*2,t,.19,'triangle',.09,this.music);this.tone(melody*2,t+.15,.27,'sine',.025,this.music);
-  if(s===0&&this.vocalBuffer){const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=this.vocalBuffer;gain.gain.value=.95;source.connect(gain);gain.connect(this.music);source.start(t);this.voices.add(source);this.musicVoices.add(source);this.vocalCount++;source.onended=()=>{source.disconnect();gain.disconnect();this.voices.delete(source);this.musicVoices.delete(source)}}
+ startTrack(){
+  if(!this.audible||!this.musicPlaying||!this.trackBuffer||this.trackSource)return;
+  const source=this.context.createBufferSource();source.buffer=this.trackBuffer;source.loop=true;source.connect(this.music);
+  this.trackSource=source;this.trackStartedAt=this.context.currentTime;this.epoch=this.trackStartedAt-this.trackOffset;
+  source.start(this.trackStartedAt,this.trackOffset);this.voices.add(source);this.musicVoices.add(source);this.trackPlayCount++;
+  source.onended=()=>{source.disconnect();this.voices.delete(source);this.musicVoices.delete(source);if(this.trackSource===source)this.trackSource=null};
  }
- get lyrics(){return this.station===2?NEON_LYRICS:''}
- stopMusic(){this.startVersion=(this.startVersion||0)+1;this.starting=false;clearInterval(this.timer);this.timer=null;this.musicPlaying=false;this.station=0;for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear();if(this.context&&this.music)this.music.gain.setValueAtTime(0,this.context.currentTime)}
+ get trackPosition(){return this.trackBuffer?(this.trackOffset+(this.trackSource?Math.max(0,this.context.currentTime-this.trackStartedAt):0))%this.trackBuffer.duration:0}
+ pauseTrack(){
+  const source=this.trackSource;if(!source)return;this.trackOffset=this.trackPosition;this.trackSource=null;this.musicVoices.delete(source);try{source.stop()}catch{}
+ }
+ stopMusic(){this.startVersion=(this.startVersion||0)+1;this.starting=false;clearInterval(this.timer);this.timer=null;this.pauseTrack();this.trackOffset=0;this.musicPlaying=false;this.station=0;for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear();if(this.context&&this.music)this.music.gain.setValueAtTime(0,this.context.currentTime)}
  setMuted(value){this.muted=value;if(value)this.stopMusic();if(this.master)this.master.gain.setValueAtTime(value?0:.22,this.context.currentTime);try{localStorage.setItem('lemonomics_sound_v1',value?'off':'on')}catch{}}
- setAudible(value){if(!value&&this.audible){for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}if(value&&!this.audible&&this.musicPlaying&&this.context){this.epoch=this.context.currentTime+.02;this.nextNote=this.epoch;this.step=0}this.audible=value;if(this.music&&this.context)this.music.gain.setValueAtTime(value&&this.musicPlaying?.42:0,this.context.currentTime)}
+ setAudible(value){
+  if(value===this.audible)return;
+  if(!value){this.pauseTrack();for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}
+  this.audible=value;
+  if(value&&this.musicPlaying&&this.context){
+   if(this.station===2)this.startTrack();else{this.epoch=this.context.currentTime+.02;this.nextNote=this.epoch;this.step=0}
+  }
+  if(this.music&&this.context)this.music.gain.setValueAtTime(value&&this.musicPlaying?.42:0,this.context.currentTime);
+ }
  level(){if(!this.musicPlaying||!this.audible||!this.analyser?.getFloatTimeDomainData)return 0;this.samples??=new Float32Array(256);this.analyser.getFloatTimeDomainData(this.samples);let sum=0;for(const value of this.samples)sum+=value*value;return Math.sqrt(sum/this.samples.length)}
  beat(){if(!this.musicPlaying||!this.audible||!this.context)return 0;const period=60/(this.station===2?100:124),phase=((this.context.currentTime-this.epoch)%period+period)%period;return Math.exp(-phase*17)}
  reset(){this.stopMusic()}

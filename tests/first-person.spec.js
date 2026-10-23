@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {enterGame} from './fixtures/profile-ui.js';
 import {gameWithChecking,marketFixture} from './fixtures/market.js';
+import {readFile} from 'node:fs/promises';
 const key='lemonadeLane_bank_v3';
 async function ready(page,upgrades=['classic'],day=1,extra={}){
  const state=gameWithChecking(0);state.upgrades=upgrades;state.day=day;Object.assign(state,extra);
@@ -29,9 +30,25 @@ test('speaker mesh toggles original music and vibration, and mute stops it',asyn
  const world=await ready(page,['classic','music']);await page.locator('[data-scene-view=exterior]').click();
  await clickTarget(page,world,'data-speaker-screen');await expect(world).toHaveAttribute('data-music-playing','true');await expect(world).toHaveAttribute('data-audio-state','running');await expect.poll(async()=>Number(await world.getAttribute('data-audio-notes'))).toBeGreaterThan(2);await expect.poll(async()=>Number(await world.getAttribute('data-audio-level'))).toBeGreaterThan(.001);
  // Respect reduced motion, then verify actual beat movement when it is allowed.
- await expect(world).toHaveAttribute('data-speaker-pulse','1');await page.emulateMedia({reducedMotion:'no-preference'});await expect.poll(async()=>Number(await world.getAttribute('data-speaker-pulse'))).toBeGreaterThan(1.02);await page.emulateMedia({reducedMotion:'reduce'});await clickTarget(page,world,'data-speaker-screen');await expect(world).toHaveAttribute('data-radio-station','2');await expect(world).toHaveAttribute('data-music-playing','true');await expect.poll(async()=>Number(await world.getAttribute('data-vocal-phrases'))).toBeGreaterThan(0);await expect(world).toHaveAttribute('data-radio-lyrics',/Stay in the light/);await expect.poll(async()=>Number(await world.getAttribute('data-audio-level'))).toBeGreaterThan(.001);
+ await expect(world).toHaveAttribute('data-speaker-pulse','1');await page.emulateMedia({reducedMotion:'no-preference'});await expect.poll(async()=>Number(await world.getAttribute('data-speaker-pulse'))).toBeGreaterThan(1.02);await page.emulateMedia({reducedMotion:'reduce'});await clickTarget(page,world,'data-speaker-screen');await expect(world).toHaveAttribute('data-radio-station','2');await expect(world).toHaveAttribute('data-music-playing','true');await expect(world).toHaveAttribute('data-track-title','Afterglow Drive');await expect.poll(async()=>Number(await world.getAttribute('data-track-duration'))).toBeCloseTo(192,0);await expect.poll(async()=>Number(await world.getAttribute('data-audio-level'))).toBeGreaterThan(.001);
+ const position=Number(await world.getAttribute('data-track-position'));await page.locator('#saveMenuBtn').click();await page.locator('#backToGame').click();await expect.poll(async()=>Number(await world.getAttribute('data-track-position'))).toBeGreaterThan(position);
  await clickTarget(page,world,'data-speaker-screen');await expect(world).toHaveAttribute('data-music-playing','false');await expect(world).toHaveAttribute('data-radio-station','0');
  await page.locator('#speakerToggleBtn').click();await expect(world).toHaveAttribute('data-music-playing','true');await page.locator('#gameSoundBtn').click();await expect(world).toHaveAttribute('data-music-playing','false');
+});
+
+test('full instrumental plays in the downloaded single file with every HTTP request blocked',async({page})=>{
+ const state=gameWithChecking(0);state.upgrades=['classic','music'];const errors=[];let requests=0;
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route(/^https?:\/\//,route=>{requests++;route.abort()});
+ // The managed browser blocks file: navigation. An opaque sandbox exercises the
+ // same single-file assets with a seeded in-memory storage fixture instead.
+ let html=await readFile(new URL('../dist/lemonade-lane.html',import.meta.url),'utf8');
+ const seed=`<script>const fixture=new Map([['lemonadeLane_bank_v3',${JSON.stringify(JSON.stringify(state))}]]);Object.defineProperty(window,'localStorage',{value:{getItem:k=>fixture.get(k)??null,setItem:(k,v)=>fixture.set(k,String(v)),removeItem:k=>fixture.delete(k)}});</script>`;
+ html=html.replace('<head>','<head>'+seed);await page.setContent('<iframe title="Offline game" sandbox="allow-scripts" style="width:100%;height:1000px"></iframe>');await page.locator('iframe').evaluate((f,html)=>f.srcdoc=html,html);
+ const game=page.frameLocator('iframe');await enterGame(game);const world=game.locator('#world3d');await game.locator('#speakerToggleBtn').click();await expect(world).toHaveAttribute('data-radio-station','1');
+ await game.locator('#speakerToggleBtn').click();await expect(world).toHaveAttribute('data-radio-station','2');await expect(world).toHaveAttribute('data-track-title','Afterglow Drive');
+ await expect.poll(async()=>Number(await world.getAttribute('data-track-duration'))).toBeCloseTo(192,0);await expect.poll(async()=>Number(await world.getAttribute('data-audio-level'))).toBeGreaterThan(.001);
+ await game.locator('#speakerToggleBtn').click();await expect(world).toHaveAttribute('data-music-playing','false');expect(requests).toBe(0);expect(errors).toEqual([]);
 });
 
 test('interior front window shows the real rainy street with owned rear equipment',async({page})=>{

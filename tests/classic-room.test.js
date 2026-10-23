@@ -31,7 +31,7 @@ test('all five prep machines sit separately on the rear counter, fridge is rear-
 });
 class Param{value=0;setValueAtTime(v){this.value=v}exponentialRampToValueAtTime(v){this.value=v}}
 class Node{gain=new Param();frequency=new Param();connect(target){assert.equal(typeof target,'object')}disconnect(){}start(){}stop(){}}
-class AudioContextFake{currentTime=1;state='running';sampleRate=8000;destination={};createGain(){return new Node()}createAnalyser(){return new Node()}createOscillator(){return new Node()}createBufferSource(){return new Node()}createBiquadFilter(){return new Node()}createBuffer(_,size){return {getChannelData:()=>new Float32Array(size)}}async decodeAudioData(){return {duration:19.2}}async resume(){this.state='running'}}
+class AudioContextFake{currentTime=1;state='running';sampleRate=8000;destination={};createGain(){return new Node()}createAnalyser(){return new Node()}createOscillator(){return new Node()}createBufferSource(){return new Node()}createBiquadFilter(){return new Node()}createBuffer(_,size){return {getChannelData:()=>new Float32Array(size)}}async decodeAudioData(){return {duration:192}}async resume(){this.state='running'}}
 test('original sequencer schedules audio, respects mute and pause, and never consumes the simulation RNG',async()=>{
  const before=globalThis.AudioContext,random=Math.random;globalThis.AudioContext=AudioContextFake;
  const audio=new GameAudio();
@@ -49,13 +49,27 @@ test('rapid station changes and Off cancel pending starts without resurrecting p
  const second=audio.toggleMusic();assert.equal(audio.station,2);assert.equal(await audio.toggleMusic(),false);
  releases.forEach(release=>release(true));assert.deepEqual(await Promise.all([first,second]),[false,false]);assert.equal(audio.station,0);assert.equal(audio.musicPlaying,false);assert.equal(audio.timer,null);
 });
-test('second station schedules bundled vocals and restarts cleanly after a hidden game',async()=>{
- const before=globalThis.AudioContext;globalThis.AudioContext=AudioContextFake;const audio=new GameAudio();
+test('full instrumental loads once, loops and preserves its position across hidden games',async()=>{
+ const before=globalThis.AudioContext,fetchBefore=globalThis.fetch;globalThis.AudioContext=AudioContextFake;let requests=0;
+ globalThis.fetch=async()=>{requests++;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)}};
+ const audio=new GameAudio();
  try{
-  await audio.toggleMusic();assert.equal(audio.station,1);assert.equal(audio.vocalCount,0);
-  await audio.toggleMusic();assert.equal(audio.station,2);assert.equal(audio.vocalCount,1);assert.match(audio.lyrics,/We are alive/);
-  assert.ok(audio.musicVoices.size>0);audio.setAudible(false);assert.equal(audio.musicVoices.size,0);
-  audio.setAudible(true);audio.sequence();assert.equal(audio.vocalCount,2);
-  await audio.toggleMusic();assert.equal(audio.station,0);assert.equal(audio.musicVoices.size,0);assert.equal(audio.timer,null);
- }finally{audio.reset();globalThis.AudioContext=before}
+  await audio.toggleMusic();assert.equal(audio.station,1);assert.equal(audio.trackPlayCount,0);
+  await audio.toggleMusic();assert.equal(audio.station,2);assert.equal(audio.trackBuffer.duration,192);assert.equal(audio.trackSource.loop,true);assert.equal(audio.trackPlayCount,1);
+  audio.context.currentTime+=37;assert.equal(audio.trackPosition,37);audio.setAudible(false);assert.equal(audio.trackSource,null);assert.equal(audio.musicVoices.size,0);
+  audio.context.currentTime+=20;assert.equal(audio.trackPosition,37);audio.setAudible(true);assert.equal(audio.trackPosition,37);assert.equal(audio.trackPlayCount,2);
+  audio.context.currentTime+=160;assert.equal(audio.trackPosition,5);
+  await audio.toggleMusic();assert.equal(audio.station,0);assert.equal(audio.trackOffset,0);assert.equal(audio.musicVoices.size,0);assert.equal(audio.timer,null);
+  await audio.toggleMusic();await audio.toggleMusic();assert.equal(requests,1);assert.equal(audio.trackPosition,0);
+  audio.setMuted(true);assert.equal(audio.trackSource,null);assert.equal(audio.musicPlaying,false);
+ }finally{audio.reset();globalThis.AudioContext=before;globalThis.fetch=fetchBefore}
+});
+test('a failed instrumental load can retry without caching a rejected request',async()=>{
+ const before=globalThis.AudioContext,fetchBefore=globalThis.fetch;globalThis.AudioContext=AudioContextFake;let requests=0;
+ globalThis.fetch=async()=>{requests++;return {ok:requests>1,arrayBuffer:async()=>new ArrayBuffer(8)}};
+ const audio=new GameAudio();
+ try{
+  await audio.toggleMusic();assert.equal(await audio.toggleMusic(),false);assert.equal(audio.musicPlaying,false);assert.equal(audio.station,0);
+  await audio.toggleMusic();assert.equal(await audio.toggleMusic(),true);assert.equal(audio.trackBuffer.duration,192);assert.equal(requests,2);
+ }finally{audio.reset();globalThis.AudioContext=before;globalThis.fetch=fetchBefore}
 });
