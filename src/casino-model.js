@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import {box,group,label,batch,character} from './models.js';
 import {voxelText} from './voxel-text.js';
 import {drawSlotScreen} from './casino-screen.js';
-export const CASINO_CENTER={x:-29.5,z:-10.2},CASINO_ANGLE=0;
+export const CASINO_CENTER={x:-29.5,z:-7.9},CASINO_ANGLE=0,CASINO_SCALE=.64;
 export const CASINO_BOUNDS={minX:-5.65,maxX:5.65,minZ:-4.7,maxZ:4.75};
 export const CASINO_SOLIDS=[{minX:-6,maxX:-4.05,minZ:-4.9,maxZ:3.85},{minX:4.05,maxX:6,minZ:-4.9,maxZ:3.85},{minX:-6,maxX:6,minZ:-5,maxZ:-3.45},{minX:-3.52,maxX:-.95,minZ:-2.25,maxZ:1.65},{minX:.95,maxX:3.52,minZ:-2.25,maxZ:1.65}];
-export function casinoWorld(x,z){return {x:CASINO_CENTER.x+x*Math.cos(CASINO_ANGLE)+z*Math.sin(CASINO_ANGLE),z:CASINO_CENTER.z-x*Math.sin(CASINO_ANGLE)+z*Math.cos(CASINO_ANGLE)};}
+export function casinoWorld(x,z){return {x:CASINO_CENTER.x+CASINO_SCALE*(x*Math.cos(CASINO_ANGLE)+z*Math.sin(CASINO_ANGLE)),z:CASINO_CENTER.z+CASINO_SCALE*(-x*Math.sin(CASINO_ANGLE)+z*Math.cos(CASINO_ANGLE))};}
 export const CASINO_FRONT=casinoWorld(0,5.8);
 function seat(parent,x,z){box(parent,x,.45,z,.48,.13,.45,'#b8273d');for(const dx of [-.16,.16])box(parent,x+dx,.23,z,.07,.4,.3,'#735039');}
 function slot(parent,x,z,angle,stake,index){
@@ -32,7 +32,7 @@ function table(parent,x,kind){const g=group(parent,x,0,-.3);g.name='casino-'+kin
  for(const dx of [-.7,.7])seat(parent,x+dx,1.24);batch(g);return g;
 }
 export function buildCasino(parent){
- const root=group(parent,CASINO_CENTER.x,.12,CASINO_CENTER.z);root.rotation.y=CASINO_ANGLE;root.name='downtown-casino';
+ const root=group(parent,CASINO_CENTER.x,.12,CASINO_CENTER.z);root.rotation.y=CASINO_ANGLE;root.name='downtown-casino';root.scale.setScalar(CASINO_SCALE);
  const body=group(root),roof=group(root),doors=group(root),props=group(root),targets=[];
  box(body,0,.05,0,12.2,.16,10.2,'#82443b');box(body,0,.17,0,11.7,.10,9.7,'#a91735');
  for(const x of [-5.3,5.3])box(body,x,.235,0,.07,.015,9.2,'#e9b750');box(body,0,.235,4.2,10.6,.015,.07,'#e9b750');
@@ -46,7 +46,7 @@ export function buildCasino(parent){
  for(const x of [-3.8,3.8])glass(body,x,1.92,5,3.25,1.86);
  const hinges=[];for(const side of [-1,1]){const h=group(doors,side*1.18,0,5),leaf=group(h,-side*.57,0,0);for(const x of [-.57,.57])box(leaf,x,1.55,0,.09,2.64,.11,'#413532');for(const y of [.25,2.87])box(leaf,0,y,0,1.22,.1,.12,'#413532');glass(leaf,0,1.56,0,1.04,2.5);box(leaf,-side*.38,1.44,.11,.055,.56,.09,'#efc359');batch(h);hinges.push(h);}
  box(body,0,.13,5.35,2.8,.15,.75,'#bb2d40');
- box(roof,0,3.65,0,12.6,.28,10.55,'#b42239');box(roof,0,3.8,0,12.7,.14,10.65,'#e3b549');box(roof,0,3.98,0,12.3,.25,10.3,'#aa1e36');
+ box(roof,0,3.65,0,12.6,.28,10.55,'#b42239');box(roof,0,3.8,0,12.7,.14,10.65,'#e3b549');for(let tier=0;tier<9;tier++)box(roof,0,3.99+tier*.19,0,12.3-tier*.76,.22,10.3-tier*.72,tier%2?'#b82438':'#a91f32');
  box(roof,0,4.45,5.13,8.2,1.6,.38,'#9f1e35');for(const x of [-4.1,4.1])box(roof,x,4.45,5.36,.12,1.7,.12,'#f8cf65');for(const y of [3.63,5.29])box(roof,0,y,5.36,8.3,.12,.12,'#f8cf65');voxelText(roof,'CASINO',0,4.44,5.39,1.1,'#ffe084');
  box(roof,0,5.45,5.13,2.6,.7,.38,'#9f1e35');box(roof,0,5.63,5.4,.17,.17,.12,'#ffe084');box(roof,0,5.46,5.4,.47,.18,.12,'#ffe084');box(roof,0,5.29,5.4,.73,.19,.12,'#ffe084');box(roof,0,5.10,5.4,.15,.22,.12,'#ffe084');
  box(roof,0,3.25,5.7,3.2,.28,1.1,'#a11c35');

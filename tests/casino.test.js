@@ -47,3 +47,13 @@ test('downtown fronts face a nearest street, lots stay separate, and casino circ
  const b=lotBounds(a);for(const other of DOWNTOWN_LOTS.slice(i+1)){const c=lotBounds(other);assert.ok(b.maxX<=c.minX||b.minX>=c.maxX||b.maxZ<=c.minZ||b.minZ>=c.maxZ,`${a.shop} overlaps ${other.shop}`)}}
  assert.ok(validCasinoPosition({x:0,z:4.2}));assert.ok(!validCasinoPosition({x:-2.4,z:0}));let p={x:0,z:4.2};for(let i=0;i<70;i++)p=moveInCasino(p,{x:0,z:-1},0,.05);assert.ok(p.z<-2.4);for(let i=0;i<50;i++)p=moveInCasino(p,{x:-1,z:0},0,.05);assert.ok(p.x<-3.4);assert.ok(validCasinoPosition(p));
 });
+
+test('roulette dozens cover exactly twelve pockets with the same single-zero house edge',()=>{for(const kind of ['dozen1','dozen2','dozen3']){let total=0,wins=0;for(let n=0;n<37;n++){const r=spinRoulette(initial(),1,kind,0,()=>n);total+=r.net;if(r.payout)wins++;if(n===0)assert.equal(r.payout,0)}assert.equal(wins,12);assert.equal(total,-1)}});
+
+test('compact casino entrance is finite, in front of its scaled footprint and clear of adjacent buildings',async()=>{
+ const {CASINO_SCALE,CASINO_CENTER,CASINO_FRONT,casinoWorld}=await import('../src/casino-model.js');
+ assert.ok(12.7*CASINO_SCALE<8.2);assert.ok(10.65*CASINO_SCALE<7);
+ assert.deepEqual(casinoWorld(0,0),CASINO_CENTER);assert.ok(Number.isFinite(CASINO_FRONT.z));assert.ok(CASINO_FRONT.z>CASINO_CENTER.z+5.1*CASINO_SCALE);
+ const b={minX:CASINO_CENTER.x-6.35*CASINO_SCALE,maxX:CASINO_CENTER.x+6.35*CASINO_SCALE,minZ:CASINO_CENTER.z-5.33*CASINO_SCALE,maxZ:CASINO_CENTER.z+5.33*CASINO_SCALE};
+ for(const lot of DOWNTOWN_LOTS){const c=lotBounds(lot);assert.ok(b.maxX<=c.minX||b.minX>=c.maxX||b.maxZ<=c.minZ||b.minZ>=c.maxZ,`Casino overlaps ${lot.shop}`)}
+});
