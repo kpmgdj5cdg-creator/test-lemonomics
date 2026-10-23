@@ -1,4 +1,5 @@
-import {box,group,label,batch,bench,lamp,material} from './models.js';
+import * as THREE from 'three';
+import {box,group,label,batch,bench,lamp} from './models.js';
 import {palm,chalkboard} from './street-details.js';
 import {voxelText} from './voxel-text.js';
 
@@ -46,20 +47,33 @@ function surfRack(parent,x,z){
   }
 }
 function boat(parent,x,z){
-  const g=group(parent,x,-.13,z);g.rotation.y=-.2;
+  const g=group(parent,x,-.13,z);g.rotation.y=-.2;g.name='anchored-boat';
   box(g,0,.08,0,3.4,.42,1.45,'#e4a758');box(g,0,.35,0,3.55,.15,1.55,'#f5e2b2');
   box(g,1.72,.15,0,.38,.33,1.1,'#e4a758');box(g,1.99,.15,0,.2,.3,.65,'#e4a758');
   box(g,-.55,.83,0,1.25,.85,1.07,'#f8ebce');box(g,-.55,.92,.56,.98,.45,.04,'#337d97');
   box(g,-.55,1.33,0,1.48,.16,1.28,'#458fa1');box(g,-.55,1.7,0,.07,.67,.07,'#d3e0d2');
   for(const px of [-1.4,1.35])box(g,px,.65,.66,.06,.62,.06,'#dce3d0');box(g,0,.96,.66,2.8,.06,.06,'#dce3d0');
+  // Merge before the environment is batched so the hull keeps its own transform.
+  batch(g);return g;
+}
+export function waveHeight(x,z,time){
+  const shore=Math.min(1,Math.max(0,(z-4)/4));
+  if(!shore)return 0;
+  return shore*(Math.sin(z*1.15-time*1.65+x*.14)*.095+Math.sin(x*.65+z*.48-time*.92)*.045);
+}
+function ocean(parent){
+  const geometry=new THREE.PlaneGeometry(150,72,75,36);geometry.rotateX(-Math.PI/2);geometry.translate(0,0,40);
+  const colors=[],p=geometry.attributes.position;
+  for(let i=0;i<p.count;i++){const depth=Math.min(1,Math.max(0,(p.getZ(i)-5)/20)),c=new THREE.Color('#68c9bf').lerp(new THREE.Color('#1686ac'),depth);colors.push(c.r,c.g,c.b)}
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.38,metalness:.12,flatShading:true});material.userData.owned=true;
+  const mesh=new THREE.Mesh(geometry,material);mesh.name='moving-ocean';mesh.receiveShadow=true;parent.add(mesh);return mesh;
 }
 export function buildWaterfront(g,rival){
   // Sand ends at the shoreline; the ocean remains separate for weather and routing.
   box(g,0,-.24,-37.5,150,.48,83,'#efd6a2');
   box(g,0,-.43,40,150,.5,72,'#478b99');
-  box(g,0,-.14,5.8,150,.09,3.6,'#69c7bf');box(g,0,-.14,9.6,150,.09,4,'#3fb5bb');
-  box(g,0,-.14,15,150,.09,6.8,'#279fba');box(g,0,-.14,49.2,150,.09,61.6,'#1686ac');
-  for(const color of ['#69c7bf','#3fb5bb','#279fba','#1686ac']){material(color).roughness=.42;material(color).metalness=.08;}
+  const surface=ocean(g);
   // Discrete sand patches and shell pebbles keep the beach geometric and quiet.
   for(let i=0;i<95;i++){
     const x=((i*79)%470)/10-23.5,z=-1-((i*97)%180)/10;
@@ -80,7 +94,9 @@ export function buildWaterfront(g,rival){
   lifeguard(g,-10,-6.6);
   cabana(g,-3.5,-10.2,{wall:'#4eafbd',roof:'#257f90'});cabana(g,.1,-10.2,{wall:'#ecae96',roof:'#c96e72'});
   umbrella(g,-5.3,-5.4,'#de8f8d');umbrella(g,9.4,-8.7,'#74b9b3');
-  surfRack(g,5.4,-3.8);boat(g,-6.5,12.8);
+  surfRack(g,5.4,-3.8);const anchoredBoat=boat(g,-6.5,12.8);
+  // A stationary anchor buoy makes the fixed mooring clear without tying it to shore.
+  box(g,-8.6,-.02,12.8,.26,.3,.26,'#eeb65a');
   for(const [x,z,s] of [[-14,-2.8,1.15],[-7,-13.8,1.2],[5.7,-9.3,1.1],[15,-5.4,1.1],[20,-12,1.3]])palm(g,x,z,s);
   // Dune grass, beach seating, pier lamps, and small working waterfront details.
   for(const [x,z] of [[-12,-2.9],[-1,-5.4],[10,-5.5],[19,-1]])for(let i=0;i<5;i++)box(g,x-.35+i*.18,.2+(i%2)*.08,z,.09,.38+(i%2)*.16,.1,'#799e58');
@@ -90,17 +106,25 @@ export function buildWaterfront(g,rival){
   const sign=group(g,-6.5,0,-2.25);for(const x of [-1.2,1.2])box(sign,x,.95,0,.13,1.9,.13,'#ad8552');box(sign,0,1.65,0,2.9,.72,.18,'#347f90');voxelText(sign,'MAPLE BAY',0,1.68,.16,.34,'#fff0c3');
   chalkboard(g,-5.4,-.02);
   const plot=label(g,'SEASIDE PITCH',rival.x,.191,-.8,2.5,.45,{background:'#cba974',color:'#685a3f',size:70});plot.rotation.x=-Math.PI/2;
-  // Foam bars are merged per band so gentle surf needs only three transforms.
+  // Foam bars are merged per band so the surf needs only seven transforms.
   const surf=group(g);
-  for(let row=0;row<3;row++){
+  for(let row=0;row<7;row++){
     const band=group(surf,0,0,4.2+row*2.3);band.userData.baseZ=band.position.z;
     for(let i=0;i<37;i++)if((i+row)%4!==0)box(band,-28+i*1.6,-.035,((i*7)%5)*.12,.65+(i%3)*.3,.045,.13,row?'#a7e3d7':'#e8f3dc');
     batch(band);
     for(const mesh of band.children)if(mesh.isMesh)mesh.castShadow=false;
   }
-  return {plotLabel:plot,surf};
+  const result={plotLabel:plot,surf,surface,boat:anchoredBoat};animateWaterfront(result,0,false);return result;
 }
 export function animateWaterfront(waterfront,time,reduced){
   const t=reduced?0:time;
-  waterfront.surf.children.forEach((band,i)=>{band.position.z=band.userData.baseZ+Math.sin(t*.55+i)*.22;band.position.y=Math.sin(t*.8+i)*.015;});
+  if(waterfront.lastTime===t)return;waterfront.lastTime=t;
+  const p=waterfront.surface.geometry.attributes.position;
+  for(let i=0;i<p.count;i++)p.setY(i,-.095+waveHeight(p.getX(i),p.getZ(i),t));
+  p.needsUpdate=true;waterfront.surface.geometry.computeVertexNormals();
+  waterfront.surf.children.forEach((band,i)=>{band.position.z=band.userData.baseZ+Math.sin(t*.75+i)*.55;band.position.y=waveHeight(0,band.position.z,t)+.025;});
+  const b=waterfront.boat,x=b.position.x,z=b.position.z;b.position.y=-.13+waveHeight(x,z,t);
+  const forwardX=Math.sin(b.rotation.y),forwardZ=Math.cos(b.rotation.y),rightX=forwardZ,rightZ=-forwardX;
+  b.rotation.x=Math.atan2(waveHeight(x-forwardX*.7,z-forwardZ*.7,t)-waveHeight(x+forwardX*.7,z+forwardZ*.7,t),1.4);
+  b.rotation.z=Math.atan2(waveHeight(x+rightX*1.2,z+rightZ*1.2,t)-waveHeight(x-rightX*1.2,z-rightZ*1.2,t),2.4);
 }

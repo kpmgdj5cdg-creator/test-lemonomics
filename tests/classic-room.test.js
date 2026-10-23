@@ -31,7 +31,7 @@ test('all five prep machines sit separately on the rear counter, fridge is rear-
 });
 class Param{value=0;setValueAtTime(v){this.value=v}exponentialRampToValueAtTime(v){this.value=v}}
 class Node{gain=new Param();frequency=new Param();connect(target){assert.equal(typeof target,'object')}disconnect(){}start(){}stop(){}}
-class AudioContextFake{currentTime=1;state='running';sampleRate=8000;destination={};createGain(){return new Node()}createAnalyser(){return new Node()}createOscillator(){return new Node()}createBufferSource(){return new Node()}createBiquadFilter(){return new Node()}createBuffer(_,size){return {getChannelData:()=>new Float32Array(size)}}async resume(){this.state='running'}}
+class AudioContextFake{currentTime=1;state='running';sampleRate=8000;destination={};createGain(){return new Node()}createAnalyser(){return new Node()}createOscillator(){return new Node()}createBufferSource(){return new Node()}createBiquadFilter(){return new Node()}createBuffer(_,size){return {getChannelData:()=>new Float32Array(size)}}async decodeAudioData(){return {duration:19.2}}async resume(){this.state='running'}}
 test('original sequencer schedules audio, respects mute and pause, and never consumes the simulation RNG',async()=>{
  const before=globalThis.AudioContext,random=Math.random;globalThis.AudioContext=AudioContextFake;
  const audio=new GameAudio();
@@ -43,7 +43,19 @@ test('original sequencer schedules audio, respects mute and pause, and never con
  }finally{audio.reset();globalThis.AudioContext=before;Math.random=random}
 });
 
-test('a second speaker click cancels a pending audio start',async()=>{
- const audio=new GameAudio();let release;audio.unlock=()=>new Promise(r=>release=r);
- const first=audio.toggleMusic();assert.equal(audio.starting,true);assert.equal(await audio.toggleMusic(),false);release(true);assert.equal(await first,false);assert.equal(audio.musicPlaying,false);assert.equal(audio.timer,null);
+test('rapid station changes and Off cancel pending starts without resurrecting playback',async()=>{
+ const audio=new GameAudio(),releases=[];audio.unlock=()=>new Promise(r=>releases.push(r));
+ const first=audio.toggleMusic();assert.equal(audio.starting,true);assert.equal(audio.station,1);
+ const second=audio.toggleMusic();assert.equal(audio.station,2);assert.equal(await audio.toggleMusic(),false);
+ releases.forEach(release=>release(true));assert.deepEqual(await Promise.all([first,second]),[false,false]);assert.equal(audio.station,0);assert.equal(audio.musicPlaying,false);assert.equal(audio.timer,null);
+});
+test('second station schedules bundled vocals and restarts cleanly after a hidden game',async()=>{
+ const before=globalThis.AudioContext;globalThis.AudioContext=AudioContextFake;const audio=new GameAudio();
+ try{
+  await audio.toggleMusic();assert.equal(audio.station,1);assert.equal(audio.vocalCount,0);
+  await audio.toggleMusic();assert.equal(audio.station,2);assert.equal(audio.vocalCount,1);assert.match(audio.lyrics,/We are alive/);
+  assert.ok(audio.musicVoices.size>0);audio.setAudible(false);assert.equal(audio.musicVoices.size,0);
+  audio.setAudible(true);audio.sequence();assert.equal(audio.vocalCount,2);
+  await audio.toggleMusic();assert.equal(audio.station,0);assert.equal(audio.musicVoices.size,0);assert.equal(audio.timer,null);
+ }finally{audio.reset();globalThis.AudioContext=before}
 });

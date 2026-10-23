@@ -14,6 +14,7 @@ import {gameAudio} from './game-audio.js';
 import {HomeInterior} from './home-interior.js';
 import {batchPlayerHome} from './home-model.js';
 import {activeUpgrades} from './equipment.js';
+import {SceneLighting} from './scene-lighting.js';
 
 const PLAYER=new THREE.Vector3(-3,0,-.8),RIVAL=new THREE.Vector3(11.3,0,-.7),DOWNTOWN_RIVAL=new THREE.Vector3(13.3,0,-.7),WATERFRONT_RIVAL=new THREE.Vector3(11.8,0,-.8);
 const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,11 +30,11 @@ export class Neighborhood{
     try{this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});}catch(e){this.showError('This neighborhood needs WebGL. Please enable hardware acceleration or try a browser with WebGL support.');return}
     this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.03;
     container.appendChild(this.renderer.domElement);
-    this.scene.add(new THREE.HemisphereLight('#d9f7ff','#214d52',1.35));
+    this.hemisphere=new THREE.HemisphereLight('#d9f7ff','#214d52',1.35);this.scene.add(this.hemisphere);
     this.sun=new THREE.DirectionalLight('#fff4d4',3.2);this.sun.position.set(-15,22,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:22,bottom:-22,near:1,far:70});this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.00015;this.sun.shadow.radius=3;this.scene.add(this.sun);
     this.environment=group(this.scene);this.location='neighborhood';this.buildNeighborhood();this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);this.batchScenery();this.weatherEffects=new WeatherEffects(this.scene);this.arrivals=[];
     this.actorRoot=group(this.scene);this.hitbox=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,3.4),new THREE.MeshBasicMaterial({visible:false}));this.hitbox.position.copy(PLAYER).add(new THREE.Vector3(0,1.7,0));this.scene.add(this.hitbox);
-    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.installAudioControls();
+    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.drag=null;this.installControls();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);this.resize();
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
@@ -120,9 +121,7 @@ export class Neighborhood{
     if(this.stockSignature!==stockSig){this.stockSignature=stockSig;this.updateStock(state.inventory)}
     const weatherMode=weather.name==='Snowy'?'snow':weather.name==='Rainy'?'rain':'sunny';
     this.weatherEffects.set(weatherMode,this.location);this.container.dataset.weather=weatherMode;
-    this.sun.intensity=weatherMode==='sunny'?3.1:weatherMode==='snow'?1.9:1.45;
-    this.sun.color.set(weatherMode==='sunny'?'#fff4d4':'#d7edff');
-    this.scene.background.set(weatherMode==='snow'?'#cedeea':weatherMode==='rain'?'#87b4c4':'#8bd8e0');
+    this.lighting.apply();
     const iceFree=active.includes('icemaker')||active.includes('icedispenser');
     const capacity=availableCups(state.inventory,state.recipe,iceFree);
     const info=document.getElementById('sceneInventory');if(info){info.textContent=`WORKSPACE · ${capacity} cups available   |   Lemons ${fmt(state.inventory.lemons)} · Sugar ${fmt(state.inventory.sugar)} · Ice ${fmt(state.inventory.ice)} · Cups ${fmt(state.inventory.cups)}`}
@@ -182,7 +181,9 @@ export class Neighborhood{
   publishAudio(){
     const playing=!!this.audio.musicPlaying;
     this.soundButton.textContent=this.audio.muted?'Sound off':'Sound on';this.soundButton.setAttribute('aria-pressed',String(!this.audio.muted));
-    this.musicButton.hidden=!this.player?.speaker;this.musicButton.textContent=playing?'Speaker: Stop':'Speaker: Play';this.musicButton.setAttribute('aria-pressed',String(playing));
+    this.musicButton.hidden=!this.player?.speaker;this.musicButton.textContent=playing?`Radio: ${this.audio.station===2?'Neon Nights':'Lemon FM'}`:'Speaker: Play';this.musicButton.setAttribute('aria-pressed',String(playing));this.musicButton.title=playing?`Playing ${this.audio.station===2?'Neon Nights — synthwave with vocoder vocals. Click to turn off.':'Lemon FM — techno. Click for Neon Nights.'}`:'Click to play Lemon FM';
+    this.container.dataset.radioStation=playing?String(this.audio.station):'0';
+    this.container.dataset.vocalPhrases=String(this.audio.vocalCount);this.container.dataset.radioLyrics=this.audio.lyrics;
     this.container.dataset.musicPlaying=String(playing);this.container.dataset.audioState=this.audio.context?.state||'locked';this.container.dataset.audioNotes=String(this.audio.noteCount);this.container.dataset.audioLevel=String(+this.audio.level().toFixed(4));
   }
   currentCamera(){if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}
@@ -269,11 +270,11 @@ export class Neighborhood{
       if((!walking&&!a.route?.length&&Math.hypot(a.group.position.x-a.destination.x,a.group.position.z-a.destination.z)<.06&&a.mode!=='queue'&&this.time-a.born>1.5)||this.time-a.born>24){disposeGroup(a.group);this.people.delete(id)}
     }
     this.weatherEffects.update(this.time,this.view==='interior',reducedMotion());
-    if(this.waterfront)animateWaterfront(this.waterfront,this.time,reducedMotion());
+    if(this.waterfront){animateWaterfront(this.waterfront,this.time,reducedMotion());const boat=this.waterfront.boat;this.container.dataset.boatPose=JSON.stringify({x:boat.position.x,y:boat.position.y,z:boat.position.z,pitch:boat.rotation.x,roll:boat.rotation.z});this.container.dataset.waveHeight=String(this.waterfront.surface.geometry.attributes.position.getY(1000));}
     const camera=this.currentCamera();camera.updateMatrixWorld(true);this.classicInterior.projectTargets(camera);
     if(this.player?.speaker){const p=this.player.speaker.group.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.55,.2)).project(camera);this.container.dataset.speakerScreen=JSON.stringify({x:(p.x+1)/2,y:(1-p.y)/2});this.container.dataset.speakerPulse=String(+this.player.speaker.cone.scale.z.toFixed(3));}
     this.renderer.render(this.scene,camera);this.raf=requestAnimationFrame(this.frame);
   }
-  dispose(){this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
+  dispose(){this.lighting?.dispose();this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
 }
 function fmt(v){return Number(v.toFixed(1))}

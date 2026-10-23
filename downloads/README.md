@@ -8,6 +8,10 @@
 
 You can also download [the standalone HTML](Lemonade-Lane.html) using GitHub’s **Download raw file** button.
 
+The **Night mode** checkbox in the upper-right of the play area changes the lighting across all four locations, including views through interior windows. It does not advance the game day or change the weather. The beach has moving waves and an anchored boat that bobs and rocks without drifting. Reduced-motion settings freeze these animations.
+
+With the High-Five sound system purchased and equipped, clicking its speaker cycles **Lemon FM** (techno) → **Neon Nights** (original synthwave with vocoder vocals) → **Off**. The radio button follows the same cycle. Music and vocals are included in this download and require no streaming service.
+
 The new **Lemonomics** title screen has five separate player profiles. Choose **New game**, enter a name (up to 16 letters), and choose a male or female avatar. Saved slots display the avatar, name, game day and last-save date/time. The exit icon at the upper right opens **Save**, **Save & Quit**, and **Back to Game**. You can save partway through a selling day and resume without paying for supplies or a permit twice.
 
 Profiles in this downloaded copy are saved in this browser. The separate password-protected Cloudflare website supports online profiles across PCs; see [private hosting setup](../docs/PRIVATE-PLAYTEST.md). Saving and starting a new profile check the pricing service when it is available. An offline HTML copy retains the last available prices.

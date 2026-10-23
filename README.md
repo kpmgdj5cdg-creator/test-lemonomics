@@ -140,7 +140,7 @@ With Classic Stand equipped, click its double doors or **Enter stand**. The door
 
 The lime-walled room shares the actual world, weather and live customers outside its windows. Purchased juicers, dispensers and ice maker appear separately on the back counter; Mr. Fridge occupies the back-right corner. The inward-facing EZserve register occupies less than a fifth of the serving counter.
 
-Original synthesized effects accompany controls, purchases, doors, footsteps and sales. The purchased High-Five speaker sits outside on the front-right: click it or **Speaker: Play/Stop** to toggle an original upbeat techno loop. **Sound on/off** mutes audio; music pauses while the game is hidden or a modal is open. Speaker vibration respects reduced-motion preferences. No external music downloads or audio assets are required.
+Original synthesized effects accompany controls, purchases, doors, footsteps and sales. The purchased High-Five speaker sits outside on the front-right: clicks cycle **Lemon FM** (upbeat techno), **Neon Nights** (original synthwave with vocoder vocals), then **Off**. The radio button offers the same cycle. **Sound on/off** mutes audio; music pauses while the game is hidden or a modal is open. Speaker vibration respects reduced-motion preferences. The original vocals are bundled into the game; playback needs no music service or external audio requests.
 
 ### Equipped upgrades and the neighborhood house
 
@@ -168,3 +168,11 @@ The Investments screen now has private server-backed IEX quotes, approximately f
 
 
 Bitcoin (`BTC/USD`) is available alongside the six ETFs, with private Alpaca US crypto quotes and virtual trading 24/7. Shared Bitcoin polling runs about every 20 seconds to conserve free allowances; ETF polling stays about five seconds in regular hours. Historical charts, saved holdings, fees and bank accounting use the existing investment system. See [Bitcoin feed and limits](docs/ALPACA-LIVE-SETUP.md#bitcoin-btcusd-private-virtual-trading-around-the-clock).
+
+### Day/night lighting, beach waves and radio stations
+
+The **Night mode** checkbox in the play area's upper-right corner switches all four worlds between daylight and blue moonlight, with glowing street lamps and a voxel moon/stars in clear weather. The preference persists in this browser. It is cosmetic: weather, the business day, market hours and saved progress remain unchanged. The Classic Stand and house use this same world lighting through their actual windows; their warm interior lights stay on.
+
+The Waterfront ocean now has a gently moving faceted surface and traveling foam. Its moored boat follows the local wave height, pitch and roll while retaining its horizontal position and heading. Reduced-motion preferences freeze these animations and speaker vibration.
+
+**Neon Nights** uses an original 100 BPM synth arrangement with generated vocoder vocals: “Stay in the light / We are alive / Ride through the night / We shine so bright.” No existing recording, artist voice, or song melody is included. `src/radio-vocals.js` embeds the short generated vocal performance so both hosted and single-file games can play it offline. The optional regeneration script is `scripts/generate-radio-vocals.py` (ffmpeg with flite, numpy and scipy); normal builds need only the existing Node dependencies. Switching stations, muting, quitting, and hiding the game stop or suspend the old performance without layering stations.
