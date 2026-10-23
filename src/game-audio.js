@@ -33,7 +33,11 @@ export class GameAudio{
  }
  effect(name){
   if(this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;
-  if(name==='purchase'||name==='sale'){this.tone(660,t,.09,'triangle',.18);this.tone(990,t+.07,.12,'triangle',.14)}
+  if(name==='slot'){[440,554,660,740].forEach((f,i)=>this.tone(f,t+i*.09,.08,'triangle',.12))}
+  else if(name==='roulette'){for(let i=0;i<10;i++)this.tone(350-i*17,t+i*.045,.025,'square',.025)}
+  else if(name==='cards'){this.noise(t,.055,.12);this.noise(t+.1,.045,.08)}
+  else if(name==='win'){[523,659,784,1046].forEach((f,i)=>this.tone(f,t+i*.10,.22,'triangle',.16))}
+  else if(name==='purchase'||name==='sale'){this.tone(660,t,.09,'triangle',.18);this.tone(990,t+.07,.12,'triangle',.14)}
   else if(name==='door'){this.noise(t,.18,.15);this.tone(180,t,.16,'triangle',.07,this.master,110)}
   else if(name==='step')this.tone(100,t,.035,'sine',.12,this.master,55);
   else if(name==='start'){[440,554,660].forEach((n,i)=>this.tone(n,t+i*.065,.13,'triangle',.11))}

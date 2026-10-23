@@ -15,14 +15,15 @@ import {HomeInterior} from './home-interior.js';
 import {batchPlayerHome} from './home-model.js';
 import {activeUpgrades} from './equipment.js';
 import {SceneLighting} from './scene-lighting.js';
+import {CasinoInterior} from './casino-interior.js';
 
 const PLAYER=new THREE.Vector3(-3,0,-.8),RIVAL=new THREE.Vector3(11.3,0,-.7),DOWNTOWN_RIVAL=new THREE.Vector3(13.3,0,-.7),WATERFRONT_RIVAL=new THREE.Vector3(11.8,0,-.8);
 const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Renderer consumes the game's state and events; it never creates sales or edits money. */
 export class Neighborhood{
-  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{},onFirstPerson=()=>{},onHome=()=>{},onHouseDetails=()=>{}}={}){
-    this.container=container;this.onHome=onHome;this.onHouseDetails=onHouseDetails;this.audio=gameAudio;this.onFirstPerson=onFirstPerson;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
+  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{},onFirstPerson=()=>{},onHome=()=>{},onHouseDetails=()=>{},onCasino=()=>{},onCasinoGame=()=>{}}={}){
+    this.container=container;this.onCasino=onCasino;this.onCasinoGame=onCasinoGame;this.onHome=onHome;this.onHouseDetails=onHouseDetails;this.audio=gameAudio;this.onFirstPerson=onFirstPerson;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#8bd8e0');
     this.scene.fog=new THREE.Fog('#92d8df',70,140);
     this.camera=new THREE.OrthographicCamera(-20,20,16,-16,.1,150);this.camera.position.set(25,30,34);this.target=new THREE.Vector3(0,0,0);
@@ -34,7 +35,7 @@ export class Neighborhood{
     this.sun=new THREE.DirectionalLight('#fff4d4',3.2);this.sun.position.set(-15,22,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:22,bottom:-22,near:1,far:70});this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.00015;this.sun.shadow.radius=3;this.scene.add(this.sun);
     this.environment=group(this.scene);this.location='neighborhood';this.buildNeighborhood();this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);this.batchScenery();this.weatherEffects=new WeatherEffects(this.scene);this.arrivals=[];
     this.actorRoot=group(this.scene);this.hitbox=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,3.4),new THREE.MeshBasicMaterial({visible:false}));this.hitbox.position.copy(PLAYER).add(new THREE.Vector3(0,1.7,0));this.scene.add(this.hitbox);
-    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);
+    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.casinoInterior=new CasinoInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.drag=null;this.installControls();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);this.resize();
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
@@ -88,11 +89,11 @@ export class Neighborhood{
     const location=state.location==='beach'?'waterfront':state.location==='square'?'downtown':state.location==='park'?'park':'neighborhood';
     this.rivalPosition=location==='waterfront'?WATERFRONT_RIVAL:location==='downtown'?DOWNTOWN_RIVAL:RIVAL;
     if(this.location!==location){
-      this.classicInterior.reset();this.homeInterior.reset();this.home=null;
+      this.classicInterior.reset();this.homeInterior.reset();this.casinoInterior.reset();this.home=null;this.casino=null;
       this.weatherEffects.clearCaps();disposeGroup(this.environment);this.environment=group(this.scene);
       this.location=location;this.waterfront=null;
       if(location==='park')this.plotLabel=buildPark(this.environment,RIVAL);
-      else if(location==='downtown')this.plotLabel=buildDowntown(this.environment,this.rivalPosition);
+      else if(location==='downtown'){this.plotLabel=buildDowntown(this.environment,this.rivalPosition);this.casino=this.environment.userData.casino;this.container.dataset.buildingCount=String(this.environment.userData.buildingCount);}
       else if(location==='waterfront'){this.waterfront=buildWaterfront(this.environment,this.rivalPosition);this.plotLabel=this.waterfront.plotLabel;}
       else this.buildNeighborhood();
       this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);
@@ -138,7 +139,9 @@ export class Neighborhood{
     }batch(root);
   }
   setView(view){
-    if(!['neighborhood','exterior','interior','firstperson','home'].includes(view))return;
+    if(!['neighborhood','exterior','interior','firstperson','home','casino'].includes(view))return;
+    if(view==='casino'){if(!this.casinoInterior.available())return;if(!this.casinoInterior.active)this.casinoInterior.enter(this.state.playerView?.casinoInterior||{});this.view='casino';this.container.dataset.view='casino';return}
+    if(this.casinoInterior.active||this.casinoInterior.entering){this.casinoInterior.deactivate();this.avatarController.parkAtStand();}
     if(view==='home'){if(!this.homeInterior.owned()||!this.homeInterior.available())return;if(!this.homeInterior.active)this.homeInterior.enter(this.state.playerView?.homeInterior||{});this.view='home';this.container.dataset.view='home';return}
     if(this.homeInterior.active){this.homeInterior.deactivate();this.avatarController.parkAtStand();}
     if(view==='firstperson'){if(this.player?.style!=='classic')return;if(!this.classicInterior.active)this.classicInterior.enterInstant();this.view=view;this.container.dataset.view=view;return}
@@ -149,10 +152,10 @@ export class Neighborhood{
     if(this.player)this.player.roof.visible=view!=='interior';
     this.container.dataset.view=view;this.updateCameraGoal();
   }
-  rotate(delta){if(this.homeInterior.active){this.homeInterior.look(-delta*160,0);return}if(this.classicInterior.active){this.classicInterior.look(-delta*160,0);return}this.angle=THREE.MathUtils.clamp(this.angle+delta,-.9,1.2);this.updateCameraGoal()}
+  rotate(delta){if(this.casinoInterior.active){this.casinoInterior.look(-delta*160,0);return}if(this.homeInterior.active){this.homeInterior.look(-delta*160,0);return}if(this.classicInterior.active){this.classicInterior.look(-delta*160,0);return}this.angle=THREE.MathUtils.clamp(this.angle+delta,-.9,1.2);this.updateCameraGoal()}
   updateCameraGoal(){
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);
-    if(this.homeInterior?.active){this.homeInterior.updateCamera();return}if(this.classicInterior?.active){this.classicInterior.updateCamera();return}
+    if(this.casinoInterior?.active){this.casinoInterior.updateCamera();return}if(this.homeInterior?.active){this.homeInterior.updateCamera();return}if(this.classicInterior?.active){this.classicInterior.updateCamera();return}
     if(this.avatarController?.enabled){
       this.desiredTarget.copy(this.avatarController.avatar.group.position).add(new THREE.Vector3(0,.8,0));
       this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*16,13,Math.cos(this.angle)*16));
@@ -173,11 +176,11 @@ export class Neighborhood{
     const nav=this.container.parentElement.querySelector('.scene-nav');
     this.soundButton=document.createElement('button');this.soundButton.type='button';this.soundButton.className='scene-chip';this.soundButton.id='gameSoundBtn';
     this.musicButton=document.createElement('button');this.musicButton.type='button';this.musicButton.className='scene-chip';this.musicButton.id='speakerToggleBtn';this.musicButton.hidden=true;
-    nav.append(this.soundButton,this.musicButton);this.soundButton.onclick=()=>{this.audio.unlock();this.audio.setMuted(!this.audio.muted);this.publishAudio();if(this.classicInterior.active||this.homeInterior.active)this.container.focus({preventScroll:true})};this.musicButton.onclick=()=>this.toggleSpeaker();
+    nav.append(this.soundButton,this.musicButton);this.soundButton.onclick=()=>{this.audio.unlock();this.audio.setMuted(!this.audio.muted);this.publishAudio();if(this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active)this.container.focus({preventScroll:true})};this.musicButton.onclick=()=>this.toggleSpeaker();
     this.audioAbort=new AbortController();document.addEventListener('pointerdown',e=>{if(e.target.closest('button,canvas'))this.audio.unlock().then(()=>{if(e.target.closest('button'))this.audio.effect('click')})},{capture:true,signal:this.audioAbort.signal});
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.audio.setAudible(false)},{signal:this.audioAbort.signal});this.publishAudio();
   }
-  async toggleSpeaker(){if(!this.player?.speaker)return;await this.audio.toggleMusic();this.publishAudio();if(this.classicInterior.active||this.homeInterior.active)this.container.focus({preventScroll:true})}
+  async toggleSpeaker(){if(!this.player?.speaker)return;await this.audio.toggleMusic();this.publishAudio();if(this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active)this.container.focus({preventScroll:true})}
   publishAudio(){
     const playing=!!this.audio.musicPlaying;
     this.soundButton.textContent=this.audio.muted?'Sound off':'Sound on';this.soundButton.setAttribute('aria-pressed',String(!this.audio.muted));
@@ -187,11 +190,12 @@ export class Neighborhood{
     this.container.dataset.trackTitle=station?.title||'';this.container.dataset.trackDuration=String(this.audio.trackBuffer?.duration||0);this.container.dataset.trackPosition=String(+this.audio.trackPosition.toFixed(3));this.container.dataset.trackPlays=String(this.audio.trackPlayCount);
     this.container.dataset.musicPlaying=String(playing);this.container.dataset.audioState=this.audio.context?.state||'locked';this.container.dataset.audioNotes=String(this.audio.noteCount);this.container.dataset.audioLevel=String(+this.audio.level().toFixed(4));
   }
-  currentCamera(){if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}
+  currentCamera(){if(this.casinoInterior?.active)return this.casinoInterior.camera;if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}
   interactAt(x,y){
     if(this.paused||this.classicInterior.modalOpen())return;
     const visible=o=>{for(let p=o;p;p=p.parent)if(!p.visible)return false;return true};
     const r=this.container.getBoundingClientRect();this.pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.currentCamera());
+    if(this.casinoInterior.interact(this.raycaster))return;
     if(this.homeInterior.interact(this.raycaster))return;
     if(this.homeInterior.active)return;
     const candidates=[];
@@ -207,11 +211,11 @@ export class Neighborhood{
   installControls(){
     const c=this.container;
     c.addEventListener('pointerdown',e=>{if(e.button!==0)return;c.focus({preventScroll:true});this.audio.unlock();this.drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:0};c.setPointerCapture(e.pointerId)});
-    c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.homeInterior.active)this.homeInterior.look(dx,dy);else if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
+    c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.casinoInterior.active)this.casinoInterior.look(dx,dy);else if(this.homeInterior.active)this.homeInterior.look(dx,dy);else if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
     c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6&&!this.classicInterior.entering)this.interactAt(e.clientX,e.clientY);this.drag=null});
     c.addEventListener('pointercancel',()=>{this.drag=null});
-    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.classicInterior.active||this.homeInterior.active)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
-    c.addEventListener('keydown',e=>{if(this.homeInterior.active||this.classicInterior.active||this.classicInterior.entering)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
+    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active||this.casinoInterior.entering)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,['neighborhood','downtown'].includes(this.location)?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
+    c.addEventListener('keydown',e=>{if(this.casinoInterior.active||this.casinoInterior.entering||this.homeInterior.active||this.classicInterior.active||this.classicInterior.entering)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
   }
   clearTraffic(){for(const a of this.people.values())disposeGroup(a.group);this.people.clear();this.arrivals=[];this.queue=[];}
   beginDay(visitors,tickSeconds){
@@ -252,7 +256,7 @@ export class Neighborhood{
     // The bank and title screen need no off-screen shadow-map rendering.
     if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.audio.setAudible(false);if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
     const suspended=!!this.container.closest('#ll-app')?.querySelector('#modal.show')||document.hidden;this.audio.setAudible(!suspended);
-    this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());this.homeInterior.update(moveDt,this.time);
+    this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());this.homeInterior.update(moveDt,this.time);this.casinoInterior.update(moveDt,this.time);
     this.player?.speaker?.update(reducedMotion()?0:this.audio.beat());this.publishAudio();
     const ease=1-Math.exp(-dt*7);this.camera.position.lerp(this.desiredPosition,ease);this.target.lerp(this.desiredTarget,ease);this.span=THREE.MathUtils.lerp(this.span,this.desiredSpan,ease);
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);this.camera.left=-this.span*aspect/2;this.camera.right=this.span*aspect/2;this.camera.top=this.span/2;this.camera.bottom=-this.span/2;this.camera.updateProjectionMatrix();this.camera.lookAt(this.target);
@@ -276,6 +280,6 @@ export class Neighborhood{
     if(this.player?.speaker){const p=this.player.speaker.group.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.55,.2)).project(camera);this.container.dataset.speakerScreen=JSON.stringify({x:(p.x+1)/2,y:(1-p.y)/2});this.container.dataset.speakerPulse=String(+this.player.speaker.cone.scale.z.toFixed(3));}
     this.renderer.render(this.scene,camera);this.raf=requestAnimationFrame(this.frame);
   }
-  dispose(){this.lighting?.dispose();this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
+  dispose(){this.casinoInterior?.dispose();this.lighting?.dispose();this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
 }
 function fmt(v){return Number(v.toFixed(1))}

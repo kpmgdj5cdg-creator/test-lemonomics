@@ -29,3 +29,5 @@ The live-market integration release adds authenticated Alpaca Basic IEX quotes a
 
 
 Bitcoin (`BTC/USD`) is now included as a seventh investment. On the private hosted game it uses Alpaca’s US crypto feed and supports virtual buying/selling 24/7, with shared updates about every 20 seconds. Historical crypto charts, holdings and trade records are saved with the existing profiles. This offline copy can show saved Bitcoin holdings but needs the private hosted service for fresh quotes and new trades. Existing six ETF choices, game saves, neighborhoods and banking remain compatible.
+
+Downtown now has 32 street-facing buildings and a walk-in Maple Casino west of the Bookstore. Walk up to its double doors to enter. The left/right/back walls offer $0.25/$1/$5 slots, with Casino Hold'em and single-zero roulette at the center tables. Click a machine or table while inside. Games use in-game cash and save their results; an unfinished poker hand and casino viewpoint also restore after saving. All casino rules and music are bundled for offline play.

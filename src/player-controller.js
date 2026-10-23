@@ -73,7 +73,7 @@ export class PlayerController{
     this.world.updateCameraGoal();this.publish();
   }
   parkAtStand(){
-    if(this.world.homeInterior?.active||this.world.classicInterior?.active||this.world.classicInterior?.entering){this.avatar.group.visible=false;this.stool.visible=false;return;}
+    if(this.world.casinoInterior?.active||this.world.casinoInterior?.entering||this.world.homeInterior?.active||this.world.classicInterior?.active||this.world.classicInterior?.entering){this.avatar.group.visible=false;this.stool.visible=false;return;}
     // Feet rest on a step inside the stand, behind the front counter.
     const anchor=this.world.player?.avatarAnchor||{x:0,y:.75,z:.42};
     this.avatar.group.position.set(-3+anchor.x,anchor.y,-.8+anchor.z);this.avatar.group.rotation.y=0;
@@ -81,9 +81,10 @@ export class PlayerController{
     this.avatar.group.visible=!!WALKING_AREAS[this.world.location];this.stool.visible=this.avatar.group.visible;
     this.avatar.animate(0,false,true);
   }
-  snapshot(sceneView){return {homeInterior:this.world.homeInterior?.snapshot(),firstPerson:this.world.classicInterior?.snapshot(),location:this.world.location,walking:this.enabled,position:this.avatar.group.position.toArray(),rotation:this.avatar.group.rotation.y,angle:this.world.angle,zoom:this.world.zoom,sceneView};}
+  snapshot(sceneView){return {casinoInterior:this.world.casinoInterior?.snapshot(),homeInterior:this.world.homeInterior?.snapshot(),firstPerson:this.world.classicInterior?.snapshot(),location:this.world.location,walking:this.enabled,position:this.avatar.group.position.toArray(),rotation:this.avatar.group.rotation.y,angle:this.world.angle,zoom:this.world.zoom,sceneView};}
   restore(view){
     if(!view||view.location!==this.world.location)return;
+    if(view.casinoInterior&&this.world.casinoInterior.available()){this.world.casinoInterior.enter(view.casinoInterior);return}
     if(view.homeInterior&&this.world.homeInterior.owned()){this.world.homeInterior.enter(view.homeInterior);return}
     if(view.firstPerson&&this.world.player?.style==='classic'){this.world.classicInterior.enterInstant(view.firstPerson);return}
     if(Number.isFinite(view.angle))this.world.angle=THREE.MathUtils.clamp(view.angle,-.9,1.25);
@@ -95,7 +96,7 @@ export class PlayerController{
         if(Number.isFinite(view.rotation))this.avatar.group.rotation.y=view.rotation;
       }
     }
-    if(Number.isFinite(view.zoom))this.world.zoom=THREE.MathUtils.clamp(view.zoom,this.world.location==='neighborhood'?.4:.8,1.4);
+    if(Number.isFinite(view.zoom))this.world.zoom=THREE.MathUtils.clamp(view.zoom,['neighborhood','downtown'].includes(this.world.location)?.4:.8,1.4);
     this.world.updateCameraGoal();this.publish();
   }
   syncLocation(){
@@ -109,8 +110,8 @@ export class PlayerController{
     if(world.rival)stands.push({x:world.rivalPosition.x,z:world.rivalPosition.z,width:world.rival.width});
     return [...(world.sceneObstacles||[]),...(WALKING_AREAS[world.location]?.barriers||[]),...stands.map(s=>({minX:s.x-s.width/2-.18,maxX:s.x+s.width/2+.18,minZ:s.z-1.53,maxZ:s.z+1.53}))];
   }
-  nearShop(){const p=this.avatar.group.position;const shops=this.world.location==='neighborhood'?[{id:'market',name:'Maple Market',x:-10,z:-3.15}]:this.world.location==='downtown'?[{id:'bookstore',name:'Bookstore',x:-9.55,z:-3.65},{id:'market',name:'Maple Market',x:1.4,z:-12.8}]:[];return shops.find(shop=>Math.hypot(p.x-shop.x,p.z-shop.z)<1.15)}
-  visitStand(){if(this.enabled&&this.world.homeInterior?.near()){if(this.world.homeInterior.owned())this.world.homeInterior.enter();else this.world.onHouseDetails();return}const shop=this.nearShop();if(this.enabled&&shop)this.world.onShop(shop.id);else if(this.enabled&&nearStand(this.avatar.group.position))this.world.onSelect()}
+  nearShop(){const p=this.avatar.group.position;const shops=this.world.location==='neighborhood'?[{id:'market',name:'Maple Market',x:-10,z:-3.15}]:this.world.location==='downtown'?[{id:'bookstore',name:'Bookstore',x:-9.55,z:-3.65},{id:'market',name:'Maple Market',x:4.5,z:-16}]:[];return shops.find(shop=>Math.hypot(p.x-shop.x,p.z-shop.z)<1.15)}
+  visitStand(){if(this.enabled&&this.world.casinoInterior?.near()){this.world.casinoInterior.beginEntry();return}if(this.enabled&&this.world.homeInterior?.near()){if(this.world.homeInterior.owned())this.world.homeInterior.enter();else this.world.onHouseDetails();return}const shop=this.nearShop();if(this.enabled&&shop)this.world.onShop(shop.id);else if(this.enabled&&nearStand(this.avatar.group.position))this.world.onSelect()}
   update(dt,time,reducedMotion){
     if(!this.enabled)return;
     const root=this.world.container.closest('#ll-app');if(this.world.paused||root?.hidden||root?.querySelector('#modal.show')||root?.querySelector('#phaseLabel')?.dataset.closed==='true'){this.keys.clear();this.touch.clear();return}
@@ -122,9 +123,9 @@ export class PlayerController{
     if(moving)this.avatar.group.rotation.y=Math.atan2(next.x-p.x,next.z-p.z);
     p.set(next.x,groundElevation(this.world.sceneGround,next.x,next.z),next.z);
     if(moving&&time-(this.lastStep||0)>.31){this.world.audio?.effect('step');this.lastStep=time}
-    this.avatar.animate(time,moving,reducedMotion);const shop=this.nearShop();const home=this.world.homeInterior?.near();this.interact.hidden=!home&&!shop&&!nearStand(p);this.interact.textContent=home?(this.world.homeInterior.owned()?'Enter my house · E':'House for sale · E'):shop?'Visit '+shop.name+' · E':'Visit my stand · E';if(shop&&this.lastShop!==shop.id){this.lastShop=shop.id;this.keys.clear();this.touch.clear();this.world.onShop(shop.id)}else if(!shop)this.lastShop=null;
+    this.avatar.animate(time,moving,reducedMotion);const shop=this.nearShop();const home=this.world.homeInterior?.near();const casino=this.world.casinoInterior?.near();this.interact.hidden=!casino&&!home&&!shop&&!nearStand(p);this.interact.textContent=casino?'Enter casino · E':home?(this.world.homeInterior.owned()?'Enter my house · E':'House for sale · E'):shop?'Visit '+shop.name+' · E':'Visit my stand · E';if(shop&&this.lastShop!==shop.id){this.lastShop=shop.id;this.keys.clear();this.touch.clear();this.world.onShop(shop.id)}else if(!shop)this.lastShop=null;
     this.world.updateCameraGoal();this.publish();
   }
-  publish(){const c=this.world.container,p=this.avatar.group.position;c.dataset.walking=String(this.enabled);c.dataset.avatarState=this.avatar.group.visible?(this.enabled?'walking':'at-stand'):'unavailable';c.dataset.avatarPosition=JSON.stringify({x:+p.x.toFixed(3),z:+p.z.toFixed(3)});c.dataset.nearStand=String(nearStand(p));c.dataset.nearShop=this.nearShop()?.id||'';if(this.world.classicInterior?.active)this.world.classicInterior.publish();if(this.world.homeInterior?.active)this.world.homeInterior.publish();}
+  publish(){const c=this.world.container,p=this.avatar.group.position;c.dataset.walking=String(this.enabled);c.dataset.avatarState=this.avatar.group.visible?(this.enabled?'walking':'at-stand'):'unavailable';c.dataset.avatarPosition=JSON.stringify({x:+p.x.toFixed(3),z:+p.z.toFixed(3)});c.dataset.nearStand=String(nearStand(p));c.dataset.nearShop=this.nearShop()?.id||'';if(this.world.classicInterior?.active)this.world.classicInterior.publish();if(this.world.homeInterior?.active)this.world.homeInterior.publish();if(this.world.casinoInterior?.active)this.world.casinoInterior.publish();}
   dispose(){this.abort.abort();this.avatar.dispose();disposeGroup(this.stool);this.toggle.remove();this.panel.remove()}
 }

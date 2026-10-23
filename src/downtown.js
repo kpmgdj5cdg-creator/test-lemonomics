@@ -1,6 +1,8 @@
 import {box,group,label,bench,lamp,tree} from './models.js';
 import {planter,chalkboard} from './street-details.js';
 import {voxelText} from './voxel-text.js';
+import {DOWNTOWN_LOTS} from './downtown-layout.js';
+import {buildCasino} from './casino-model.js';
 
 function window(g,x,y,z,w=1.05,h=1.15){
   box(g,x,y,z,w+.18,h+.18,.13,'#f6e7cb');box(g,x,y,z+.09,w,h,.045,'#21526f');
@@ -31,6 +33,9 @@ function cityBuilding(parent,x,z,{width=5.4,height=7.6,wall='#ca7865',trim='#f3d
     // Windows on the visible side keep the architecture dimensional.
     for(const wz of [-1.25,.65]){box(g,width/2+.035,y,wz,.1,1.17,1.12,trim);box(g,width/2+.1,y,wz,.04,.98,.91,'#20526d');box(g,width/2+.13,y,wz,.025,.99,.055,'#c8e0cf');}
   }
+  // Upper and ground-floor rear windows keep the opposite street's backs inhabited.
+  const rear=group(g,0,0,-front-.08);rear.rotation.y=Math.PI;
+  for(let y=1.55;y<height-.5;y+=2.5)for(const wx of [-width*.30,0,width*.30])window(rear,wx,y,.04,.75,1.02);
   box(g,0,height+.28,0,width+.4,.23,depth+.45,'#577f88');
   for(const zz of [-depth/2,depth/2])box(g,0,height+.59,zz,width+.35,.45,.2,trim);
   for(const xx of [-width/2,width/2])box(g,xx,height+.59,0,.2,.45,depth,trim);
@@ -71,23 +76,22 @@ export function buildDowntown(g,rival){
   const paving=['#e0e5d9','#d2ded6','#e8eadd','#cbd8d1'];
   // A broad stone plaza backs onto the stand; nothing blocks the customer lane.
   for(let x=-24;x<25;x+=.8)for(let z=-4.8;z<1.3;z+=.8)if(x<5.65||x>10.35)box(g,x,.09,z,.78,.16,.78,paving[(Math.round((x+z)*5)+300)%4]);
-  for(let x=-35;x<35;x+=.75)for(const z of [.92,7.08]){for(let row=0;row<2;row++)box(g,x,.1,z+(row-.5)*.72,.73,.17,.7,paving[(Math.round(x*4)+row+400)%4]);box(g,x,.18,z+(z<4?.69:-.69),.74,.18,.16,'#f3efd9');}
-  for(let z=-26;z<1;z+=.75)for(const x of [4.95,11.05,-16])box(g,x,.1,z,1.4,.17,.73,paving[(Math.round(-z*4)+400)%4]);
-  for(let x=-35;x<35;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f1ce71');
-  for(let z=-28;z<0;z+=2.4)box(g,8,.055,z,.09,.018,1.1,'#f1ce71');
+  for(let x=-55;x<59;x+=.75)for(const z of [.92,7.08]){for(let row=0;row<2;row++)box(g,x,.1,z+(row-.5)*.72,.73,.17,.7,paving[(Math.round(x*4)+row+400)%4]);box(g,x,.18,z+(z<4?.69:-.69),.74,.18,.16,'#f3efd9');}
+  for(let z=-57;z<1;z+=.75)for(const x of [4.95,11.05,-16])box(g,x,.1,z,1.4,.17,.73,paving[(Math.round(-z*4)+400)%4]);
+  for(let x=-55;x<59;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f1ce71');
+  for(let z=-57;z<0;z+=2.4)box(g,8,.055,z,.09,.018,1.1,'#f1ce71');
   for(let i=0;i<7;i++)box(g,8,.06,2.1+i*.58,3.6,.025,.27,'#eff0dc');
   for(let i=0;i<8;i++)box(g,5.9+i*.6,.06,-.15,.27,.025,2.4,'#eff0dc');
-  cityBuilding(g,-10,-6.8,{width:5.6,height:6.2,wall:'#d78170',shop:'BOOKS',sign:'#72435f',letters:'#ffe5b1',awning:'#c27391'});
-  cityBuilding(g,-3.3,-7.3,{width:5.8,height:7.6,wall:'#3e9f9e',trim:'#f0dfbb',shop:'BAKERY',sign:'#27586c',letters:'#f8c879',awning:'#dfb059'});
-  cityBuilding(g,14.4,-7.2,{width:4.8,height:7.2,wall:'#4d83b2',shop:'STUDIO',sign:'#30516e',letters:'#f8b0cc',awning:'#518eab'});
-  cityBuilding(g,-20,-7.5,{width:5.3,height:8.5,wall:'#d2b573',shop:'CAFE',sign:'#3f786e',letters:'#fff0c6',awning:'#638d83'});
-  cityBuilding(g,-7.5,-15.5,{width:7.8,height:11,wall:'#8c9fa1',shop:'CITY HALL',sign:'#3b6676',letters:'#e8d8a2'});
-  cityBuilding(g,1.4,-16,{width:5.8,height:9.4,wall:'#cc9f82',shop:'MAPLE',sign:'#73546c',letters:'#f8d4b0'});
+  for(const lot of DOWNTOWN_LOTS){const building=cityBuilding(g,lot.x,lot.z,lot);building.rotation.y=lot.angle||0;}
+  const casino=buildCasino(g);g.userData.casino=casino;g.userData.buildingCount=DOWNTOWN_LOTS.length+1;
+  // Front walks link every added frontage to the continuous sidewalk.
+  for(const lot of DOWNTOWN_LOTS){if(Math.abs(Math.sin(lot.angle||0))>.5){const a=lot.x<8?lot.x+2.3:11.7,b=lot.x<8?4.3:lot.x-2.3;box(g,(a+b)/2,.09,lot.z,b-a,.16,1.3,'#dce4d7')}else if(lot.z>4)box(g,lot.x,.09,9.9,1.4,.16,3.9,'#dce4d7');}
+  box(g,-29.5,.09,-2.15,2.6,.16,6.4,'#dce4d7');
   // Street trees, planters and shop furniture keep the miniature city inviting.
   for(const [x,z] of [[-13.8,-2.5],[2.6,-5.8],[17.5,-3.4],[-8,9.6],[12,10]]){
     box(g,x,.16,z,1.75,.25,1.75,'#ece5d0');box(g,x,.31,z,1.4,.08,1.4,'#3b6550');tree(g,x,z,.95,1);
   }
-  planter(g,-7.3,-2.35,2.4);planter(g,-5,9.1,3);planter(g,12,8.8,3);
+  planter(g,-7.3,-2.35,2.4);planter(g,-2,9.1,1.8);planter(g,12,8.8,3);
   transitShelter(g,1.5,-2.15);cafeTable(g,-11.1,-3.2);cafeTable(g,-1.3,-3.5);
   bench(g,-8.5,9.2,Math.PI);bench(g,1.5,9.2,Math.PI);
   lamp(g,-7,.18);lamp(g,11.75,6.9);lamp(g,4.1,-7);lamp(g,-14.7,6.9);

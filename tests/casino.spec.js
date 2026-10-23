@@ -1,0 +1,39 @@
+import {test,expect} from '@playwright/test';
+import {enterGame} from './fixtures/profile-ui.js';
+import {gameWithChecking,marketFixture} from './fixtures/market.js';
+import {CASINO_FRONT} from '../src/casino-model.js';
+import {readFile} from 'node:fs/promises';
+async function ready(page,{inside=null,near=false}={}){
+ const state=gameWithChecking(100);state.cash=100;state.location='square';state.upgrades=['classic'];
+ if(inside)state.playerView={location:'downtown',walking:false,sceneView:'casino',casinoInterior:inside};
+ if(near)state.playerView={location:'downtown',walking:true,sceneView:'outside',position:[CASINO_FRONT.x,.16,CASINO_FRONT.z+.6],rotation:Math.PI,angle:.55,zoom:1};
+ await page.addInitScript(state=>{if(!localStorage.getItem('lemonadeLane_bank_v3'))localStorage.setItem('lemonadeLane_bank_v3',JSON.stringify(state))},state);
+ await page.route('**/api/market',r=>r.fulfill({json:{data:marketFixture(),status:'current'}}));await page.goto('/');await enterGame(page);return page.locator('#world3d');
+}
+async function clickPoint(world,point){const b=await world.boundingBox();await world.click({position:{x:point.x*b.width,y:point.y*b.height}})}
+async function clickGame(world,kind,stake){await expect.poll(()=>world.getAttribute('data-casino-targets')).toBeTruthy();const targets=JSON.parse(await world.getAttribute('data-casino-targets')),p=targets.filter(t=>t.kind===kind&&(stake===undefined||stake===t.stake)).find(t=>t.x>.05&&t.x<.95&&t.y>.05&&t.y<.95);expect(p).toBeTruthy();await clickPoint(world,p);}
+test('downtown fills both streets; clicking double doors walks inside, supports first person and saved restoration',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const w=await ready(page,{near:true});await expect(w).toHaveAttribute('data-near-casino','true');
+ await page.locator('#scene').screenshot({path:'artifacts/casino-exterior.png'});await expect.poll(()=>w.getAttribute('data-casino-door-screen')).toBeTruthy();await clickPoint(w,JSON.parse(await w.getAttribute('data-casino-door-screen')));
+ await expect(w).toHaveAttribute('data-casino-interior','true',{timeout:60000});await expect(w).toHaveAttribute('data-camera-type','perspective');await page.locator('#scene').screenshot({path:'artifacts/casino-interior.png'});
+ const before=await w.getAttribute('data-casino-position');await w.focus();await page.keyboard.down('KeyW');await expect(w).not.toHaveAttribute('data-casino-position',before);await page.keyboard.up('KeyW');
+ await page.locator('#saveMenuBtn').click();await page.locator('#saveAndQuit').click();await page.locator('[data-load-slot="0"]').click();await expect(w).toHaveAttribute('data-casino-interior','true');
+ await page.locator('#casinoExitBtn').click();await expect(w).toHaveAttribute('data-casino-interior','false');await expect(w).toHaveAttribute('data-walking','true');await page.getByRole('button',{name:'Overview',exact:true}).click();await w.focus();await w.dispatchEvent('wheel',{deltaY:800});await page.locator('#scene').screenshot({path:'artifacts/downtown-filled.png'});expect(Number(await w.getAttribute('data-building-count'))).toBeGreaterThan(30);expect(errors).toEqual([]);
+});
+for(const [stake,position,yaw]of [[.25,{x:-3.6,z:2.9},Math.PI/2],[1,{x:3.6,z:2.9},-Math.PI/2],[5,{x:0,z:-2.85},0]])test(`$${stake} wall machines use cash, settle one spin and keep the result after reload`,async({page})=>{
+ const w=await ready(page,{inside:{position,yaw,pitch:-.08}});await expect(w).toHaveAttribute('data-casino-interior','true');await clickGame(w,'slots',stake);await expect(page.locator('.casino-desk h2')).toContainText('$'+stake.toFixed(2));await page.locator('[data-casino-action=spin]').click();await expect(page.locator('.casino-result')).toContainText('Net');
+ const s=await page.evaluate(()=>JSON.parse(localStorage.getItem('lemonadeLane_bank_v3')));expect(s.ledger.filter(l=>l.category==='casino').length).toBe(1);expect(s.cash).toBeCloseTo(100+s.casino.last.net,2);expect(s.bank.checking).toBe(100);await page.locator('#modalClose').click();await page.locator('#saveMenuBtn').click();await page.locator('#saveOnly').click();await page.reload();await enterGame(page);await expect(w).toHaveAttribute('data-casino-interior','true');const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('lemonadeLane_bank_v3')));expect(restored.casino.last.id).toBe(s.casino.last.id);expect(restored.cash).toBe(s.cash);
+});
+test('dealer Holdem can save a pending ante, resume it, settle once, then play roulette',async({page})=>{
+ const w=await ready(page,{inside:{position:{x:0,z:2.7},yaw:0,pitch:-.08}});await clickGame(w,'holdem');await page.locator('[data-casino-action=deal]').click();await expect(page.locator('[data-casino-action=call]')).toContainText('$2.00');await page.locator('#modalClose').click();await page.locator('#saveMenuBtn').click();await page.locator('#saveAndQuit').click();await page.locator('[data-load-slot="0"]').click();await expect(w).toHaveAttribute('data-casino-interior','true');await clickGame(w,'holdem');await page.locator('[data-casino-action=call]').click();await expect(page.locator('.casino-result')).toContainText('Dealer');await page.locator('#modalClose').click();await clickGame(w,'roulette');await page.locator('[data-casino-action=number][data-value="0"]').click();await expect(page.locator('.casino-result')).toContainText('Ball landed');const s=await page.evaluate(()=>JSON.parse(localStorage.getItem('lemonadeLane_bank_v3')));expect(s.casino.hand).toBeNull();expect(s.ledger.filter(l=>l.category==='casino').length).toBe(3);
+});
+test('phone casino controls, night mode and game dialogs fit without horizontal overflow',async({page})=>{
+ await page.setViewportSize({width:390,height:844});const w=await ready(page,{inside:{position:{x:-3.6,z:2.9},yaw:Math.PI/2,pitch:-.08}});await page.getByRole('checkbox',{name:'Night mode'}).check();await expect(w).toHaveAttribute('data-time-of-day','night');await clickGame(w,'slots',.25);await page.locator('[data-casino-action=spin]').click();await expect(page.locator('.casino-result')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);await page.screenshot({path:'artifacts/casino-phone.png'});
+});
+
+test('offline casino can spin using its embedded source with all network requests blocked',async({page})=>{
+ const state=gameWithChecking(100);Object.assign(state,{location:'square',cash:10,upgrades:['classic'],playerView:{location:'downtown',walking:false,sceneView:'casino',casinoInterior:{position:{x:-3.6,z:2.9},yaw:Math.PI/2,pitch:-.08}}});
+ let requests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route(/^https?:\/\//,r=>{requests++;r.abort()});
+ let html=await readFile(new URL('../dist/lemonade-lane.html',import.meta.url),'utf8');const seed=`<script>const fixture=new Map([['lemonadeLane_bank_v3',${JSON.stringify(JSON.stringify(state))}]]);Object.defineProperty(window,'localStorage',{value:{getItem:k=>fixture.get(k)??null,setItem:(k,v)=>fixture.set(k,String(v)),removeItem:k=>fixture.delete(k)}});</script>`;
+ html=html.replace('<head>','<head>'+seed);await page.setContent('<iframe title="Offline casino" sandbox="allow-scripts" style="width:100%;height:1000px"></iframe>');await page.locator('iframe').evaluate((f,html)=>f.srcdoc=html,html);const game=page.frameLocator('iframe');await enterGame(game);const w=game.locator('#world3d');await expect(w).toHaveAttribute('data-casino-interior','true');await clickGame(w,'slots',.25);await game.locator('[data-casino-action=spin]').click();await expect(game.locator('.casino-result')).toContainText('Net');expect(requests).toBe(0);expect(errors).toEqual([]);
+});

@@ -4,9 +4,10 @@ import {round} from './business.js';
 const rates={lemons:.5,sugar:.2,ice:.1,cups:.16};
 export function statements(state,equipment=[],market=null){
  const days=Array.from({length:Math.max(1,state.day)},(_,i)=>i+1);
- const profits=Object.fromEntries(days.map(d=>[d,{sales:0,investment:0,cost:0,permit:0,interest:0,recipes:0,loss:0}]));
+ const profits=Object.fromEntries(days.map(d=>[d,{sales:0,investment:0,casino:0,cost:0,permit:0,interest:0,recipes:0,loss:0}]));
  for(const l of state.ledger){const d=profits[l.day];if(!d)continue;const c=l.category;
  if(c==='sales')d.sales+=l.cash||0;
+ if(c==='casino')d.casino+=l.cash||0;
  if(c==='cost'||c==='spoilage')d.cost+=l.expense||0;
  if(c==='permit')d.permit-=l.cash||0;
  if(c==='loan')d.interest+=l.expense??Math.max(0,(l.loanChange||0)-(l.bankChange||0));
@@ -20,7 +21,7 @@ export function statements(state,equipment=[],market=null){
  for(const t of portfolio?.trades||[]){if(t.side==='sell'&&profits[t.gameDay])profits[t.gameDay].investment+=(t.realizedCents||0)/100;}
  const unrealized=portfolioTotals(state.bank,market).unrealizedCents/100;let previousMark=0;for(const day of days){const mark=day===state.day?unrealized:(state.financialMarks?.[day]??previousMark);profits[day].investment+=round(mark-previousMark);previousMark=mark;}
  const income=[['Income Statement',...days.map(d=>'Day '+d),'Totals']];
- const rows=[['Lemonade sales','sales',1],['Investment income / (loss), including unrealized','investment',1],['Ingredients, cups and spoilage','cost',-1],['Permits','permit',-1],['Loan interest and collateral fees','interest',-1],['Recipe books','recipes',-1],['Loss on resale','loss',-1]];
+ const rows=[['Lemonade sales','sales',1],['Casino winnings / (losses)','casino',1],['Investment income / (loss), including unrealized','investment',1],['Ingredients, cups and spoilage','cost',-1],['Permits','permit',-1],['Loan interest and collateral fees','interest',-1],['Recipe books','recipes',-1],['Loss on resale','loss',-1]];
  const totals=days.map(()=>0);for(const [label,key,sign] of rows){const values=days.map((d,i)=>{const v=round(profits[d][key]*sign);totals[i]=round(totals[i]+v);return v});income.push([label,...values,round(values.reduce((a,b)=>a+b,0))]);}income.push(['Net income / (loss)',...totals,round(totals.reduce((a,b)=>a+b,0))]);
  const inventory=round(Object.entries(state.inventory).reduce((sum,[k,v])=>sum+v*rates[k],0)),equip=round(state.upgrades.filter(id=>id!=='house').reduce((sum,id)=>sum+(state.equipmentCosts?.[id]??equipment.find(u=>u.id===id)?.price??0),0)),house=state.upgrades.includes('house')?400000:0;
  const investments=portfolioTotals(state.bank,market).valueCents/100,debt=round(state.bank.loans.reduce((s,l)=>s+l.balance,0)+(state.bank.mortgage?.balance||0)),assets=round(state.cash+state.bank.checking+inventory+equip+investments+house),net=income.at(-1).at(-1),opening=round(assets-debt-net);

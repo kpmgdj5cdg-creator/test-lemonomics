@@ -8,7 +8,7 @@ export class SceneLighting{
   const label=document.createElement('label');label.className='scene-night-toggle';
   this.input=document.createElement('input');this.input.type='checkbox';this.input.id='nightModeToggle';this.input.checked=this.night;
   const text=document.createElement('span');text.textContent='Night mode';label.append(this.input,text);world.container.parentElement.append(label);this.control=label;
-  this.input.addEventListener('change',()=>{this.night=this.input.checked;try{localStorage.setItem('lemonomics_night_v1',this.night?'on':'off')}catch{}this.apply();if(world.classicInterior.active||world.homeInterior.active)world.container.focus({preventScroll:true})});
+  this.input.addEventListener('change',()=>{this.night=this.input.checked;try{localStorage.setItem('lemonomics_night_v1',this.night?'on':'off')}catch{}this.apply();if(world.classicInterior.active||world.homeInterior.active||world.casinoInterior?.active)world.container.focus({preventScroll:true})});
   const positions=[];for(let i=0;i<170;i++){const angle=i*2.39996,y=22+(i*37%65),radius=Math.sqrt(96*96-y*y);positions.push(Math.cos(angle)*radius,y,Math.sin(angle)*radius)}
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   this.stars=new THREE.Points(geometry,new THREE.PointsMaterial({color:'#dfe9ff',size:.19,sizeAttenuation:true,fog:false,depthWrite:false}));this.stars.name='night-stars';world.scene.add(this.stars);
