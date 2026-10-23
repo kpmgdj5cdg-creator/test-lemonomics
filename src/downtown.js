@@ -2,6 +2,7 @@ import {box,group,label,bench,lamp,tree} from './models.js';
 import {planter,chalkboard} from './street-details.js';
 import {voxelText} from './voxel-text.js';
 import {DOWNTOWN_LOTS} from './downtown-layout.js';
+import {buildCasinoParking} from './casino-parking.js';
 import {buildCasino} from './casino-model.js';
 
 function window(g,x,y,z,w=1.05,h=1.15){
@@ -83,10 +84,10 @@ export function buildDowntown(g,rival){
   for(let i=0;i<7;i++)box(g,8,.06,2.1+i*.58,3.6,.025,.27,'#eff0dc');
   for(let i=0;i<8;i++)box(g,5.9+i*.6,.06,-.15,.27,.025,2.4,'#eff0dc');
   for(const lot of DOWNTOWN_LOTS){const building=cityBuilding(g,lot.x,lot.z,lot);building.rotation.y=lot.angle||0;}
-  const casino=buildCasino(g);g.userData.casino=casino;g.userData.buildingCount=DOWNTOWN_LOTS.length+1;
+  const parking=buildCasinoParking(g);g.userData.casinoParking=parking;const casino=buildCasino(g);g.userData.casino=casino;g.userData.buildingCount=DOWNTOWN_LOTS.length+1;
   // Front walks link every added frontage to the continuous sidewalk.
   for(const lot of DOWNTOWN_LOTS){if(Math.abs(Math.sin(lot.angle||0))>.5){const a=lot.x<8?lot.x+2.3:11.7,b=lot.x<8?4.3:lot.x-2.3;box(g,(a+b)/2,.09,lot.z,b-a,.16,1.3,'#dce4d7')}else if(lot.z>4)box(g,lot.x,.09,9.9,1.4,.16,3.9,'#dce4d7');}
-  box(g,-29.5,.09,-2.15,2.6,.16,6.4,'#dce4d7');
+
   // Street trees, planters and shop furniture keep the miniature city inviting.
   for(const [x,z] of [[-13.8,-2.5],[2.6,-5.8],[17.5,-3.4],[-8,9.6],[12,10]]){
     box(g,x,.16,z,1.75,.25,1.75,'#ece5d0');box(g,x,.31,z,1.4,.08,1.4,'#3b6550');tree(g,x,z,.95,1);

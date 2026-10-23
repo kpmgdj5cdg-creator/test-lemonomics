@@ -254,7 +254,7 @@ export class Neighborhood{
   frame(){
     const elapsed=this.clock.getDelta(),dt=Math.min(elapsed,.05),moveDt=Math.min(elapsed,.2);this.time=performance.now()/1000;
     // The bank and title screen need no off-screen shadow-map rendering.
-    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.audio.setAudible(false);this.container.dataset.casinoAmbience=String(this.audio.casinoPlaying);if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
+    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.casino?.crowd?.pause();this.audio.setAudible(false);this.container.dataset.casinoAmbience=String(this.audio.casinoPlaying);if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
     const suspended=!!this.container.closest('#ll-app')?.querySelector('#modal.show')||document.hidden;this.audio.setAudible(!suspended);
     this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());this.homeInterior.update(moveDt,this.time);this.casinoInterior.update(moveDt,this.time);
     this.player?.speaker?.update(reducedMotion()?0:this.audio.beat());this.publishAudio();

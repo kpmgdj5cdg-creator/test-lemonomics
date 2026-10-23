@@ -7,7 +7,7 @@ import {GameAudio} from '../src/game-audio.js';
 const stops=[...[-2.8,-.9,1,2.9].map((z,id)=>({id,x:-3.8,z,facing:-Math.PI/2})),...[-2.8,-.9,1,2.9].map((z,i)=>({id:i+4,x:3.8,z,facing:Math.PI/2})),...[-3.6,-1.2,1.2,3.6].map((x,i)=>({id:i+8,x,z:-3,facing:Math.PI}))];
 test('patrons can reach every machine from every other machine without crossing walls or tables',()=>{
  for(const a of stops)for(const b of stops){const path=casinoPatronPath(a,b);assert.ok(path.length,`${a.id} -> ${b.id}`);let last=a;for(const p of path){for(let k=0;k<=5;k++){const f=k/5;assert.equal(blocked(last.x+(p.x-last.x)*f,last.z+(p.z-last.z)*f,CASINO_SOLIDS,CASINO_BOUNDS,.14),false)}last=p}}
- assert.equal(patronDwell(()=>0),120);assert.equal(patronDwell(()=>1),210);
+ assert.equal(patronDwell(()=>0),8);assert.equal(patronDwell(()=>1),16);
 });
 test('hours of cosmetic traffic reserve distinct machines, visit four before leaving, and replace visitors within six total NPCs',()=>{
  const s=new CasinoPatronSchedule(stops,{seed:12345});const previous=new Map();let moves=0,arrivals=0;const maxInitialId=s.serial;

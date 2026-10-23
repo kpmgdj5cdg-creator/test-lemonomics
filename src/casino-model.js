@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {box,group,label,batch,character} from './models.js';
-import {voxelText,glyphs} from './voxel-text.js';
+import {voxelText} from './voxel-text.js';
+import {buildCasinoLighting} from './casino-lighting.js';
 import {drawSlotScreen} from './casino-screen.js';
-export const CASINO_CENTER={x:-29.5,z:-7.9},CASINO_ANGLE=0,CASINO_SCALE=.64;
+export const CASINO_CENTER={x:-29.5,z:-14.5},CASINO_ANGLE=0,CASINO_SCALE=.64;
 export const CASINO_BOUNDS={minX:-5.65,maxX:5.65,minZ:-4.7,maxZ:4.75};
 export const CASINO_SOLIDS=[{minX:-6,maxX:-4.05,minZ:-4.9,maxZ:3.85},{minX:4.05,maxX:6,minZ:-4.9,maxZ:3.85},{minX:-6,maxX:6,minZ:-5,maxZ:-3.45},{minX:-3.52,maxX:-.95,minZ:-2.25,maxZ:1.65},{minX:.95,maxX:3.52,minZ:-2.25,maxZ:1.65}];
 export function casinoWorld(x,z){return {x:CASINO_CENTER.x+CASINO_SCALE*(x*Math.cos(CASINO_ANGLE)+z*Math.sin(CASINO_ANGLE)),z:CASINO_CENTER.z+CASINO_SCALE*(-x*Math.sin(CASINO_ANGLE)+z*Math.cos(CASINO_ANGLE))};}
@@ -13,6 +14,7 @@ function slot(parent,x,z,angle,stake,index){
  box(g,0,.78,0,.98,1.5,.55,'#28354a');box(g,0,1.6,0,1.08,.18,.65,'#b82038');box(g,0,1.86,0,.62,.35,.2,'#bf2439');label(g,'$'+stake.toFixed(2),0,1.87,.12,.54,.25,{background:'#e4b546',color:'#842233',size:190});
  box(g,0,1.28,.31,.88,.62,.08,'#d5af54');const panel=label(g,'',0,1.28,.365,.79,.43,{background:'#f7f1cd',color:'#6a3444',size:100});
  drawSlotScreen(panel.material.map.image,[0,1,3]);panel.material.map.needsUpdate=true;panel.material.emissive.set('#ffffff');panel.material.emissiveMap=panel.material.map;panel.material.emissiveIntensity=.35;
+ for(const dx of [-.47,.47])box(g,dx,1.25,.37,.025,1.05,.025,index%2?'#69b8cd':'#b76bb7');
  for(const dx of [-.135,.135])box(g,dx,1.28,.375,.018,.44,.02,'#75524a');box(g,0,1.28,.385,.81,.014,.02,'#bf3d3e');
  const console=box(g,0,.91,.41,.96,.15,.52,'#a72641');console.rotation.x=.16;for(const dx of [-.27,0,.27])box(g,dx,1.01,.48,.15,.05,.17,'#f5d45a');box(g,0,.55,.3,.62,.19,.04,'#101c2a');seat(g,0,.92);
  batch(g);return {group:g,stake,panel,index};
@@ -34,10 +36,11 @@ function table(parent,x,kind){const g=group(parent,x,0,-.3);g.name='casino-'+kin
 export function buildCasino(parent){
  const root=group(parent,CASINO_CENTER.x,.12,CASINO_CENTER.z);root.rotation.y=CASINO_ANGLE;root.name='downtown-casino';root.scale.setScalar(CASINO_SCALE);
  const body=group(root),roof=group(root),doors=group(root),props=group(root),targets=[];
- box(body,0,.05,0,12.2,.16,10.2,'#82443b');box(body,0,.17,0,11.7,.10,9.7,'#a91735');
+ box(body,0,.05,0,12.2,.16,10.2,'#82443b');box(body,0,.17,0,11.7,.10,9.7,'#59182f');
  for(const x of [-5.3,5.3])box(body,x,.235,0,.07,.015,9.2,'#e9b750');box(body,0,.235,4.2,10.6,.015,.07,'#e9b750');
  for(const x of [-6,6]){box(body,x,1.9,0,.22,3.6,10,'#e3d4b9');box(body,x,2.95,0,.25,.22,10,'#bd263c');box(body,x,.52,0,.25,.54,10,'#a8283b')}
  box(body,0,1.9,-5,12.1,3.6,.22,'#e6d9bb');box(body,0,3,-4.87,11.8,.21,.08,'#cfaa50');
+ for(const x of [-5.85,5.85])box(body,x,1.75,0,.05,2.6,9.6,'#806652');box(body,0,1.75,-4.85,11.6,2.6,.05,'#806652');
  // Real front window and door openings keep the actual street visible inside.
  for(const [a,b]of [[-6,-5.45],[-2.1,-1.28],[1.28,2.1],[5.45,6]])box(body,(a+b)/2,1.85,5,b-a,3.6,.22,'#e9ddc5');
  box(body,0,3.28,5,12,.72,.22,'#eee1c9');for(const x of [-3.8,3.8]){box(body,x,.53,5,3.3,.74,.23,'#b22a3d');for(const y of [.94,2.91])box(body,x,y,5,3.5,.1,.28,'#403535');for(const dx of [-1.7,1.7])box(body,x+dx,1.93,5,.1,2.05,.28,'#403535');}
@@ -48,28 +51,18 @@ export function buildCasino(parent){
  box(body,0,.13,5.35,2.8,.15,.75,'#bb2d40');
  box(roof,0,3.65,0,12.6,.28,10.55,'#b42239');box(roof,0,3.8,0,12.7,.14,10.65,'#e3b549');for(let tier=0;tier<9;tier++)box(roof,0,3.99+tier*.19,0,12.3-tier*.76,.22,10.3-tier*.72,tier%2?'#b82438':'#a91f32');
  box(roof,0,4.45,5.13,8.2,1.6,.38,'#9f1e35');for(const x of [-4.1,4.1])box(roof,x,4.45,5.36,.12,1.7,.12,'#f8cf65');for(const y of [3.63,5.29])box(roof,0,y,5.36,8.3,.12,.12,'#f8cf65');const sign=voxelText(roof,'CASINO',0,4.44,5.39,1.1,'#ffe084');
- const signMaterial=new THREE.MeshStandardMaterial({color:'#ffe084',emissive:'#ffc25c',emissiveIntensity:.05,roughness:.45});signMaterial.userData.owned=true;sign.traverse(o=>{if(o.isMesh)o.material=signMaterial});
  box(roof,0,5.45,5.13,2.6,.7,.38,'#9f1e35');box(roof,0,5.63,5.4,.17,.17,.12,'#ffe084');box(roof,0,5.46,5.4,.47,.18,.12,'#ffe084');box(roof,0,5.29,5.4,.73,.19,.12,'#ffe084');box(roof,0,5.10,5.4,.15,.22,.12,'#ffe084');
  box(roof,0,3.25,5.7,3.2,.28,1.1,'#a11c35');
  // Warm ceiling recesses and practical lights remain on at night.
- box(roof,0,3.56,0,11.7,.12,9.7,'#e3cfaa');box(roof,0,3.47,0,7.4,.16,6.6,'#a32138');
- for(const [x,z]of [[0,3],[0,-2.8],[-4,0],[4,0]]){box(roof,x,3.36,z,.84,.16,.75,'#d9a446');box(roof,x,3.25,z,.65,.12,.55,'#fff1b5')}
- for(const x of [-2.8,2.8]){const light=new THREE.PointLight('#ffe1a4',7,10,1.4);light.position.set(x,2.9,0);root.add(light);}
+ box(roof,0,3.56,0,11.7,.12,9.7,'#50333a');box(roof,0,3.47,0,7.4,.16,6.6,'#56283b');
+ for(const [x,z]of [[0,3],[0,-2.8],[-4,0],[4,0]]){box(roof,x,3.36,z,.84,.16,.75,'#d9a446');box(roof,x,3.25,z,.65,.12,.55,'#b89161')}
+ for(const x of [-2.8,2.8]){const light=new THREE.PointLight('#ffc08a',.65,5,1.7);light.position.set(x,2.9,0);root.add(light);}
  let index=0;const slots=[];for(const [x,angle,stake]of [[-5.25,Math.PI/2,.25],[5.25,-Math.PI/2,1]])for(const z of [-2.8,-.9,1,2.9])slots.push(slot(props,x,z,angle,stake,index++));
  for(const x of [-3.6,-1.2,1.2,3.6])slots.push(slot(props,x,-4.45,0,5,index++));
  for(const machine of slots)targets.push({kind:'slots',stake:machine.stake,index:machine.index,object:machine.group});
  const holdem=table(props,-2.4,'holdem'),roulette=table(props,2.4,'roulette');holdem.scale.x=roulette.scale.x=.82;holdem.position.x=-2.25;roulette.position.x=2.25;targets.push({kind:'holdem',object:holdem},{kind:'roulette',object:roulette});
  dealer(props,-2.4,-1.88);dealer(props,2.4,-1.88,true);
- const bulbMaterial=new THREE.MeshStandardMaterial({color:'#fff1bd',emissive:'#ffc96b',emissiveIntensity:0});bulbMaterial.userData.owned=true;
- const glowCanvas=document.createElement('canvas'),word=[...'CASINO'].map(c=>glyphs[c]),pixels=word.reduce((n,g)=>n+g[0].length+1,0)-1;glowCanvas.width=(pixels+8)*24;glowCanvas.height=15*24;const ctx=glowCanvas.getContext('2d');
- function drawGlow(){let x=4;for(const glyph of word){for(let row=0;row<7;row++)for(let col=0;col<glyph[row].length;col++)if(glyph[row][col]==='1')ctx.fillRect((x+col)*24,(4+row)*24,24,24);x+=glyph[0].length+1}}
- ctx.fillStyle='#ffc45c';ctx.shadowColor='#ffb44b';ctx.shadowBlur=21;drawGlow();ctx.globalCompositeOperation='destination-out';ctx.shadowBlur=0;drawGlow();
- const glow=new THREE.Mesh(new THREE.PlaneGeometry((pixels+8)*1.1/7,15*1.1/7),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(glowCanvas),transparent:true,opacity:.6,depthWrite:false,blending:THREE.AdditiveBlending}));glow.name='casino-sign-halo';glow.position.set(0,4.44,5.51);roof.add(glow);
- const outdoorLights=[];
- for(const x of [-4.9,4.9]){box(body,x,2.55,5.2,.35,.6,.25,'#493a2b');const glass=box(body,x,2.55,5.36,.23,.4,.12,'#fff1bd');glass.material=bulbMaterial;const light=new THREE.PointLight('#ffce85',0,6,1.6);light.position.set(x,2.5,5.85);root.add(light);outdoorLights.push(light)}
- for(const x of [-1.8,1.8]){box(body,x,.55,6.05,.18,1,.18,'#493a2b');const glass=box(body,x,1.05,6.05,.27,.22,.27,'#fff1bd');glass.material=bulbMaterial;const light=new THREE.PointLight('#ffd69b',0,3.5,1.7);light.position.set(x,1.2,6.05);root.add(light);outdoorLights.push(light)}
- const signLight=new THREE.PointLight('#ffbe60',0,6,1.6);signLight.position.set(0,4.5,6);root.add(signLight);outdoorLights.push(signLight);
- let isNight=null;function setNight(night){if(night===isNight)return;isNight=night;signMaterial.emissiveIntensity=night?2.8:.05;bulbMaterial.emissiveIntensity=night?2:0;glow.visible=night;outdoorLights.forEach((l,i)=>l.intensity=night?(i===4?10:i<2?8:3):0)}setNight(false);
+ const lighting=buildCasinoLighting(root,roof,body,sign);
  batch(body);batch(roof);
- return {root,body,roof,doors,hinges,targets,slots,roulette,doorAmount:0,setNight,signMaterial,outdoorLights,glow};
+ return {root,body,roof,doors,hinges,targets,slots,roulette,doorAmount:0,...lighting,get chasePhase(){return lighting.chasePhase}};
 }
