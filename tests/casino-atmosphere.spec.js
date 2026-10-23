@@ -1,0 +1,14 @@
+import {test,expect} from '@playwright/test';
+import {enterGame} from './fixtures/profile-ui.js';
+import {gameWithChecking} from './fixtures/market.js';
+import {CASINO_FRONT} from '../src/casino-model.js';
+async function start(page,inside=true){const s=gameWithChecking(100);Object.assign(s,{cash:100,location:'square',playerView:inside?{location:'downtown',sceneView:'casino',casinoInterior:{position:{x:0,z:4.2},yaw:0,pitch:-.04}}:{location:'downtown',walking:true,sceneView:'outside',position:[CASINO_FRONT.x,.16,CASINO_FRONT.z+.6],rotation:Math.PI,angle:.55,zoom:1}});await page.addInitScript(s=>{localStorage.setItem('lemonadeLane_bank_v3',JSON.stringify(s));localStorage.setItem('lemonomics_sound_v1','on')},s);await page.goto('/');await enterGame(page);return page.locator('#world3d')}
+test('night sign and exterior fixtures glow; indoor patrons remain separate from actual player cash',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const w=await start(page,false);await expect(w).toHaveAttribute('data-casino-npc-count','6');await expect(w).toHaveAttribute('data-casino-exterior-lights','0');await page.getByRole('checkbox',{name:'Night mode'}).check();await expect(w).toHaveAttribute('data-casino-sign-glow','2.8');await expect(w).toHaveAttribute('data-casino-exterior-lights','5');await page.locator('#scene').screenshot({path:'artifacts/casino-night-lighting.png'});
+ await page.locator('#casinoEntryBtn').click();await expect(w).toHaveAttribute('data-casino-interior','true');await expect(w).toHaveAttribute('data-casino-ambience','true');const patrons=JSON.parse(await w.getAttribute('data-casino-patrons'));expect(patrons).toHaveLength(4);expect(new Set(patrons.map(a=>a.machine)).size).toBe(4);await page.locator('#scene').screenshot({path:'artifacts/casino-patrons.png'});
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('lemonadeLane_bank_v3')));expect(saved.cash).toBe(100);expect(saved.ledger.filter(l=>l.category==='casino')).toHaveLength(0);expect(errors).toEqual([]);
+});
+test('casino ambience follows entry, Sound toggle, Save pause, resume and exit',async({page})=>{
+ const w=await start(page);await expect(w).toHaveAttribute('data-casino-ambience','true');await page.getByRole('button',{name:'Sound on',exact:true}).click();await expect(w).toHaveAttribute('data-casino-ambience','false');await page.getByRole('button',{name:'Sound off',exact:true}).click();await expect(w).toHaveAttribute('data-casino-ambience','true');
+ await page.locator('#saveMenuBtn').click();await expect(w).toHaveAttribute('data-casino-ambience','false');await page.locator('#modalClose').click();await expect(w).toHaveAttribute('data-casino-ambience','true');await page.locator('#casinoExitBtn').click();await expect(w).toHaveAttribute('data-casino-ambience','false');
+});

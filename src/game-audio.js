@@ -4,7 +4,7 @@ const stations=[null,{name:'Lemon FM',description:'techno',bpm:124},{name:'Neon 
 // Original techno synthesis and two full bundled instrumental radio tracks.
 export class GameAudio{
  constructor(){
-  this.muted=false;try{this.muted=localStorage.getItem('lemonomics_sound_v1')==='off'}catch{}
+  this.casinoVoices=new Set();this.casinoPlaying=false;this.casinoSeed=0x43415349;this.muted=false;try{this.muted=localStorage.getItem('lemonomics_sound_v1')==='off'}catch{}
   this.musicPlaying=false;this.station=0;this.trackPromises=new Map();this.audible=true;this.voices=new Set();this.musicVoices=new Set();this.step=0;this.nextNote=0;this.noteCount=0;this.trackOffset=0;this.trackPlayCount=0;this.noiseSeed=0x1234567;
  }
  async unlock(){
@@ -12,6 +12,7 @@ export class GameAudio{
    const Context=globalThis.AudioContext||globalThis.webkitAudioContext;if(!Context)return false;
    if(!this.context){
     const c=this.context=new Context();this.master=c.createGain();this.master.gain.value=this.muted?0:.22;this.master.connect(c.destination);
+    this.casinoBus=c.createGain();this.casinoBus.gain.value=0;this.casinoBus.connect(this.master);
     this.music=c.createGain();this.music.gain.value=0;this.music.connect(this.master);
     this.analyser=c.createAnalyser();this.analyser.fftSize=256;this.music.connect(this.analyser);
    }
@@ -23,13 +24,13 @@ export class GameAudio{
   const o=c.createOscillator(),v=c.createGain();o.type=type;o.frequency.setValueAtTime(frequency,start);
   if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,start+duration);
   v.gain.setValueAtTime(.0001,start);v.gain.exponentialRampToValueAtTime(gain,start+Math.min(.16,duration*.15));v.gain.exponentialRampToValueAtTime(.0001,start+duration);
-  o.connect(v);v.connect(target);o.start(start);o.stop(start+duration+.01);this.voices.add(o);if(target===this.music)this.musicVoices.add(o);o.onended=()=>{o.disconnect();v.disconnect();this.voices.delete(o);this.musicVoices.delete(o)};this.noteCount++;
+  o.connect(v);v.connect(target);o.start(start);o.stop(start+duration+.01);this.voices.add(o);if(target===this.music)this.musicVoices.add(o);if(target===this.casinoBus)this.casinoVoices.add(o);o.onended=()=>{o.disconnect();v.disconnect();this.voices.delete(o);this.musicVoices.delete(o);this.casinoVoices.delete(o)};this.noteCount++;
  }
  noise(start,duration,gain,target=this.master){
   const c=this.context;if(!c)return;const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),d=buffer.getChannelData(0);
   for(let i=0;i<d.length;i++){let n=this.noiseSeed;n^=n<<13;n^=n>>>17;n^=n<<5;this.noiseSeed=n;d[i]=((n>>>0)/2147483648-1)*(1-i/d.length);}
   const source=c.createBufferSource(),v=c.createGain(),filter=c.createBiquadFilter();source.buffer=buffer;filter.type='highpass';filter.frequency.value=5000;v.gain.value=gain;
-  source.connect(filter);filter.connect(v);v.connect(target);source.start(start);this.voices.add(source);if(target===this.music)this.musicVoices.add(source);source.onended=()=>{source.disconnect();filter.disconnect();v.disconnect();this.voices.delete(source);this.musicVoices.delete(source)};
+  source.connect(filter);filter.connect(v);v.connect(target);source.start(start);this.voices.add(source);if(target===this.music)this.musicVoices.add(source);if(target===this.casinoBus)this.casinoVoices.add(source);source.onended=()=>{source.disconnect();filter.disconnect();v.disconnect();this.voices.delete(source);this.musicVoices.delete(source);this.casinoVoices.delete(source)};
  }
  effect(name){
   if(this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;
@@ -86,10 +87,10 @@ export class GameAudio{
   const source=this.trackSource;if(!source)return;this.trackOffset=this.trackPosition;this.trackSource=null;this.musicVoices.delete(source);try{source.stop()}catch{}
  }
  stopMusic(){this.startVersion=(this.startVersion||0)+1;this.starting=false;clearInterval(this.timer);this.timer=null;this.pauseTrack();this.trackOffset=0;this.trackBuffer=null;this.musicPlaying=false;this.station=0;for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear();if(this.context&&this.music)this.music.gain.setValueAtTime(0,this.context.currentTime)}
- setMuted(value){this.muted=value;if(value)this.stopMusic();if(this.master)this.master.gain.setValueAtTime(value?0:.22,this.context.currentTime);try{localStorage.setItem('lemonomics_sound_v1',value?'off':'on')}catch{}}
+ setMuted(value){this.muted=value;if(value){this.stopMusic();this.stopCasino()}if(this.master)this.master.gain.setValueAtTime(value?0:.22,this.context.currentTime);try{localStorage.setItem('lemonomics_sound_v1',value?'off':'on')}catch{}}
  setAudible(value){
   if(value===this.audible)return;
-  if(!value){this.pauseTrack();for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}
+  if(!value){this.stopCasino();this.pauseTrack();for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}
   this.audible=value;
   if(value&&this.musicPlaying&&this.context){
    if(this.station>=2)this.startTrack();else{this.epoch=this.context.currentTime+.02;this.nextNote=this.epoch;this.step=0}
@@ -98,6 +99,23 @@ export class GameAudio{
  }
  level(){if(!this.musicPlaying||!this.audible||!this.analyser?.getFloatTimeDomainData)return 0;this.samples??=new Float32Array(256);this.analyser.getFloatTimeDomainData(this.samples);let sum=0;for(const value of this.samples)sum+=value*value;return Math.sqrt(sum/this.samples.length)}
  beat(){if(!this.musicPlaying||!this.audible||!this.context)return 0;const period=60/(this.stationInfo?.bpm||124),phase=((this.context.currentTime-this.epoch)%period+period)%period;return Math.exp(-phase*17)}
- reset(){this.stopMusic()}
+ casinoRandom(){let n=this.casinoSeed;n^=n<<13;n^=n>>>17;n^=n<<5;this.casinoSeed=n;return (n>>>0)/4294967296}
+ stopCasino(){for(const node of this.casinoVoices){try{node.stop()}catch{}}this.casinoVoices.clear();this.casinoPlaying=false;if(this.context&&this.casinoBus)this.casinoBus.gain.setValueAtTime(0,this.context.currentTime)}
+ updateCasino(active){
+  if(!active||this.muted||!this.audible||this.context?.state!=='running'){if(this.casinoPlaying)this.stopCasino();return}
+  const c=this.context,t=c.currentTime,bus=this.casinoBus;if(!bus)return;
+  if(!this.casinoPlaying){
+   this.casinoPlaying=true;bus.gain.setValueAtTime(.42,t);this.nextCasinoEvent=t+.1;
+   // A quiet, band-limited room murmur beneath distant chimes and coin clinks.
+   const buffer=c.createBuffer(1,c.sampleRate*2,c.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=this.casinoRandom()*2-1;
+   const room=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();room.buffer=buffer;room.loop=true;filter.type='bandpass';filter.frequency.value=470;filter.Q.value=.55;gain.gain.value=.075;room.connect(filter);filter.connect(gain);gain.connect(bus);room.start(t);this.casinoVoices.add(room);this.voices.add(room);room.onended=()=>{room.disconnect();filter.disconnect();gain.disconnect();this.casinoVoices.delete(room);this.voices.delete(room)};
+  }
+  if(t<this.nextCasinoEvent)return;this.nextCasinoEvent=t+1.1+this.casinoRandom()*2.2;const kind=Math.floor(this.casinoRandom()*4);
+  if(kind===0){const root=[523,659,784][Math.floor(this.casinoRandom()*3)];[1,1.25,1.5,2].forEach((r,i)=>this.tone(root*r,t+i*.12,.16,'triangle',.055,bus))}
+  else if(kind===1){for(let i=0;i<5;i++)this.tone(1600+i*170,t+i*.065,.035,'sine',.035,bus);this.noise(t,.12,.025,bus)}
+  else if(kind===2){for(let i=0;i<7;i++)this.tone(330-i*22,t+i*.06,.025,'triangle',.04,bus)}
+  else{this.noise(t,.08,.035,bus);this.tone(660,t+.12,.07,'triangle',.055,bus);this.tone(880,t+.27,.10,'triangle',.04,bus)}
+ }
+ reset(){this.stopCasino();this.stopMusic()}
 }
 export const gameAudio=new GameAudio();
