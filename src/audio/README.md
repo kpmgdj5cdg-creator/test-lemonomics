@@ -17,7 +17,8 @@ Normal game builds require only the existing Node dependencies.
 ## Evening Current
 
 `evening-current.mp3` is a second full original instrumental: 3:20, 96 BPM,
-electric piano, bass, reed-like synthesizer, and lightly swung drums. It plays on
+mellow electric piano, soft chord pads, rounded bass and light electronic percussion.
+The revised modern elevator/lounge arrangement has no flute, reed or wind lead. It plays on
 Velvet Jazz after Neon Nights. `render_jazz.py` is the editable score and synthesis
 source. Run it optionally and copy `Evening-Current-Instrumental.mp3` to
 `evening-current.mp3`. `jazz-track-info.json` lists the arrangement sections.

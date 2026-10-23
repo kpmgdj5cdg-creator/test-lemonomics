@@ -2,7 +2,8 @@
   "title": "Evening Current",
   "durationSeconds": 200.0,
   "bpm": 96,
-  "key": "D minor with jazz turnarounds",
+  "key": "C major lounge progression",
+  "arrangement": "Modern elevator lounge; electric piano, warm pads, bass and light percussion; no wind lead",
   "vocals": false,
   "originalComposition": true,
   "sections": [
@@ -14,7 +15,7 @@
     {
       "startSeconds": 20.0,
       "endSeconds": 60.0,
-      "name": "First conversation"
+      "name": "Lobby groove"
     },
     {
       "startSeconds": 60.0,
@@ -29,7 +30,7 @@
     {
       "startSeconds": 120.0,
       "endSeconds": 160.0,
-      "name": "Second conversation"
+      "name": "Soft reflections"
     },
     {
       "startSeconds": 160.0,

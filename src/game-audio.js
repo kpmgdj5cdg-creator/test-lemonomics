@@ -1,6 +1,6 @@
 const instrumentalUrl=new URL('./audio/afterglow-drive.mp3',import.meta.url).href;
 const jazzUrl=new URL('./audio/evening-current.mp3',import.meta.url).href;
-const stations=[null,{name:'Lemon FM',description:'techno',bpm:124},{name:'Neon Nights',title:'Afterglow Drive',description:'3:12 instrumental synthwave',bpm:100,url:instrumentalUrl},{name:'Velvet Jazz',title:'Evening Current',description:'3:20 instrumental jazz',bpm:96,url:jazzUrl}];
+const stations=[null,{name:'Lemon FM',description:'techno',bpm:124},{name:'Neon Nights',title:'Afterglow Drive',description:'3:12 instrumental synthwave',bpm:100,url:instrumentalUrl},{name:'Velvet Jazz',title:'Evening Current',description:'3:20 modern lounge instrumental',bpm:96,url:jazzUrl}];
 // Original techno synthesis and two full bundled instrumental radio tracks.
 export class GameAudio{
  constructor(){
