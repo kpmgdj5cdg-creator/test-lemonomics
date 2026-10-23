@@ -1,0 +1,45 @@
+{
+  "title": "Evening Current",
+  "durationSeconds": 200.0,
+  "bpm": 96,
+  "key": "D minor with jazz turnarounds",
+  "vocals": false,
+  "originalComposition": true,
+  "sections": [
+    {
+      "startSeconds": 0.0,
+      "endSeconds": 20.0,
+      "name": "Evening / intro"
+    },
+    {
+      "startSeconds": 20.0,
+      "endSeconds": 60.0,
+      "name": "First conversation"
+    },
+    {
+      "startSeconds": 60.0,
+      "endSeconds": 100.0,
+      "name": "Current / theme"
+    },
+    {
+      "startSeconds": 100.0,
+      "endSeconds": 120.0,
+      "name": "Electric piano interlude"
+    },
+    {
+      "startSeconds": 120.0,
+      "endSeconds": 160.0,
+      "name": "Second conversation"
+    },
+    {
+      "startSeconds": 160.0,
+      "endSeconds": 180.0,
+      "name": "Last light / theme"
+    },
+    {
+      "startSeconds": 180.0,
+      "endSeconds": 200.0,
+      "name": "Goodnight / outro"
+    }
+  ]
+}

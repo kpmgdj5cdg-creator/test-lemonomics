@@ -181,9 +181,10 @@ export class Neighborhood{
   publishAudio(){
     const playing=!!this.audio.musicPlaying;
     this.soundButton.textContent=this.audio.muted?'Sound off':'Sound on';this.soundButton.setAttribute('aria-pressed',String(!this.audio.muted));
-    this.musicButton.hidden=!this.player?.speaker;this.musicButton.textContent=this.audio.starting?'Radio: Loading…':playing?`Radio: ${this.audio.station===2?'Neon Nights':'Lemon FM'}`:'Speaker: Play';this.musicButton.setAttribute('aria-pressed',String(playing));this.musicButton.title=playing?`Playing ${this.audio.station===2?'Neon Nights — Afterglow Drive, 3:12 instrumental synthwave. Click to turn off.':'Lemon FM — techno. Click for Neon Nights.'}`:'Click to play Lemon FM';
+    const station=this.audio.stationInfo,next=this.audio.nextStationInfo;
+    this.musicButton.hidden=!this.player?.speaker;this.musicButton.textContent=this.audio.starting?'Radio: Loading…':playing?`Radio: ${station.name}`:'Speaker: Play';this.musicButton.setAttribute('aria-pressed',String(playing));this.musicButton.title=playing?`Playing ${station.name} — ${station.title?station.title+', ':''}${station.description}. Click ${next?'for '+next.name:'to turn off'}.`:'Click to play Lemon FM';
     this.container.dataset.radioStation=playing?String(this.audio.station):'0';
-    this.container.dataset.trackTitle=this.audio.station===2?'Afterglow Drive':'';this.container.dataset.trackDuration=String(this.audio.trackBuffer?.duration||0);this.container.dataset.trackPosition=String(+this.audio.trackPosition.toFixed(3));this.container.dataset.trackPlays=String(this.audio.trackPlayCount);
+    this.container.dataset.trackTitle=station?.title||'';this.container.dataset.trackDuration=String(this.audio.trackBuffer?.duration||0);this.container.dataset.trackPosition=String(+this.audio.trackPosition.toFixed(3));this.container.dataset.trackPlays=String(this.audio.trackPlayCount);
     this.container.dataset.musicPlaying=String(playing);this.container.dataset.audioState=this.audio.context?.state||'locked';this.container.dataset.audioNotes=String(this.audio.noteCount);this.container.dataset.audioLevel=String(+this.audio.level().toFixed(4));
   }
   currentCamera(){if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}

@@ -10,7 +10,7 @@ You can also download [the standalone HTML](Lemonade-Lane.html) using GitHub’s
 
 The **Night mode** checkbox in the upper-right of the play area changes the lighting across all four locations, including views through interior windows. It does not advance the game day or change the weather. The beach has moving waves and an anchored boat that bobs and rocks without drifting. Reduced-motion settings freeze these animations.
 
-With the High-Five sound system purchased and equipped, clicking its speaker cycles **Lemon FM** (techno) → **Neon Nights** (Afterglow Drive, a full 3:12 instrumental) → **Off**. The radio button follows the same cycle. The music is included in this download and require no streaming service.
+With the High-Five sound system purchased and equipped, clicking its speaker cycles **Lemon FM** (techno) → **Neon Nights** (Afterglow Drive, a full 3:12 instrumental) → **Velvet Jazz** (Evening Current, a full 3:20 instrumental jazz track) → **Off**. The radio button follows the same cycle. The music is included in this download and require no streaming service.
 
 The new **Lemonomics** title screen has five separate player profiles. Choose **New game**, enter a name (up to 16 letters), and choose a male or female avatar. Saved slots display the avatar, name, game day and last-save date/time. The exit icon at the upper right opens **Save**, **Save & Quit**, and **Back to Game**. You can save partway through a selling day and resume without paying for supplies or a permit twice.
 
