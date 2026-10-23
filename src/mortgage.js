@@ -1,4 +1,5 @@
 import {isCrypto} from './funds.js';
+import {tradeQuote} from './live-market-data.js';
 import {round} from './business.js';
 import {portfolioTotals,ensurePortfolio,holdingPrice,quoteTrade,executeTrade,SHARE_SCALE} from './investments.js';
 export const HOUSE_PRICE=400000,DOWN_PAYMENT=8000,MORTGAGE_PERIOD=10,MORTGAGE_MONTHS=360;
@@ -12,7 +13,7 @@ export function downPaymentAssets(state,market){
  let amount=round(state.cash+state.bank.checking);
  if(state.bank.loans.some(l=>l.secured&&l.balance>0))return amount;
  const p=ensurePortfolio(state.bank);amount+=(p.legacyCents||0)/100;
- for(const [symbol,pos]of Object.entries(p.positions)){const gross=Math.round(pos.units/SHARE_SCALE*(holdingPrice(p,market,symbol)||0)*100);amount+=Math.max(0,gross-Math.max(1,Math.round(gross*.005)))/100}
+ for(const [symbol,pos]of Object.entries(p.positions)){const bid=isCrypto(symbol)?market?.liveQuotes?.quotes?.[symbol]?.bidPrice:null;const gross=Math.round(pos.units/SHARE_SCALE*(Number.isFinite(bid)&&bid>0?bid:holdingPrice(p,market,symbol)||0)*100);amount+=Math.max(0,gross-Math.max(1,Math.round(gross*.005)))/100}
  return round(amount);
 }
 function liquidFunds(state,amount,desc,category){
@@ -28,7 +29,7 @@ function raiseDownPayment(s,market,now){
  if(legacy){p.legacyCents-=legacy;s.bank.checking=round(s.bank.checking+legacy/100);s.ledger.push({day:s.day,desc:'Investment balance released for house down payment',category:'investment transfer',cash:0,bankChange:legacy/100,investmentChange:-legacy/100});missing=round(missing-legacy/100)}
  for(const [symbol,pos]of Object.entries(p.positions)){
   if(missing<=0)break;
-  const price=holdingPrice(p,market,symbol),net=u=>{const g=Math.round(u/SHARE_SCALE*price*100);return g-Math.max(1,Math.round(g*.005))};
+  const crypto=isCrypto(symbol)?tradeQuote(market?.liveQuotes,symbol,now):null,price=crypto?(crypto.bidPrice??crypto.price):holdingPrice(p,market,symbol),net=u=>{const g=Math.round(u/SHARE_SCALE*price*100);return g-Math.max(1,Math.round(g*.005))};
   let lo=1,hi=pos.units;if(net(hi)<=0)continue;
   if(net(hi)>=Math.round(missing*100)){while(lo<hi){const mid=Math.floor((lo+hi)/2);if(net(mid)>=Math.round(missing*100))hi=mid;else lo=mid+1}}
   const request={symbol,side:'sell',mode:'shares',amount:(hi/SHARE_SCALE).toFixed(6),...(isCrypto(symbol)?{marketMode:'live'}:{})},q=quoteTrade(s.bank,market,request,now);

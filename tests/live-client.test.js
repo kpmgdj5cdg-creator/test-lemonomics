@@ -12,3 +12,10 @@ test('client wakes at the regular-session opening instead of waiting the full cl
  const client=new LiveMarketClient({clock:()=>new Date(time),fetcher:async()=>{calls++;const data=alpacaFixture(new Date(time));data.retryAfterMs=data.session.open?5000:300000;return Response.json(data)}});
  try{await client.refresh();assert.equal(client.data.session.open,false);assert.equal(client.delay(),5000);time+=5000;await client.refresh();assert.equal(calls,2);assert.equal(client.data.session.open,true)}finally{globalThis.location=oldLocation}
 });
+
+test('Bitcoin polls every twenty seconds while the last executed trade stays ten minutes old',async()=>{
+ const oldLocation=globalThis.location;globalThis.location={protocol:'https:'};let time=Date.parse('2026-10-24T02:00:00Z'),calls=0;const original=time,tradeStamp=new Date(time-600000).toISOString();
+ const {normalizeBitcoin}=await import('../server/alpaca-provider.js'),{decorateBitcoin}=await import('../src/live-market-data.js');
+ const client=new LiveMarketClient({clock:()=>new Date(time),fetcher:async()=>{calls++;const now=new Date(time),data=alpacaFixture(now),base=60000+(time-original)/1000,btc=decorateBitcoin(normalizeBitcoin({snapshots:{'BTC/USD':{latestTrade:{p:59000,t:tradeStamp},latestQuote:{bp:base-10,ap:base+10,t:now.toISOString()}}}},null,now),'ok',now);data.quotes['BTC/USD']=btc.quote;data.crypto=btc.market;data.retryAfterMs=20000;return Response.json(data)}});
+ try{for(let i=0;i<4;i++){await client.refresh();assert.equal(calls,i+1);assert.equal(client.data.quotes['BTC/USD'].price,60000+i*20);assert.equal(client.data.quotes['BTC/USD'].lastTradeTimestamp,tradeStamp);assert.equal(client.delay(),20000);time+=20000}}finally{globalThis.location=oldLocation}
+});

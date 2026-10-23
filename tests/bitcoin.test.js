@@ -11,6 +11,7 @@ import {marketFixture,gameWithChecking} from './fixtures/market.js';
 import {SYMBOLS} from '../src/funds.js';
 import {originate} from '../src/business.js';
 import {settleCollateral} from '../src/secured-investments.js';
+import {purchaseHouse,downPaymentAssets} from '../src/mortgage.js';
 const SATURDAY=Date.parse('2026-10-24T02:00:00Z');
 const bitcoin=(now,price=60000)=>({snapshots:{'BTC/USD':{latestTrade:{p:price,t:now.toISOString()},prevDailyBar:{c:59000,t:new Date(Date.parse(now.toISOString().slice(0,10)+'T00:00:00Z')-86400000).toISOString()}}}});
 function fixture(start=SATURDAY){
@@ -75,4 +76,29 @@ test('regular-session polling gives both asset classes bounded refreshes without
  for(let i=1;i<stocks.length;i++)assert.ok(stocks[i].at-stocks[i-1].at<=10000);
  for(let i=1;i<crypto.length;i++)assert.ok(crypto[i].at-crypto[i-1].at<=25000);
  assert.ok((await f.service().guard()).minute_calls<=LIVE_LIMITS.minuteCalls);
+});
+
+test('fresh Bitcoin bid/ask updates move the card between sparse trades and execute at the correct side of the spread',t=>{
+ t.mock.timers.enable({apis:['Date'],now:SATURDAY});const now=new Date(SATURDAY),tradeTime=new Date(+now-600000).toISOString(),payload=bitcoin(now,81105.95);payload.snapshots['BTC/USD'].latestTrade.t=tradeTime;payload.snapshots['BTC/USD'].latestQuote={bp:81090,ap:81110,t:now.toISOString()};
+ const raw=normalizeBitcoin(payload,null,now),btc=decorateBitcoin(raw,'ok',now),data=alpacaFixture(now);data.quotes['BTC/USD']=btc.quote;data.crypto=btc.market;
+ assert.equal(btc.quote.price,81100);assert.equal(btc.quote.priceBasis,'bid-ask-midpoint');assert.equal(btc.quote.lastTradeTimestamp,tradeTime);assert.equal(btc.quote.current,true);assert.equal(tradeQuote(data,'BTC/USD',now).timestamp,now.toISOString());
+ const market={...marketFixture(now),liveQuotes:data},s=gameWithChecking(20),request={symbol:'BTC/USD',side:'buy',mode:'dollars',amount:20,marketMode:'live'},buy=quoteTrade(s.bank,market,request,now);assert.equal(buy.price,81110);executeTrade(s,market,request,buy.signature,now);assert.equal(s.bank.portfolio.trades[0].priceBasis,'bid-ask-midpoint');assert.equal(s.bank.portfolio.trades[0].askPrice,81110);
+ const sell={...request,side:'sell',mode:'shares',amount:s.bank.portfolio.positions['BTC/USD'].units/1000000},sale=quoteTrade(s.bank,market,sell,now);assert.equal(sale.price,81090);assert.ok(sale.realizedCents<0,'spread and fees cannot generate an instant profit');
+ const later=new Date(+now+20000);t.mock.timers.setTime(+later);payload.snapshots['BTC/USD'].latestQuote={bp:81120,ap:81140,t:later.toISOString()};const updated=normalizeBitcoin(payload,raw,later);assert.equal(updated.quotes['BTC/USD'].price,81130);assert.equal(updated.quotes['BTC/USD'].lastTradeTimestamp,tradeTime);assert.equal(updated.fetchedAt,later.toISOString());
+});
+test('invalid or stale Bitcoin books never authorize stale trades, and spread changes invalidate review atomically',t=>{
+ t.mock.timers.enable({apis:['Date'],now:SATURDAY});const now=new Date(SATURDAY),payload=bitcoin(now);payload.snapshots['BTC/USD'].latestTrade.t=new Date(+now-600000).toISOString();
+ for(const book of [{bp:10,ap:9,t:now.toISOString()},{bp:0,ap:10,t:now.toISOString()},{bp:10,ap:11,t:'bad'},{bp:10,ap:11,t:new Date(+now-121000).toISOString()},{bp:10,ap:11,t:new Date(+now+10000).toISOString()}]){
+  payload.snapshots['BTC/USD'].latestQuote=book;const btc=decorateBitcoin(normalizeBitcoin(payload,null,now),'ok',now),data=alpacaFixture(now);data.quotes['BTC/USD']=btc.quote;data.crypto=btc.market;assert.equal(btc.quote.current,false);assert.throws(()=>tradeQuote(data,'BTC/USD',now),/expired/);
+ }
+ payload.snapshots['BTC/USD'].latestQuote={bp:59900,ap:60100,t:now.toISOString()};const btc=decorateBitcoin(normalizeBitcoin(payload,null,now),'ok',now),data=alpacaFixture(now);data.quotes['BTC/USD']=btc.quote;data.crypto=btc.market;
+ const s=gameWithChecking(20),market={...marketFixture(now),liveQuotes:data},r={symbol:'BTC/USD',side:'buy',mode:'dollars',amount:20,marketMode:'live'},q=quoteTrade(s.bank,market,r,now),before=JSON.stringify(s);data.quotes['BTC/USD'].bidPrice=59800;data.quotes['BTC/USD'].askPrice=60200;assert.throws(()=>executeTrade(s,market,r,q.signature,now),/changed/);assert.equal(JSON.stringify(s),before);
+});
+
+test('Bitcoin loan repayment and mortgage down-payment sales use bid proceeds rather than overstating the midpoint',t=>{
+ t.mock.timers.enable({apis:['Date'],now:SATURDAY});const now=new Date(SATURDAY),payload=bitcoin(now);payload.snapshots['BTC/USD'].latestQuote={bp:59000,ap:61000,t:now.toISOString()};const btc=decorateBitcoin(normalizeBitcoin(payload,null,now),'ok',now),data=alpacaFixture(now);data.quotes['BTC/USD']=btc.quote;data.crypto=btc.market;const market={...marketFixture(now),liveQuotes:data};
+ const state=gameWithChecking(20000);state.cash=0;state.bank.creditScore=700;const r={symbol:'BTC/USD',side:'buy',mode:'dollars',amount:20000,marketMode:'live'},q=quoteTrade(state.bank,market,r,now);executeTrade(state,market,r,q.signature,now);
+ const collateral=structuredClone(state),loan=originate(collateral,100,true);collateral.bank.checking=0;settleCollateral(collateral,loan,market,now,{full:true,collection:false});assert.equal(loan.balance,0);assert.equal(collateral.bank.portfolio.trades.at(-1).price,59000);
+ const units=state.bank.portfolio.positions['BTC/USD'].units,gross=Math.round(units/1000000*59000*100),net=gross-Math.max(1,Math.round(gross*.005));assert.equal(downPaymentAssets(state,market),Math.round((state.bank.checking+net/100)*100)/100);
+ purchaseHouse(state,{mortgage:true,quote:{rate:6.5,asOf:'2026-10-23'},market,now});assert.equal(state.bank.mortgage.balance,392000);assert.equal(state.bank.portfolio.trades.at(-1).price,59000);assert.ok(state.bank.checking>=0);assert.ok(state.upgrades.includes('house'));
 });

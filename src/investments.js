@@ -39,7 +39,7 @@ export function quoteTrade(bank,market,{symbol,side,mode,amount,marketMode,accou
   if(!live&&!marketFresh(market,now))throw new Error('Refresh prices before trading. Trades use the latest prior trading day’s close.');
   if(!live&&p.marketDate&&market.asOf<p.marketDate)throw new Error('These quotes are older than your portfolio. Refresh prices first.');
   if(bank.loans?.some(l=>l.secured&&l.balance>0&&!l.settling)){if(side==='sell')throw new Error('These investments secure a loan. Repay the secured loan before selling.');if(bank.loans.some(l=>l.collateralDue))throw new Error('Settle the overdue secured loan before investing.');}
-  const n=numberInput(amount),price=live?.price??quotePrice(market,symbol);
+  const n=numberInput(amount),price=live?.priceBasis==='bid-ask-midpoint'?(side==='buy'?live.askPrice:live.bidPrice):live?.price??quotePrice(market,symbol);
   let units=Math.floor((mode==='shares'?n:n/price)*SHARE_SCALE+1e-7);
   // Existing 0.5% virtual fees remain. A live dollar buy is a total budget, so
   // even a child with exactly $20 can invest without needing extra fee money.
@@ -56,7 +56,7 @@ export function quoteTrade(bank,market,{symbol,side,mode,amount,marketMode,accou
   if(side==='sell'&&totalCents<0)throw new Error('Choose a larger sale so the proceeds cover the fee.');
   const removedCost=side==='sell'?(units===position.units?position.costCents:Math.round(position.costCents*units/position.units)):0;
   const priceDate=live?live.timestamp.slice(0,10):market.asOf;
-  return {symbol,side,mode,units,price,priceDate,quoteTimestamp:live?.timestamp,marketMode,accountId,notionalCents,feeCents,totalCents,removedCost,realizedCents:side==='sell'?totalCents-removedCost:0,checkingAfterCents:cents(bank.checking)+(side==='buy'?-totalCents:totalCents),signature:JSON.stringify([symbol,side,units,price,live?.timestamp||market.asOf,feeCents,cents(bank.checking),position?.units||0,position?.costCents||0,p.sequence,accountId||null])};
+  return {symbol,side,mode,units,price,priceDate,priceBasis:live?.priceBasis,bidPrice:live?.bidPrice,askPrice:live?.askPrice,quoteTimestamp:live?.timestamp,marketMode,accountId,notionalCents,feeCents,totalCents,removedCost,realizedCents:side==='sell'?totalCents-removedCost:0,checkingAfterCents:cents(bank.checking)+(side==='buy'?-totalCents:totalCents),signature:JSON.stringify([symbol,side,units,price,live?.timestamp||market.asOf,feeCents,cents(bank.checking),position?.units||0,position?.costCents||0,p.sequence,accountId||null])};
 }
 export function recordSnapshot(bank,market){
   if(!market)return;const p=ensurePortfolio(bank),t=portfolioTotals(bank,market);bank.investments=t.valueCents/100;
@@ -75,8 +75,8 @@ export function executeTrade(state,market,request,expectedSignature,now=new Date
   if(q.marketMode!=='live')position.lastPrice=q.price;
   if(position.units)p.positions[q.symbol]=position;else delete p.positions[q.symbol];
   bank.checking=q.checkingAfterCents/100;
-  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,quoteTimestamp:q.quoteTimestamp,marketMode:q.marketMode,accountId:q.accountId,costBasisCents:q.side==='buy'?q.totalCents:q.removedCost,provider:q.marketMode==='live'?'Alpaca':market.source,feed:q.marketMode==='live'?(isCrypto(q.symbol)?'crypto-us':'iex'):undefined,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);if(q.marketMode!=='live')p.marketDate=market.asOf;
-  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+(isCrypto(q.symbol)?'BTC':q.symbol+' shares')+' at '+money(cents(q.price))+'; fee '+money(q.feeCents)+(q.marketMode==='live'?'; '+(isCrypto(q.symbol)?'Alpaca crypto':'IEX')+' trade '+q.quoteTimestamp:'; close '+q.priceDate),category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
+  const trade={id:p.sequence++,side:q.side,symbol:q.symbol,units:q.units,price:q.price,priceDate:q.priceDate,quoteTimestamp:q.quoteTimestamp,priceBasis:q.priceBasis,bidPrice:q.bidPrice,askPrice:q.askPrice,marketMode:q.marketMode,accountId:q.accountId,costBasisCents:q.side==='buy'?q.totalCents:q.removedCost,provider:q.marketMode==='live'?'Alpaca':market.source,feed:q.marketMode==='live'?(isCrypto(q.symbol)?'crypto-us':'iex'):undefined,notionalCents:q.notionalCents,feeCents:q.feeCents,totalCents:q.totalCents,realizedCents:q.realizedCents,executedAt:now.toISOString(),gameDay:state.day};p.trades.push(trade);if(q.marketMode!=='live')p.marketDate=market.asOf;
+  state.ledger.push({day:state.day,desc:(q.side==='buy'?'Bought ':'Sold ')+shares(q.units)+' '+(isCrypto(q.symbol)?'BTC':q.symbol+' shares')+' at '+money(cents(q.price))+'; fee '+money(q.feeCents)+(q.marketMode==='live'?'; '+(isCrypto(q.symbol)?q.priceBasis==='bid-ask-midpoint'?'Alpaca crypto '+(q.side==='buy'?'ask':'bid')+' quote':'Alpaca crypto trade':'IEX trade')+' '+q.quoteTimestamp:'; close '+q.priceDate),category:'investment '+q.side,cash:0,bankChange:(q.side==='buy'?-q.totalCents:q.totalCents)/100,investmentChange:(q.side==='buy'?q.notionalCents:-q.notionalCents)/100,fee:q.feeCents/100,priceDate:q.priceDate});
   if(q.marketMode==='live')applyLiveMarks(state,market.liveQuotes,now);else recordSnapshot(bank,market);return trade;
 }
 export function applyLiveMarks(state,data,now=new Date()){

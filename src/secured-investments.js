@@ -21,7 +21,7 @@ export function settleCollateral(state,loan,market,now=new Date(),{full=false,co
     }
     for(const [symbol,position] of Object.entries(state.bank.portfolio?.positions||{})){
       if(raised>=target)break;
-      let price=quotePrice(market,symbol);if(isCrypto(symbol)){try{price=tradeQuote(market?.liveQuotes,symbol,now).price}catch{waitingForBitcoin=true;continue}}
+      let price=quotePrice(market,symbol);if(isCrypto(symbol)){try{const quote=tradeQuote(market?.liveQuotes,symbol,now);price=quote.bidPrice??quote.price}catch{waitingForBitcoin=true;continue}}
       const needed=Math.round((target-raised)*100);
       const net=units=>{const gross=Math.round(units/SHARE_SCALE*price*100);return gross-Math.max(1,Math.round(gross*.005))};
       // Find the smallest whole microshare count that covers the remaining payment,

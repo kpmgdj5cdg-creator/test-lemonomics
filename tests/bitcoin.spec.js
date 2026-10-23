@@ -5,9 +5,9 @@ import {alpacaFixture,alpacaHistory} from './fixtures/alpaca.js';
 const key='lemonadeLane_bank_v3',TIME=Date.parse('2026-10-24T02:00:00Z');
 async function open(page){
  await page.clock.install({time:TIME});await page.addInitScript(({key,state})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(state))},{key,state:gameWithChecking(20)});
- const control={price:60000,status:'ok',calls:0};
+ const control={price:60000,status:'ok',calls:0,book:false};
  await page.route('**/api/market',r=>r.fulfill({json:{data:marketFixture(new Date(TIME)),status:'current'}}));
- await page.route('**/api/market/quotes',async r=>{control.calls++;const now=new Date(await page.evaluate(()=>Date.now())),data=alpacaFixture(now);data.retryAfterMs=20000;data.quotes['BTC/USD'].price=control.price;data.crypto.status=control.status;if(control.status!=='ok'){data.quotes['BTC/USD'].unavailable=true;data.crypto.retryAfterMs=3600000;data.retryAfterMs=300000}await r.fulfill({json:data})});
+ await page.route('**/api/market/quotes',async r=>{control.calls++;const now=new Date(await page.evaluate(()=>Date.now())),data=alpacaFixture(now);data.retryAfterMs=20000;data.quotes['BTC/USD'].price=control.price;if(control.book)Object.assign(data.quotes['BTC/USD'],{priceBasis:'bid-ask-midpoint',bidPrice:control.price-10,askPrice:control.price+10,lastTradePrice:59000,lastTradeTimestamp:new Date(TIME-600000).toISOString()});data.crypto.status=control.status;if(control.status!=='ok'){data.quotes['BTC/USD'].unavailable=true;data.crypto.retryAfterMs=3600000;data.retryAfterMs=300000}await r.fulfill({json:data})});
  await page.route('**/api/market/history?*',r=>{const u=new URL(r.request().url());return r.fulfill({json:alpacaHistory(u.searchParams.get('symbol'),u.searchParams.get('range'),new Date(TIME))})});
  await page.goto('/');await enterGame(page);await page.locator('#visitBank').click();await page.locator('[data-bank-tab=investments]').click();await expect(page.locator('.invest-price-status')).toContainText('Market closed');await expect(page.locator('.invest-price-status')).toContainText('Bitcoin 24/7');return control;
 }
@@ -24,4 +24,12 @@ test('Bitcoin charts label real-shaped crypto prices and remain usable on a phon
 });
 test('Bitcoin failure preserves funds and disables trading without claiming the crypto market closes',async({page})=>{
  const c=await open(page);await page.locator('[data-select-fund="BTC/USD"]').click();await expect(page.locator('#reviewTrade')).toBeEnabled();c.status='configuration';await page.clock.fastForward(21000);await expect(page.locator('#reviewTrade')).toBeDisabled();await expect(page.locator('#investApp')).toContainText('Bitcoin connection needs attention');const count=c.calls;await page.locator('#refreshMarket').click();expect(c.calls).toBe(count);expect((await saved(page)).bank.checking).toBe(20);
+});
+
+test('Bitcoin card follows fresh quote midpoints every twenty seconds despite an unchanged old trade, and review uses bid/ask',async({page})=>{
+ const c=await open(page),card=page.locator('[data-select-fund="BTC/USD"]');c.book=true;await page.clock.fastForward(21000);await expect(card).toContainText('Quote midpoint');await expect(card).toContainText('Checked');
+ let previous=await card.locator('.fund-quote-time').last().innerText();
+ for(const price of [60100,60200]){c.price=price;await page.clock.fastForward(21000);await expect(card.locator('.fund-card-price')).toContainText('$'+price.toLocaleString('en-US')+'.00');await expect(card.locator('.fund-quote-time').last()).not.toHaveText(previous);previous=await card.locator('.fund-quote-time').last().innerText();}
+ await card.click();await page.locator('#tradeAmount').fill('20');await page.locator('#reviewTrade').click();await expect(page.locator('.invest-confirmation')).toContainText('Crypto ask quote');await expect(page.locator('.invest-confirmation')).toContainText('$60,210.00');await page.locator('#confirmTrade').click();let s=await saved(page);expect(s.bank.portfolio.trades[0].price).toBe(60210);expect(s.bank.portfolio.trades[0].priceBasis).toBe('bid-ask-midpoint');
+ await page.locator('[data-sell-fund="BTC/USD"]').click();await page.locator('#reviewTrade').click();await expect(page.locator('.invest-confirmation')).toContainText('Crypto bid quote');await page.locator('#confirmTrade').click();s=await saved(page);expect(s.bank.portfolio.trades[1].price).toBe(60190);expect(s.bank.portfolio.trades[1].realizedCents).toBeLessThan(0);await page.locator('#investApp').screenshot({path:'artifacts/bitcoin-live-midpoint.png'});
 });

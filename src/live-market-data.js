@@ -26,6 +26,7 @@ export function tradeQuote(data,symbol,now=new Date()){
  if(isCrypto(symbol)){
   const crypto=data?.crypto,fetched=Date.parse(crypto?.fetchedAt);
   if(crypto?.status!=='ok'||!Number.isFinite(fetched)||fetched>+now+1000||+now-fetched>LIVE_LIMITS.cryptoSnapshotAgeMs||!validLiveQuote(q,now)||q.symbol!==symbol||q.unavailable||q.feed!=='crypto-us'||q.provider!=='Alpaca'||+now-Date.parse(q.timestamp)>LIVE_LIMITS.tradeAgeMs)throw Error('This Bitcoin quote is expired or unavailable. Refresh prices before trading.');
+  if(q.priceBasis==='bid-ask-midpoint'&&(!Number.isFinite(q.bidPrice)||q.bidPrice<=0||!Number.isFinite(q.askPrice)||q.askPrice<q.bidPrice||q.price<q.bidPrice||q.price>q.askPrice))throw Error('This Bitcoin bid/ask quote is unavailable. Refresh prices before trading.');
   return q;
  }
  if(!session?.open||!session.verified||session.date!==marketDay(now))throw Error('Virtual trades are available only during verified regular US market hours.');

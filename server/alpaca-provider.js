@@ -54,8 +54,12 @@ export function boundedHistory(points,range){
 }
 
 export function normalizeBitcoin(payload,previous=null,now=new Date()){
- const symbol='BTC/USD',s=payload?.snapshots?.[symbol],trade=s?.latestTrade;
- const q={symbol,name:'Bitcoin',price:trade?.p,timestamp:trade?.t,provider:'Alpaca',feed:'crypto-us'};
+ const symbol='BTC/USD',s=payload?.snapshots?.[symbol],trade=s?.latestTrade,book=s?.latestQuote;
+ const bookTime=Date.parse(book?.t),bid=book?.bp,ask=book?.ap;
+ const freshBook=Number.isFinite(bid)&&bid>0&&Number.isFinite(ask)&&ask>=bid&&Number.isFinite(bookTime)&&bookTime<=+now+1000&&+now-bookTime<=LIVE_LIMITS.tradeAgeMs;
+ const q={symbol,name:'Bitcoin',price:freshBook?bid+(ask-bid)/2:trade?.p,timestamp:freshBook?book.t:trade?.t,provider:'Alpaca',feed:'crypto-us',priceBasis:freshBook?'bid-ask-midpoint':'last-trade'};
+ if(freshBook){q.bidPrice=bid;q.askPrice=ask}
+ if(validLiveQuote({symbol,price:trade?.p,timestamp:trade?.t},now)){q.lastTradePrice=trade.p;q.lastTradeTimestamp=trade.t}
  if(!validLiveQuote(q,now))return {quotes:previous?.quotes?.[symbol]?{[symbol]:{...previous.quotes[symbol],unavailable:true}}:{},fetchedAt:now.toISOString()};
  const prior=s.prevDailyBar,utcDay=now.toISOString().slice(0,10),previousDay=new Date(Date.parse(utcDay+'T00:00:00Z')-86400000).toISOString().slice(0,10);
  q.previousClose=Number.isFinite(prior?.c)&&prior.c>0&&Number.isFinite(Date.parse(prior?.t))&&new Date(prior.t).toISOString().slice(0,10)===previousDay?prior.c:null;
