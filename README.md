@@ -262,4 +262,11 @@ Shopster now has a 42-unit depth, double the original 21 units, while retaining 
 
 The entrance has a deeper open approach to six numbered checkout lanes. Longer stocked aisles, more merchandise fixtures, repeated columns and ceiling lights continue through the expanded floor. Furniture and character sizes remain consistent with the rest of the game. Interior department placards, room-name plaques and cart-bay text are removed; the numbered checkout markers and exterior Shopster branding remain. Employee rooms keep their furnishings and move to the back of the extended building.
 
-Public and staff collision/pathfinding cover the new dimensions. Twenty shopper slots, five cart assignments, two cashiers, five floor workers, and the receiving/warehouse workers keep their existing roles. Saved store viewpoints now record layout version 2; legacy employee-room positions move rearward with their rooms, while invalid positions safely return to the entrance. Business, bank, inventory and investment state are unchanged.
+Public and staff collision/pathfinding cover the new dimensions. Twenty shopper slots, five cart assignments, two cashiers, five floor workers, and the receiving/warehouse workers keep their existing roles. Versioned saved viewpoints follow employee-room layout changes, with invalid positions safely returning to the entrance. Business, bank, inventory and investment state are unchanged.
+
+
+### Rear rooms enlarged by 66 percent
+
+Receiving, warehouse/stockroom, restrooms and the break room now extend 5.81 world units from their unchanged doorway line, up from 3.5 units (a 66% increase). The sales floor and room entrances retain their layout. The rear wall, building shell, floor, ceiling, loading dock, rear parking and access lanes extend by the additional 2.31 units. The completed store is now 44.31 units deep.
+
+Furniture keeps its normal proportions: rear-wall lockers, counters, toilets and storage racks stay against the enlarged rear wall; the other furnishings are spread through the extra space. Receiving gains longer shelving and the break room gains a third table. Worker routes and collision bounds cover the new rooms. Saved store viewpoints record layout version 3 and older room viewpoints are mapped into the enlarged rooms before position validation. Public shopper routes remain on the sales floor.

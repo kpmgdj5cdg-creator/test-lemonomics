@@ -1,3 +1,4 @@
+import {employeeRoomZ,STORE_BACK_Z,STORE_EMPLOYEE_FRONT} from '../src/department-store-layout.js';
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
 import {STORE_BROWSE_STOPS as stops,STORE_ROOM_BOUNDS,STORE_REAR_FIXTURES,STORE_STAFF_ROOMS,STORE_BACK_WORKERS,STORE_COLUMNS,STORE_CHECKOUTS,STORE_FIXTURES,validStorePosition,restoredStorePosition,moveInStore,storeShopperPath} from '../src/store-floorplan.js';
 import {StoreShopperSchedule,validShopperPosition} from '../src/store-shoppers.js';import {buildDepartmentStore,batchDepartmentStore} from '../src/department-store.js';
@@ -26,5 +27,10 @@ test('warehouse and receiving workers circulate inside their own rooms; customer
 });
 
 test('expanded store restores legacy employee room viewpoints and preserves versioned current coordinates',()=>{
- assert.deepEqual(restoredStorePosition({position:{x:11.9,z:-8.7}}),{x:11.9,z:-29.7});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:11.9,z:-29.7}}),{x:11.9,z:-29.7});assert.deepEqual(restoredStorePosition({position:{x:0,z:9.25}}),{x:0,z:9.25});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:NaN,z:0}}),{x:0,z:9.25});
+ assert.deepEqual(restoredStorePosition({position:{x:11.9,z:-8.7}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:11.9,z:-29.7}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({layoutVersion:3,position:{x:11.9,z:employeeRoomZ(-29.7)}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({position:{x:0,z:9.25}}),{x:0,z:9.25});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:NaN,z:0}}),{x:0,z:9.25});
+});
+
+test('all four employee rooms gain 66 percent depth with clear routes to their enlarged rear areas',()=>{
+ assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)-3.5*1.66)<1e-9);
+ for(const [x,z]of [[-10.2,-32],[-2,-32],[7.8,-31.5],[11.9,-30.8]]){const p={x,z};assert.ok(validStorePosition(p));assert.ok(storeShopperPath({x,z:-27},p,false,true).length);assert.equal(storeShopperPath({x,z:-27},p).length,0)}
 });

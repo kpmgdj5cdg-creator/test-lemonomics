@@ -1,3 +1,4 @@
+import {STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION as EXT,employeeRoomZ} from './department-store-layout.js';
 import * as THREE from 'three';
 import {box,group} from './models.js';
 import {storeProducts} from './store-front-model.js';
@@ -19,23 +20,23 @@ function employeeFixture(parent,f){const g=group(parent,f.x,0,f.z);switch(f.kind
  }}
 export function buildStoreRear(root){
  const fixtures=group(root),ceiling=group(root);fixtures.name='shopster-rear-interior';ceiling.name='shopster-rear-ceiling';
- box(fixtures,0,.2,-21,29.7,.16,21,'#d5d0bf');for(let x=-14;x<15;x++)for(let z=-31.25;z< -10.5;z++)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
- for(const x of [-14.83,14.83]){box(fixtures,x,2.9,-21,.12,5.5,21,'#e7e0d1');box(fixtures,x,4.7,-21,.14,.75,21,'#bc3038');box(fixtures,x,.43,-21,.13,.25,21,'#8c928e')}
- box(fixtures,0,2.9,-31.35,29.7,5.5,.12,'#e7e0d1');box(fixtures,0,4.7,-31.26,29.6,.75,.08,'#bc3038');
+ box(fixtures,0,.2,-21-EXT/2,29.7,.16,21+EXT,'#d5d0bf');for(let x=-14;x<15;x++)for(let z=STORE_BACK_Z+.25;z< -10.5;z++)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
+ for(const x of [-14.83,14.83]){box(fixtures,x,2.9,-21-EXT/2,.12,5.5,21+EXT,'#e7e0d1');box(fixtures,x,4.7,-21-EXT/2,.14,.75,21+EXT,'#bc3038');box(fixtures,x,.43,-21-EXT/2,.13,.25,21+EXT,'#8c928e')}
+ box(fixtures,0,2.9,STORE_BACK_Z+.15,29.7,5.5,.12,'#e7e0d1');box(fixtures,0,4.7,STORE_BACK_Z+.24,29.6,.75,.08,'#bc3038');
  for(const w of STORE_ROOM_WALLS){box(fixtures,(w.minX+w.maxX)/2,2.95,(w.minZ+w.maxZ)/2,w.maxX-w.minX,5.5,w.maxZ-w.minZ,'#e3ddcf');box(fixtures,(w.minX+w.maxX)/2,4.7,(w.minZ+w.maxZ)/2,w.maxX-w.minX+.015,.75,w.maxZ-w.minZ+.015,'#bb303c')}
  const staffDoors=[];for(const d of STORE_STAFF_DOORS){box(fixtures,d.x,4.45,d.z,1.8,2.4,.2,'#e3ddcf');for(const side of [-1,1])box(fixtures,d.x+side*.91,1.76,d.z,.08,2.95,.28,'#79888b');box(fixtures,d.x,3.22,d.z,1.95,.1,.28,'#79888b');const hinge=group(root,d.x-.86,0,d.z);box(hinge,.86,1.76,0,1.68,2.85,.09,'#7f9195');box(hinge,.86,2.18,.065,.48,.65,.025,'#b0c6c5');box(hinge,1.5,1.5,.1,.08,.2,.06,'#e7d2a0');staffDoors.push({...d,hinge});}
 
  for(const f of STORE_REAR_FIXTURES)if(f.kind==='clothing')clothes(fixtures,f);else rack(fixtures,f);
  for(const f of STORE_BACKROOM_FIXTURES)employeeFixture(fixtures,f);
- const backProps=group(fixtures,0,0,-21);
+ const backProps=group(fixtures);const propZ=z=>z< -10?z-21-EXT:employeeRoomZ(z-21);const backBox=(x,y,z,...dimensions)=>box(backProps,x,y,propZ(z),...dimensions);
  // Receiving roller shutter matches the exterior loading dock; pallet jack stays against the wall.
- box(backProps,-11.2,1.6,-10.25,5.2,2.5,.08,'#8b999b');for(let k=0;k<11;k++)box(backProps,-11.2,.42+k*.23,-10.19,5.05,.025,.025,'#b0b8b2');for(const x of [-13.9,-8.5])box(backProps,x,.8,-10.03,.12,1,.12,'#e1b948');
- const jack=group(backProps,-8.55,.28,-9.15);for(const x of [-.22,.22])box(jack,x,.15,.1,.12,.15,.95,'#dfb742');box(jack,0,.6,-.35,.07,1,.07,'#5c6f75');box(jack,0,1.11,-.35,.5,.08,.09,'#4c5e66');
+ backBox(-11.2,1.6,-10.25,5.2,2.5,.08,'#8b999b');for(let k=0;k<11;k++)backBox(-11.2,.42+k*.23,-10.19,5.05,.025,.025,'#b0b8b2');for(const x of [-13.9,-8.5])backBox(x,.8,-10.03,.12,1,.12,'#e1b948');
+ const jack=group(backProps,-8.55,.28,propZ(-9.15));for(const x of [-.22,.22])box(jack,x,.15,.1,.12,.15,.95,'#dfb742');box(jack,0,.6,-.35,.07,1,.07,'#5c6f75');box(jack,0,1.11,-.35,.5,.08,.09,'#4c5e66');
  // Corkboard, a clock, vending machines and water cooler finish the employee area.
- box(backProps,11.9,2.7,-10.22,1.15,.75,.08,'#9f7c50');for(let i=0;i<5;i++)box(backProps,11.5+i*.18,2.7+(i%2)*.12,-10.15,.15,.28,.02,palette[i]);box(backProps,14.65,2.65,-8.7,.08,.55,.55,'#bb303c');box(backProps,14.59,2.65,-8.7,.03,.43,.43,'#e9e5d5');box(backProps,14.56,2.7,-8.7,.02,.17,.04,'#53666e');
- const vending=group(backProps,14.45,0,-9.25);vending.rotation.y=-Math.PI/2;box(vending,0,1.35,0,.6,2,.48,'#bb303c');box(vending,0,1.52,.26,.45,1.2,.025,'#4c6d7a');for(let i=0;i<8;i++)box(vending,-.12+(i%2)*.24,1.1+Math.floor(i/2)*.26,.285,.12,.17,.04,palette[i%5]);
- box(backProps,9.98,.75,-7.45,.48,.9,.45,'#dedbcf');box(backProps,9.98,1.45,-7.45,.34,.5,.32,'#86b6c4');
- box(ceiling,0,5.78,-21,29.6,.14,21,'#b9b4ab');const glow=new THREE.MeshStandardMaterial({color:'#fff9e9',emissive:'#fff4d7',emissiveIntensity:.9});glow.userData.owned=true;for(let x=-12;x<=12;x+=4)for(const z of [-11.7,-16.7,-21.7,-26.7,-30]){box(ceiling,x,5.66,z,1.4,.12,1.1,'#d8d3c5');box(ceiling,x,5.58,z,1.25,.045,.95,'#fff9e9').material=glow}
- const lights=[];for(const x of [-10,0,10])for(const z of [-16,-29]){const l=new THREE.PointLight('#fff0d6',26,18,1.6);l.position.set(x,4.65,z);l.visible=false;root.add(l);lights.push(l)}
+ backBox(11.9,2.7,-10.22,1.15,.75,.08,'#9f7c50');for(let i=0;i<5;i++)backBox(11.5+i*.18,2.7+(i%2)*.12,-10.15,.15,.28,.02,palette[i]);backBox(14.65,2.65,-8.7,.08,.55,.55,'#bb303c');backBox(14.59,2.65,-8.7,.03,.43,.43,'#e9e5d5');backBox(14.56,2.7,-8.7,.02,.17,.04,'#53666e');
+ const vending=group(backProps,14.45,0,propZ(-9.25));vending.rotation.y=-Math.PI/2;box(vending,0,1.35,0,.6,2,.48,'#bb303c');box(vending,0,1.52,.26,.45,1.2,.025,'#4c6d7a');for(let i=0;i<8;i++)box(vending,-.12+(i%2)*.24,1.1+Math.floor(i/2)*.26,.285,.12,.17,.04,palette[i%5]);
+ backBox(9.98,.75,-7.45,.48,.9,.45,'#dedbcf');backBox(9.98,1.45,-7.45,.34,.5,.32,'#86b6c4');
+ box(ceiling,0,5.78,-21-EXT/2,29.6,.14,21+EXT,'#b9b4ab');const glow=new THREE.MeshStandardMaterial({color:'#fff9e9',emissive:'#fff4d7',emissiveIntensity:.9});glow.userData.owned=true;for(let x=-12;x<=12;x+=4)for(const z of [-11.7,-16.7,-21.7,-26.7,-30-EXT]){box(ceiling,x,5.66,z,1.4,.12,1.1,'#d8d3c5');box(ceiling,x,5.58,z,1.25,.045,.95,'#fff9e9').material=glow}
+ const lights=[];for(const x of [-10,0,10])for(const z of [-16,employeeRoomZ(-29)]){const l=new THREE.PointLight('#fff0d6',26,18,1.6);l.position.set(x,4.65,z);l.visible=false;root.add(l);lights.push(l)}
  return {fixtures,ceiling,lights,staffDoors};
 }

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
-import {DEPARTMENT_STORE as D,STORE_BUILDING_BOUNDS as B,STORE_PARKING_BOUNDS as P,STORE_SPACES,STORE_PARKED_SPACES,STORE_ENTRY,STORE_SIDE_LANES,STORE_REAR_BOUNDS,STORE_REAR_SPACES} from '../src/department-store-layout.js';
+import {DEPARTMENT_STORE as D,STORE_EMPLOYEE_EXTENSION as EXT,STORE_EMPLOYEE_FRONT,STORE_BACK_Z,STORE_BUILDING_BOUNDS as B,STORE_PARKING_BOUNDS as P,STORE_SPACES,STORE_PARKED_SPACES,STORE_ENTRY,STORE_SIDE_LANES,STORE_REAR_BOUNDS,STORE_REAR_SPACES} from '../src/department-store-layout.js';
 import {DOWNTOWN_LOTS,lotBounds} from '../src/downtown-layout.js';import {CASINO_PARKING} from '../src/casino-parking.js';import {buildDepartmentStore} from '../src/department-store.js';import {sceneColliders,sceneGround} from '../src/player-controller.js';import {blocked,WALKING_AREAS} from '../src/player-movement.js';
 const separate=(a,b)=>a.maxX<=b.minX||a.minX>=b.maxX||a.maxZ<=b.minZ||a.minZ>=b.maxZ;
 test('northwest department-store parcel clears city buildings and casino lots; relocated shops face across the road',()=>{
@@ -19,11 +19,11 @@ test('exterior lights switch with night mode; parked cars are solid and the entr
 test('side drive lanes connect the street to the rear parking aisle without physical obstructions',()=>{
  const parent=new THREE.Group();buildDepartmentStore(parent);const obstacles=sceneColliders(parent),bounds=WALKING_AREAS.downtown.bounds;
  for(const lane of STORE_SIDE_LANES)for(let z=lane.minZ;z<=lane.maxZ;z+=.4)for(const dx of [-1.1,0,1.1])assert.equal(blocked(lane.x+dx,z,obstacles,bounds,.65),false,`side lane obstructed at ${lane.x+dx},${z}`);
- for(let x=STORE_SIDE_LANES[0].x;x<=STORE_SIDE_LANES[1].x;x+=.4)assert.equal(blocked(x,-75.7,obstacles,bounds,.65),false,`rear aisle obstructed at ${x}`);
+ for(let x=STORE_SIDE_LANES[0].x;x<=STORE_SIDE_LANES[1].x;x+=.4)assert.equal(blocked(x,-75.7-EXT,obstacles,bounds,.65),false,`rear aisle obstructed at ${x}`);
  assert.equal(STORE_REAR_SPACES.length,8);assert.ok(STORE_PARKED_SPACES.some(s=>s.rear));
  assert.ok(B.maxX< -45,'store must have a substantial setback from the casino');
 });
 
 test('store depth doubles rearward while the street entrance and front parking stay anchored',()=>{
- assert.equal(D.depth,42);assert.equal(B.maxZ,-28.5);assert.equal(B.maxZ-B.minZ,42);assert.ok(STORE_REAR_BOUNDS.maxZ<B.minZ);assert.ok(STORE_SIDE_LANES.every(l=>l.minZ<STORE_REAR_BOUNDS.maxZ));assert.ok(STORE_REAR_BOUNDS.minZ>WALKING_AREAS.downtown.bounds.minZ);
+ assert.equal(D.depth,42+EXT);assert.equal(B.maxZ,-28.5);assert.ok(Math.abs(B.maxZ-B.minZ-(42+EXT))<1e-8);assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)/3.5-1.66)<1e-8);assert.ok(STORE_REAR_BOUNDS.maxZ<B.minZ);assert.ok(STORE_SIDE_LANES.every(l=>l.minZ<STORE_REAR_BOUNDS.maxZ));assert.ok(STORE_REAR_BOUNDS.minZ>WALKING_AREAS.downtown.bounds.minZ);
 });
