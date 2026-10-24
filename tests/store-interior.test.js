@@ -1,4 +1,4 @@
-import {employeeRoomZ,STORE_BACK_Z,STORE_EMPLOYEE_FRONT} from '../src/department-store-layout.js';
+import {employeeRoomZ,STORE_BACK_Z,STORE_EMPLOYEE_FRONT,storePlanPosition,storePlanZ} from '../src/department-store-layout.js';
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
 import {STORE_BROWSE_STOPS as stops,STORE_ROOM_BOUNDS,STORE_REAR_FIXTURES,STORE_STAFF_ROOMS,STORE_BACK_WORKERS,STORE_COLUMNS,STORE_CHECKOUTS,STORE_FIXTURES,validStorePosition,restoredStorePosition,moveInStore,storeShopperPath} from '../src/store-floorplan.js';
 import {StoreShopperSchedule,validShopperPosition} from '../src/store-shoppers.js';import {buildDepartmentStore,batchDepartmentStore} from '../src/department-store.js';
@@ -19,18 +19,18 @@ test('store batching preserves independent door hinges, visible room fixtures an
 
 test('complete rear sales floor connects to every employee room while shopper routes stay public',()=>{
  for(const kind of ['toys','household','homegoods','beauty','electronics','clothing','shoes'])assert.ok(STORE_REAR_FIXTURES.some(f=>f.kind===kind));assert.equal(STORE_STAFF_ROOMS.length,4);
- for(const r of STORE_STAFF_ROOMS){const target={x:r.doorX,z:r.id==='restrooms'?-29.1:-29.7};assert.ok(validStorePosition(target));const route=storeShopperPath({x:0,z:9.25},target,false,true);assert.ok(route.length,`${r.id} is unreachable`);assert.equal(storeShopperPath({x:0,z:9.25},target).length,0,'shoppers must not route into employee rooms');for(let i=1;i<route.length;i++)for(let t=0;t<=1;t+=.1)assert.ok(validStorePosition({x:route[i-1].x+(route[i].x-route[i-1].x)*t,z:route[i-1].z+(route[i].z-route[i-1].z)*t},.27))}
+ for(const r of STORE_STAFF_ROOMS){const target={x:r.doorX,z:storePlanZ(r.id==='restrooms'?-29.1:-29.7)};assert.ok(validStorePosition(target));const route=storeShopperPath({x:0,z:9.25},target,false,true);assert.ok(route.length,`${r.id} is unreachable`);assert.equal(storeShopperPath({x:0,z:9.25},target).length,0,'shoppers must not route into employee rooms');for(let i=1;i<route.length;i++)for(let t=0;t<=1;t+=.1)assert.ok(validStorePosition({x:route[i-1].x+(route[i].x-route[i-1].x)*t,z:route[i-1].z+(route[i].z-route[i-1].z)*t},.27))}
 });
 test('warehouse and receiving workers circulate inside their own rooms; customers use both store halves',()=>{
  const schedule=new StoreShopperSchedule({seed:123});assert.equal(schedule.backStaff.length,2);assert.ok(schedule.actors.some(a=>a.position.z<0));assert.ok(schedule.actors.some(a=>a.position.z>0));const first=schedule.backStaff.map(a=>({...a.position}));let moving=[false,false];
- for(let i=0;i<600;i++){schedule.step(.2,.2);schedule.backStaff.forEach((a,j)=>{assert.ok(validStorePosition(a.position));assert.ok(a.position.z<-28.2);if(a.id==='warehouse')assert.ok(a.position.x>-7.7&&a.position.x<5.7);else assert.ok(a.position.x< -8.3);if(Math.hypot(a.position.x-first[j].x,a.position.z-first[j].z)>1)moving[j]=true});for(const a of schedule.actors)if(a.position.z<9.2)assert.ok(a.position.z>=-27.45)}assert.deepEqual(moving,[true,true]);
+ for(let i=0;i<600;i++){schedule.step(.2,.2);schedule.backStaff.forEach((a,j)=>{assert.ok(validStorePosition(a.position));assert.ok(a.position.z<storePlanZ(-28.2));if(a.id==='warehouse')assert.ok(a.position.x>-7.7*1.3&&a.position.x<5.7*1.3);else assert.ok(a.position.x< -8.3*1.3);if(Math.hypot(a.position.x-first[j].x,a.position.z-first[j].z)>1)moving[j]=true});for(const a of schedule.actors)if(a.position.z<9.2)assert.ok(a.position.z>=storePlanZ(-27.45))}assert.deepEqual(moving,[true,true]);
 });
 
 test('expanded store restores legacy employee room viewpoints and preserves versioned current coordinates',()=>{
- assert.deepEqual(restoredStorePosition({position:{x:11.9,z:-8.7}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:11.9,z:-29.7}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({layoutVersion:3,position:{x:11.9,z:employeeRoomZ(-29.7)}}),{x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({position:{x:0,z:9.25}}),{x:0,z:9.25});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:NaN,z:0}}),{x:0,z:9.25});
+ assert.deepEqual(restoredStorePosition({position:{x:11.9,z:-8.7}}),storePlanPosition({x:11.9,z:employeeRoomZ(-29.7)}));assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:11.9,z:-29.7}}),storePlanPosition({x:11.9,z:employeeRoomZ(-29.7)}));assert.deepEqual(restoredStorePosition({layoutVersion:3,position:{x:11.9,z:employeeRoomZ(-29.7)}}),storePlanPosition({x:11.9,z:employeeRoomZ(-29.7)}));const current=storePlanPosition({x:11.9,z:employeeRoomZ(-29.7)});assert.deepEqual(restoredStorePosition({layoutVersion:4,position:current}),current);assert.deepEqual(restoredStorePosition({position:{x:0,z:9.25}}),{x:0,z:9.25});assert.deepEqual(restoredStorePosition({layoutVersion:2,position:{x:NaN,z:0}}),{x:0,z:9.25});
 });
 
 test('all four employee rooms gain 66 percent depth with clear routes to their enlarged rear areas',()=>{
  assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)-3.5*1.66)<1e-9);
- for(const [x,z]of [[-10.2,-32],[-2,-32],[7.8,-31.5],[11.9,-30.8]]){const p={x,z};assert.ok(validStorePosition(p));assert.ok(storeShopperPath({x,z:-27},p,false,true).length);assert.equal(storeShopperPath({x,z:-27},p).length,0)}
+ for(const [x,z]of [[-10.2,-32],[-2,-32],[7.8,-31.5],[11.9,-30.8]]){const p=storePlanPosition({x,z}),start=storePlanPosition({x,z:-27});assert.ok(validStorePosition(p));assert.ok(storeShopperPath(start,p,false,true).length);assert.equal(storeShopperPath(start,p).length,0)}
 });
