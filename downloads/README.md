@@ -33,3 +33,5 @@ Bitcoin (`BTC/USD`) is now included as a seventh investment. On the private host
 Downtown now has 32 street-facing buildings and a walk-in Maple Casino west of the Bookstore. Walk up to its double doors to enter. The left/right/back walls offer $0.25/$1/$5 slots, with Casino Hold'em and single-zero roulette at the center tables. Click a machine or table while inside. Games use in-game cash and save their results; an unfinished poker hand and casino viewpoint also restore after saving. All casino rules and music are bundled for offline play.
 
 Shopster now has double-thickness, double-height gondola shelves with stocked endcaps at both ends and a ceiling raised by 25%. The larger store layout preserves cart access around the endcaps, wall passages and main aisles. Existing interior saves migrate safely, and the quiet synth PA music remains included offline.
+
+Shopster tile floors now have a glossy polished finish, with light catching the surface throughout the sales floor and employee rooms.
