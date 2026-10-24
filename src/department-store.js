@@ -1,5 +1,6 @@
+import {buildStoreFront} from './store-front-model.js';
 import * as THREE from 'three';
-import {box,group,tree} from './models.js';
+import {box,group,tree,batch} from './models.js';
 import {voxelText} from './voxel-text.js';
 import {DEPARTMENT_STORE as D,STORE_SPACES,STORE_PARKED_SPACES,STORE_PARKING_BOUNDS as LOT,STORE_REAR_BOUNDS as REAR,STORE_SIDE_LANES as LANES} from './department-store-layout.js';
 const owned=m=>{m.userData.owned=true;return m};
@@ -8,14 +9,15 @@ function cart(parent,x,z){const g=group(parent,x,.2,z);box(g,0,.25,0,.52,.055,.7
 export function buildDepartmentStore(parent){
  const X=offset=>D.x+offset;const root=group(parent,D.x,.12,D.z);root.name='shopster-exterior';const body=group(root),roof=group(root),front=D.depth/2;
  // Cream big-box facade, red wraparound stripe, tall parapet and service side.
- box(body,0,.1,0,D.width+.35,.2,D.depth+.35,'#b6b4a6');box(body,0,D.height/2+.2,0,D.width,D.height,D.depth,'#d9d4c6');
+ box(body,0,.1,0,D.width+.35,.2,D.depth+.35,'#b6b4a6');for(const side of [-1,1])box(body,side*(D.width/2-.1),D.height/2+.2,0,.2,D.height,D.depth,'#d9d4c6');box(body,0,D.height/2+.2,-front,D.width,D.height,.2,'#d9d4c6');for(const x of [-10,10])box(body,x,D.height/2+.2,front,10,D.height,.2,'#d9d4c6');box(body,0,4.7,front,10,2.6,.2,'#d9d4c6');
  for(const side of [-1,1]){box(body,side*(D.width/2+.035),1.55,0,.09,.3,D.depth,'#bb303c');box(body,side*(D.width/2+.045),.75,0,.1,1.18,D.depth,'#a9a89d')}
- box(body,0,1.55,front+.04,D.width,.3,.09,'#bb303c');box(body,0,.75,front+.06,D.width,1.15,.12,'#aaa99f');
- // Recessed red-framed entry glazing is ready for a later interior doorway.
- const glass=owned(new THREE.MeshStandardMaterial({color:'#7a6860',emissive:'#d38a50',emissiveIntensity:.1,roughness:.3,metalness:.1}));
- box(body,0,2.75,front+.16,10.6,5.25,.5,'#c42e3c');box(body,0,1.75,front+.45,9.2,3.05,.17,'#663b32');
- for(let i=0;i<8;i++){const x=-4.03+i*1.15;box(body,x,1.77,front+.56,1.04,2.75,.045,'#7a6860').material=glass;box(body,x,1.77,front+.61,.065,2.85,.05,'#c4343b');box(body,x,1.72,front+.65,1.1,.055,.04,'#df7e4b');box(body,x,2.65,front+.65,.95,.035,.025,'#f4b26b')}
- for(const x of [-1.72,-.57,.57,1.72])box(body,x,1.45,front+.7,.055,.48,.06,'#f6d7a0');
+ // Actual front glazing and openable double doors share the exterior world.
+ const glass=owned(new THREE.MeshStandardMaterial({color:'#aac5c7',transparent:true,opacity:.12,depthWrite:false,roughness:.25}));
+ for(const x of [-5.1,5.1])box(body,x,2.75,front+.16,.26,5.25,.5,'#c42e3c');box(body,0,3.45,front+.16,10.6,.3,.5,'#c42e3c');
+ for(const side of [-1,1]){const x=side*3.25;box(body,x,.47,front+.4,3.4,.5,.18,'#bb303a');box(body,x,1.87,front+.45,3.35,2.4,.045,'#aac5c7').material=glass;for(const dx of [-1.68,0,1.68])box(body,x+dx,1.85,front+.5,.07,2.6,.08,'#c4343b');for(const y of [.64,3.12])box(body,x,y,front+.5,3.45,.08,.08,'#c4343b')}
+ const doors=group(root),hinges=[];doors.name='shopster-double-doors';
+ for(const side of [-1,1]){const hinge=group(doors,side*1.5,0,front+.5),leaf=group(hinge,-side*.75);for(const x of [-.73,.73])box(leaf,x,1.75,0,.07,2.9,.1,'#bd303a');for(const y of [.3,3.2])box(leaf,0,y,0,1.5,.09,.1,'#bd303a');box(leaf,0,1.75,0,1.36,2.8,.03,'#aac5c7').material=glass;box(leaf,-side*.53,1.55,.12,.06,.5,.09,'#e9c281');hinges.push(hinge)}
+ const interior=buildStoreFront(root);
  box(body,0,3.3,front+1.04,11.2,.22,1.7,'#b92e3b');box(body,0,3.44,front+1.04,11.5,.14,1.85,'#ece2cd');
  box(body,0,4.55,front+.55,11.9,2.1,.72,'#bc2937');box(body,0,5.7,front+.55,12.1,.18,.8,'#efe8d7');
  const sign=voxelText(body,'SHOPSTER',.75,4.6,front+.96,.95,'#fff0dc');const signMaterial=owned(new THREE.MeshStandardMaterial({color:'#fff3dc',emissive:'#ffdfb4',emissiveIntensity:.02,roughness:.6}));sign.traverse(o=>{if(o.isMesh)o.material=signMaterial});
@@ -49,6 +51,9 @@ export function buildDepartmentStore(parent){
  for(const [x,z]of [[X(-13),-1],[X(14),-1],[X(-13),-13],[X(14),-13],[X(-11),-24.5],[X(12),-24.5],...[-1,1].flatMap(side=>[-8,-24,-40,-55].map(z=>[X(side*22.5),z])),[X(-11),-61.8],[X(11),-61.8]]){box(site,x,.26,z,.65,.38,.65,'#d5b14e');box(site,x,2.45,z,.14,4.4,.14,'#52606a');box(site,x,4.72,z,.62,.18,.62,'#4f5d62');box(site,x,4.58,z,.46,.12,.46,'#f1db9e').material=lampMaterial}
  const lightSites=[[X(-4),3.2,D.z+front+1.3,7,18],[X(4),3.2,D.z+front+1.3,7,18],[D.x,4.6,-12,30,24],...[-1,1].flatMap(side=>[-10,-30,-49].map(z=>[X(side*20.5),4.6,z,20,17])),[D.x,4.6,-57,26,23]];
  for(const [x,y,z,power,range]of lightSites){const l=new THREE.PointLight('#ffdc9c',0,range,1.7);l.userData.nightPower=power;l.position.set(x,y,z);parent.add(l);lights.push(l)}
- let night=null;function setNight(value){if(value===night)return;night=value;signMaterial.emissiveIntensity=night?.9:.02;glass.emissiveIntensity=night?.4:.1;lampMaterial.emissiveIntensity=night?1.6:0;lights.forEach(l=>{l.intensity=night?l.userData.nightPower:0;l.visible=night})}setNight(false);
- return {root,site,sign,signMaterial,lights,setNight,spaces:STORE_SPACES.length,cars:STORE_PARKED_SPACES.length};
+ let night=null;function setNight(value){if(value===night)return;night=value;signMaterial.emissiveIntensity=night?.9:.02;lampMaterial.emissiveIntensity=night?1.6:0;lights.forEach(l=>{l.intensity=night?l.userData.nightPower:0;l.visible=night})}setNight(false);
+ return {root,body,roof,site,sign,signMaterial,lights,setNight,doors,hinges,interior,doorAmount:0,spaces:STORE_SPACES.length,cars:STORE_PARKED_SPACES.length};
 }
+
+// Preserve movable doors, articulated NPCs and collision meshes before batching.
+export function batchDepartmentStore(store){batch(store.body);batch(store.roof);batch(store.interior.fixtures);batch(store.interior.ceiling);for(const hinge of store.hinges)batch(hinge);}

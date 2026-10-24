@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
+import {STORE_BROWSE_STOPS as stops,STORE_ROOM_BOUNDS,STORE_COLUMNS,STORE_CHECKOUTS,STORE_FIXTURES,validStorePosition,moveInStore,storeShopperPath} from '../src/store-floorplan.js';
+import {StoreShopperSchedule,validShopperPosition} from '../src/store-shoppers.js';import {buildDepartmentStore,batchDepartmentStore} from '../src/department-store.js';
+test('front-half floorplan preserves six registers, cart bays, five departments and navigable aisles',()=>{
+ assert.equal(STORE_CHECKOUTS.length,6);assert.equal(STORE_CHECKOUTS.filter(s=>s.staffed).length,2);assert.equal(STORE_FIXTURES.filter(s=>s.kind==='carts').length,2);for(const kind of ['sports','grocery','seasonal','general','decor'])assert.ok(STORE_FIXTURES.some(s=>s.kind===kind));
+ assert.equal(validStorePosition({x:0,z:9.25}),true);assert.equal(validStorePosition({x:0,z:-1}),false);assert.equal(validStorePosition({x:-9,z:6}),false);assert.equal(validStorePosition({x:NaN,z:4}),false);for(const p of STORE_COLUMNS)assert.equal(validStorePosition(p),false);
+ for(const cart of [false,true])for(const stop of stops.filter(s=>validStorePosition(s,cart?.62:.27))){const path=storeShopperPath({x:0,z:9.25},stop,cart);assert.ok(path.length,`unreachable stop ${stop.id}`);for(const p of path)assert.ok(validStorePosition(p,cart?.62:.27))}
+ let p={x:0,z:9.25};for(let i=0;i<300;i++)p=moveInStore(p,{x:0,z:-1},0,.05);assert.ok(p.z>STORE_ROOM_BOUNDS.minZ);assert.ok(validStorePosition(p));p={x:-9,z:8};for(let i=0;i<40;i++)p=moveInStore(p,{x:0,z:-1},0,.05);assert.ok(p.z>6.8);const yawed=moveInStore({x:0,z:8},{x:0,z:-1},Math.PI/2,.05);assert.ok(yawed.x<0);
+});
+test('shopper traffic retains population/cart caps, browses multiple stops, checks out and turns over without using game state',()=>{
+ const s=new StoreShopperSchedule({seed:42});assert.equal(s.actors.length,20);assert.equal(s.actors.filter(a=>a.cart).length,5);assert.equal(s.staff.length,5);const initial=new Map(s.actors.map(a=>[a.id,{...a.position}]));let moved=false,checkout=false,maxVisits=0;
+ for(let i=0;i<9000;i++){s.step(.2,.2);assert.ok(s.actors.length<=20&&s.actors.length>=16);assert.ok(s.actors.filter(a=>a.cart).length<=5);assert.equal(new Set(s.actors.map(a=>a.slot)).size,s.actors.length);const registers=s.actors.filter(a=>a.checkoutLane).map(a=>a.checkoutLane);assert.equal(new Set(registers).size,registers.length);for(const a of [...s.actors,...s.staff]){assert.ok(a.visits?validShopperPosition(a):validStorePosition(a.position));if(initial.has(a.id)&&Math.hypot(a.position.x-initial.get(a.id).x,a.position.z-initial.get(a.id).z)>1)moved=true;if(a.mode==='checkout')checkout=true;maxVisits=Math.max(maxVisits,a.visits?.length||0)}}
+ assert.ok(moved);assert.ok(checkout);assert.ok(maxVisits>=3);assert.ok(s.departures>100);assert.ok(s.serial>100);
+});
+test('store batching preserves independent door hinges, visible room fixtures and switchable lighting',()=>{
+ const scene=new THREE.Group(),store=buildDepartmentStore(scene);batchDepartmentStore(store);assert.equal(store.hinges.length,2);for(const hinge of store.hinges){assert.ok(hinge.children.some(c=>c.isMesh));hinge.rotation.y=1;assert.equal(hinge.rotation.y,1)}assert.ok(store.interior.fixtures.children.some(c=>c.isMesh));assert.ok(store.interior.lights.every(l=>!l.visible));store.setNight(true);assert.ok(store.lights.every(l=>l.visible));assert.equal(store.interior.lights.length,6);
+});

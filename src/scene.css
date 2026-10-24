@@ -212,3 +212,6 @@ button.profile-slot:hover,.profile-slot.empty button:hover{background:#e7f8c8}
 #ll-app #scene.playing-casino{height:540px;min-height:540px}
 #ll-app .roulette-layout button.red{background:#c32b32}#ll-app .roulette-layout button.black{background:#121b1d}
 @media(max-width:620px){#ll-app #scene.playing-casino{height:480px;min-height:480px}}
+
+#scene[data-view=store] #sceneBack,#scene[data-view=store] #sceneInventory,#scene[data-view=store] #worldLiveStats,#scene[data-view=store] .scene-orbit,#scene[data-view=store] #classicEntryBtn,#scene[data-view=store] #neighborhoodEvent{display:none!important}
+#scene[data-view=store] #world3d{cursor:grab}

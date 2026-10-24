@@ -1,0 +1,38 @@
+import {group,character,batch,disposeGroup} from './models.js';
+import {storeStaff,storeCart} from './store-front-model.js';
+import {STORE_BROWSE_STOPS,STORE_CHECKOUTS,storeShopperPath,validStorePosition} from './store-floorplan.js';
+export const MAX_STORE_CUSTOMERS=20,STORE_CART_CUSTOMERS=5;
+const entry={x:.6,z:9.25},outside={x:.6,z:12.25};
+export const validShopperPosition=a=>validStorePosition(a.position,a.cart?.62:.27)||((a.mode==='leaving'||a.visits?.length===0)&&Math.abs(a.position.x)<1.15&&a.position.z>=9.2&&a.position.z<=12.3);
+export class StoreShopperSchedule{
+ constructor({seed=0x73686f70}={}){this.seed=seed;this.time=0;this.serial=0;this.departures=0;this.slots=Array.from({length:20},(_,slot)=>({slot,cart:slot%4===0,returnAt:0}));this.actors=[];this.staff=Array.from({length:5},(_,i)=>({id:i,position:i<4?{...STORE_BROWSE_STOPS[22+i]}:{x:13.8,z:2.2},path:[],until:2+i*1.7,facing:0,mode:'working'}));for(const slot of this.slots)this.spawn(slot,true)}
+ random(){let x=this.seed;x^=x<<13;x^=x>>>17;x^=x<<5;this.seed=x;return(x>>>0)/4294967296}
+ options(actor){return STORE_BROWSE_STOPS.filter(s=>validStorePosition(s,actor.cart?.62:.27)&&!this.actors.some(a=>a!==actor&&a.stop===s.id)&&!actor.visits.includes(s.id)&&!this.staff.some(a=>Math.hypot(a.position.x-s.x,a.position.z-s.z)<.85))}
+ spawn(slot,initial=false){const a={id:++this.serial,slot:slot.slot,cart:slot.cart,position:{...outside},stop:null,visits:[],path:[],mode:'walking',facing:Math.PI,until:0,checkout:false};this.actors.push(a);const options=this.options(a),stop=options[(slot.slot*7)%options.length];a.stop=stop.id;if(initial){a.position={x:stop.x,z:stop.z};a.facing=stop.facing;a.visits=[stop.id];a.mode='browsing';a.until=this.time+2+slot.slot*.45}else a.path=[{...entry},...storeShopperPath(entry,stop,a.cart)];return a}
+ travel(a,dt){let distance=dt*(a.cart?1.2:1.45);while(distance>0&&a.path.length){const p=a.path[0],dx=p.x-a.position.x,dz=p.z-a.position.z,d=Math.hypot(dx,dz);if(d>.001)a.facing=Math.atan2(dx,dz);if(d<=distance){a.position={x:p.x,z:p.z};a.path.shift();distance-=d}else{a.position.x+=dx/d*distance;a.position.z+=dz/d*distance;distance=0}}}
+ step(elapsed,travelDt=elapsed){this.time+=elapsed;
+  for(const a of [...this.actors]){
+   if((a.mode==='browsing'||a.mode==='checkout')&&this.time>=a.until){
+    if(a.mode==='checkout'){a.mode='leaving';a.stop=null;a.path=[...storeShopperPath(a.position,entry,a.cart),{...outside}]}
+    else if(a.visits.length>=3&&(a.slot%3===0||a.visits.length>=5)){const lane=STORE_CHECKOUTS.filter(l=>l.staffed).find(l=>!this.actors.some(other=>other!==a&&other.checkoutLane===l.number));if(!lane){a.until=this.time+1;continue}const target={x:lane.x-1.45,z:6.05};a.path=storeShopperPath(a.position,target,a.cart);if(a.path.length){a.mode='to-checkout';a.checkout=true;a.checkoutLane=lane.number;a.stop=null}else a.until=this.time+1}
+    else{let options=this.options(a);if(!options.length){a.visits=[a.stop];options=this.options(a)}const target=options[Math.floor(this.random()*options.length)];if(target){a.path=storeShopperPath(a.position,target,a.cart);if(a.path.length){a.stop=target.id;a.mode='walking'}}}
+   }
+   if(a.path.length)this.travel(a,travelDt);
+   if(!a.path.length){if(a.mode==='leaving'){this.actors.splice(this.actors.indexOf(a),1);this.slots[a.slot].returnAt=this.time+2+this.random()*4;this.departures++}else if(a.mode==='walking'){a.mode='browsing';a.visits.push(a.stop);a.facing=STORE_BROWSE_STOPS.find(s=>s.id===a.stop).facing;a.until=this.time+4+this.random()*8}else if(a.mode==='to-checkout'){a.mode='checkout';a.facing=Math.PI/2;a.until=this.time+3+this.random()*3}}
+  }
+  // Stagger returning visitors; each population slot retains its cart assignment.
+  for(const slot of this.slots)if(slot.returnAt<=this.time&&!this.actors.some(a=>a.slot===slot.slot)){this.spawn(slot);slot.returnAt=Infinity;break}
+  for(const a of this.staff){if(!a.path.length&&this.time>=a.until){const options=STORE_BROWSE_STOPS.filter(s=>!this.actors.some(other=>other.stop===s.id)&&!this.staff.some(other=>other!==a&&(other.stop===s.id||Math.hypot(other.position.x-s.x,other.position.z-s.z)<.9)));const target=options[(a.id+Math.floor(this.time/7))%options.length];if(target){a.path=storeShopperPath(a.position,target);a.stop=target.id}a.until=this.time+7+this.random()*8}if(a.path.length){a.mode='walking';this.travel(a,travelDt)}else a.mode='working'}
+ }
+}
+export class StoreCrowd{
+ constructor(store){this.store=store;this.root=group(store.root);this.root.name='shopster-crowd';this.schedule=new StoreShopperSchedule({seed:Date.now()>>>0||1});this.rigs=new Map();this.cashiers=STORE_CHECKOUTS.filter(s=>s.staffed).map((s,i)=>{const rig=storeStaff(this.root,30+i,true);rig.group.position.set(s.x+.95,.3,s.z);rig.group.rotation.y=-Math.PI/2;return rig});this.workers=this.schedule.staff.map(a=>storeStaff(this.root,a.id+20));this.update(0,0);this.pause()}
+ update(dt,time,viewer=null){const elapsed=this.lastTime===undefined?dt:Math.max(0,Math.min(2,time-this.lastTime));this.lastTime=time;this.schedule.step(elapsed,Math.min(.25,dt));const ids=new Set(this.schedule.actors.map(a=>a.id));for(const [id,rig]of this.rigs)if(!ids.has(id)){disposeGroup(rig.group);this.rigs.delete(id)}
+  for(const a of this.schedule.actors){let rig=this.rigs.get(a.id);if(!rig){rig=character(this.root,a.id,{type:a.id%2?'female':'male',pants:['#4c5a6f','#776456','#4f6959'][a.id%3]});rig.group.scale.setScalar(1.1);rig.group.name='shopster-shopper-'+a.id;rig.cup.removeFromParent();for(const part of Object.values(rig.slots).flat())if(part?.isObject3D)batch(part);if(a.cart){const cart=storeCart(rig.group,0,.52,true);cart.scale.setScalar(.7);rig.cart=cart}this.rigs.set(a.id,rig)}this.pose(rig,a,time,viewer)}
+  this.schedule.staff.forEach((a,i)=>this.pose(this.workers[i],a,time,viewer));this.cashiers.forEach((rig,i)=>rig.arms[0].rotation.x=-.45+Math.sin(time*2+i)*.12);
+ }
+ pose(rig,a,time,viewer){const walking=!!a.path.length;rig.group.position.set(a.position.x,a.position.z>10.5?.1:.3,a.position.z);rig.group.rotation.y=a.facing;rig.group.visible=!viewer||Math.hypot(a.position.x-viewer.x,a.position.z-viewer.z)>.85;rig.legs.forEach((l,i)=>l.rotation.x=walking?Math.sin(time*8+i*Math.PI)*.38:0);rig.arms.forEach((arm,i)=>arm.rotation.x=a.cart?-.95:walking?-Math.sin(time*8+i*Math.PI)*.3:-.15)}
+ pause(){this.lastTime=undefined}
+ get doorActive(){return this.schedule.actors.some(a=>(a.mode==='leaving'||a.visits.length===0)&&a.position.z>8.6)}
+ summary(){return this.schedule.actors.map(a=>({id:a.id,cart:a.cart,mode:a.mode,position:{...a.position},visits:a.visits.length}))}
+}
