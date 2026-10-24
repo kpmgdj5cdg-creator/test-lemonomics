@@ -3,6 +3,7 @@ import {planter,chalkboard} from './street-details.js';
 import {voxelText} from './voxel-text.js';
 import {DOWNTOWN_LOTS} from './downtown-layout.js';
 import {buildCasinoParking} from './casino-parking.js';
+import {buildDepartmentStore} from './department-store.js';
 import {buildCasino} from './casino-model.js';
 
 function window(g,x,y,z,w=1.05,h=1.15){
@@ -73,18 +74,18 @@ function signal(parent,x,z,angle=0){
 }
 export function buildDowntown(g,rival){
   // Same street anchors, entirely different urban architecture and public space.
-  box(g,0,-.23,0,150,.4,150,'#a6b6b3');box(g,0,.005,4,150,.07,4.6,'#304654');box(g,8,.006,-35,4.6,.07,76,'#304654');
+  box(g,0,-.23,0,210,.4,180,'#a6b6b3');box(g,0,.005,4,210,.07,4.6,'#304654');box(g,8,.006,-35,4.6,.07,76,'#304654');
   const paving=['#e0e5d9','#d2ded6','#e8eadd','#cbd8d1'];
   // A broad stone plaza backs onto the stand; nothing blocks the customer lane.
   for(let x=-24;x<25;x+=.8)for(let z=-4.8;z<1.3;z+=.8)if(x<5.65||x>10.35)box(g,x,.09,z,.78,.16,.78,paving[(Math.round((x+z)*5)+300)%4]);
-  for(let x=-55;x<59;x+=.75)for(const z of [.92,7.08]){for(let row=0;row<2;row++)box(g,x,.1,z+(row-.5)*.72,.73,.17,.7,paving[(Math.round(x*4)+row+400)%4]);box(g,x,.18,z+(z<4?.69:-.69),.74,.18,.16,'#f3efd9');}
+  for(let x=-81;x<59;x+=.75)for(const z of [.92,7.08]){for(let row=0;row<2;row++)box(g,x,.1,z+(row-.5)*.72,.73,.17,.7,paving[(Math.round(x*4)+row+400)%4]);box(g,x,.18,z+(z<4?.69:-.69),.74,.18,.16,'#f3efd9');}
   for(let z=-57;z<1;z+=.75)for(const x of [4.95,11.05,-16])box(g,x,.1,z,1.4,.17,.73,paving[(Math.round(-z*4)+400)%4]);
-  for(let x=-55;x<59;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f1ce71');
+  for(let x=-81;x<59;x+=2.4)if(x<5||x>11)box(g,x,.052,4,1.1,.018,.09,'#f1ce71');
   for(let z=-57;z<0;z+=2.4)box(g,8,.055,z,.09,.018,1.1,'#f1ce71');
   for(let i=0;i<7;i++)box(g,8,.06,2.1+i*.58,3.6,.025,.27,'#eff0dc');
   for(let i=0;i<8;i++)box(g,5.9+i*.6,.06,-.15,.27,.025,2.4,'#eff0dc');
   for(const lot of DOWNTOWN_LOTS){const building=cityBuilding(g,lot.x,lot.z,lot);building.rotation.y=lot.angle||0;}
-  const parking=buildCasinoParking(g);g.userData.casinoParking=parking;const casino=buildCasino(g);g.userData.casino=casino;g.userData.buildingCount=DOWNTOWN_LOTS.length+1;
+  g.userData.departmentStore=buildDepartmentStore(g);const parking=buildCasinoParking(g);g.userData.casinoParking=parking;const casino=buildCasino(g);g.userData.casino=casino;g.userData.buildingCount=DOWNTOWN_LOTS.length+2;
   // Front walks link every added frontage to the continuous sidewalk.
   for(const lot of DOWNTOWN_LOTS){if(Math.abs(Math.sin(lot.angle||0))>.5){const a=lot.x<8?lot.x+2.3:11.7,b=lot.x<8?4.3:lot.x-2.3;box(g,(a+b)/2,.09,lot.z,b-a,.16,1.3,'#dce4d7')}else if(lot.z>4)box(g,lot.x,.09,9.9,1.4,.16,3.9,'#dce4d7');}
 

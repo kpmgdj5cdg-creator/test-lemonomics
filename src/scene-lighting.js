@@ -24,7 +24,7 @@ export class SceneLighting{
   this.stars.visible=night&&sunny;this.moon.visible=night&&sunny;
   // Existing street-lamp glass remains visible after scenery batching.
   const glass=material('#fff1b5');glass.emissive.set(night?'#ffd07a':'#000000');glass.emissiveIntensity=night?1.4:0;
-  w.casino?.setNight(night);w.container.dataset.timeOfDay=night?'night':'day';w.container.dataset.sunIntensity=String(w.sun.intensity);
+  w.casino?.setNight(night);w.departmentStore?.setNight(night);w.container.dataset.departmentStorePresent=String(!!w.departmentStore);w.container.dataset.departmentStoreCars=String(w.departmentStore?.cars||0);w.container.dataset.departmentStoreSpaces=String(w.departmentStore?.spaces||0);w.container.dataset.departmentStoreSignLit=String(!!w.departmentStore&&night);w.container.dataset.timeOfDay=night?'night':'day';w.container.dataset.sunIntensity=String(w.sun.intensity);
  }
  dispose(){this.control.remove();for(const o of [this.stars,this.moon]){o.geometry.dispose();o.material.dispose();o.removeFromParent()}}
 }

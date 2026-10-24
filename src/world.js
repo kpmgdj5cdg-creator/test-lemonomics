@@ -15,6 +15,7 @@ import {HomeInterior} from './home-interior.js';
 import {batchPlayerHome} from './home-model.js';
 import {activeUpgrades} from './equipment.js';
 import {SceneLighting} from './scene-lighting.js';
+import {STORE_VIEW} from './department-store-layout.js';
 import {CasinoInterior} from './casino-interior.js';
 
 const PLAYER=new THREE.Vector3(-3,0,-.8),RIVAL=new THREE.Vector3(11.3,0,-.7),DOWNTOWN_RIVAL=new THREE.Vector3(13.3,0,-.7),WATERFRONT_RIVAL=new THREE.Vector3(11.8,0,-.8);
@@ -35,7 +36,7 @@ export class Neighborhood{
     this.sun=new THREE.DirectionalLight('#fff4d4',3.2);this.sun.position.set(-15,22,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:22,bottom:-22,near:1,far:70});this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.00015;this.sun.shadow.radius=3;this.scene.add(this.sun);
     this.environment=group(this.scene);this.location='neighborhood';this.buildNeighborhood();this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);this.batchScenery();this.weatherEffects=new WeatherEffects(this.scene);this.arrivals=[];
     this.actorRoot=group(this.scene);this.hitbox=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,3.4),new THREE.MeshBasicMaterial({visible:false}));this.hitbox.position.copy(PLAYER).add(new THREE.Vector3(0,1.7,0));this.scene.add(this.hitbox);
-    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.casinoInterior=new CasinoInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);
+    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.casinoInterior=new CasinoInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);this.installDepartmentStoreControl();
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.drag=null;this.installControls();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);this.resize();
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
@@ -89,18 +90,18 @@ export class Neighborhood{
     const location=state.location==='beach'?'waterfront':state.location==='square'?'downtown':state.location==='park'?'park':'neighborhood';
     this.rivalPosition=location==='waterfront'?WATERFRONT_RIVAL:location==='downtown'?DOWNTOWN_RIVAL:RIVAL;
     if(this.location!==location){
-      this.classicInterior.reset();this.homeInterior.reset();this.casinoInterior.reset();this.home=null;this.casino=null;
+      this.classicInterior.reset();this.homeInterior.reset();this.casinoInterior.reset();this.home=null;this.casino=null;this.departmentStore=null;this.storeFocus=false;
       this.weatherEffects.clearCaps();disposeGroup(this.environment);this.environment=group(this.scene);
       this.location=location;this.waterfront=null;
       if(location==='park')this.plotLabel=buildPark(this.environment,RIVAL);
-      else if(location==='downtown'){this.plotLabel=buildDowntown(this.environment,this.rivalPosition);this.casino=this.environment.userData.casino;this.container.dataset.buildingCount=String(this.environment.userData.buildingCount);}
+      else if(location==='downtown'){this.plotLabel=buildDowntown(this.environment,this.rivalPosition);this.casino=this.environment.userData.casino;this.departmentStore=this.environment.userData.departmentStore;this.container.dataset.buildingCount=String(this.environment.userData.buildingCount);}
       else if(location==='waterfront'){this.waterfront=buildWaterfront(this.environment,this.rivalPosition);this.plotLabel=this.waterfront.plotLabel;}
       else this.buildNeighborhood();
       this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);
       this.batchScenery();this.signature='';this.clearTraffic();
     }
     this.avatarController.syncLocation();
-    this.container.dataset.location=location;
+    this.container.dataset.location=location;this.storeButton.hidden=location!=='downtown';
     const active=activeUpgrades(state);const signature=JSON.stringify([active,state.price,state.day>=4,state.location]);
     if(this.signature!==signature){
       const oldDoorAmount=this.player?.doors?.amount||0;
@@ -147,19 +148,22 @@ export class Neighborhood{
     if(view==='firstperson'){if(this.player?.style!=='classic')return;if(!this.classicInterior.active)this.classicInterior.enterInstant();this.view=view;this.container.dataset.view=view;return}
     if(this.classicInterior.active||this.classicInterior.entering){this.classicInterior.deactivate();this.avatarController.parkAtStand();this.classicInterior.sync();}
     if(view!=='neighborhood'&&this.avatarController?.enabled)this.avatarController.setEnabled(false);
-    const changed=this.view!==view;this.view=view;
+    if(view!=='neighborhood')this.storeFocus=false;const changed=this.view!==view;this.view=view;
     if(changed){this.zoom=1;this.angle=view==='interior'?.2:.55}
     if(this.player)this.player.roof.visible=view!=='interior';
     this.container.dataset.view=view;this.updateCameraGoal();
   }
   rotate(delta){if(this.casinoInterior.active){this.casinoInterior.look(-delta*160,0);return}if(this.homeInterior.active){this.homeInterior.look(-delta*160,0);return}if(this.classicInterior.active){this.classicInterior.look(-delta*160,0);return}this.angle=THREE.MathUtils.clamp(this.angle+delta,-.9,1.2);this.updateCameraGoal()}
   updateCameraGoal(){
+    this.container.dataset.storeFocus=String(!!this.storeFocus);if(this.storeButton)this.storeButton.setAttribute('aria-pressed',String(!!this.storeFocus));
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);
     if(this.casinoInterior?.active){this.casinoInterior.updateCamera();return}if(this.homeInterior?.active){this.homeInterior.updateCamera();return}if(this.classicInterior?.active){this.classicInterior.updateCamera();return}
     if(this.avatarController?.enabled){
       this.desiredTarget.copy(this.avatarController.avatar.group.position).add(new THREE.Vector3(0,.8,0));
       this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*16,13,Math.cos(this.angle)*16));
       this.desiredSpan=Math.max(10.5,11/Math.max(aspect,.7))/this.zoom;
+    }else if(this.storeFocus&&this.location==='downtown'&&this.view==='neighborhood'){
+      this.desiredTarget.set(STORE_VIEW.x,1.8,STORE_VIEW.z);this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*60,46,Math.cos(this.angle)*60));this.desiredSpan=Math.max(51,68/Math.max(aspect,.7))/this.zoom;
     }else if(this.view==='neighborhood'){
       const downtown=this.location==='downtown',waterfront=this.location==='waterfront';
       this.desiredTarget.set(-1.2,downtown?1.7:waterfront?1:1.2,downtown?-1.8:waterfront?0:-1.2);this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*34,23,Math.cos(this.angle)*34));this.desiredSpan=Math.max(downtown||waterfront?18:15.8,26/Math.max(aspect,.9))/this.zoom;
@@ -172,6 +176,11 @@ export class Neighborhood{
     if(reducedMotion()){this.camera.position.copy(this.desiredPosition);this.target.copy(this.desiredTarget);this.span=this.desiredSpan}
   }
   resize(){if(!this.renderer)return;const {clientWidth:w,clientHeight:h}=this.container;if(!w||!h)return;this.renderer.setSize(w,h,false);this.updateCameraGoal()}
+  installDepartmentStoreControl(){
+    const nav=this.container.parentElement.querySelector('.scene-nav');this.storeButton=document.createElement('button');this.storeButton.type='button';this.storeButton.id='departmentStoreViewBtn';this.storeButton.className='scene-chip';this.storeButton.textContent='Shopster';this.storeButton.hidden=true;this.storeButton.setAttribute('aria-pressed','false');nav.append(this.storeButton);
+    this.storeButton.onclick=()=>{if(this.location!=='downtown')return;this.onBack();this.avatarController.setEnabled(false);this.storeFocus=true;this.zoom=1;this.angle=.45;this.updateCameraGoal();this.container.focus({preventScroll:true})};
+    nav.addEventListener('click',e=>{if(e.target.closest('[data-scene-view]')){this.storeFocus=false;this.updateCameraGoal()}},{capture:true,signal:this.audioAbort.signal});
+  }
   installAudioControls(){
     const nav=this.container.parentElement.querySelector('.scene-nav');
     this.soundButton=document.createElement('button');this.soundButton.type='button';this.soundButton.className='scene-chip';this.soundButton.id='gameSoundBtn';
@@ -214,7 +223,7 @@ export class Neighborhood{
     c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.casinoInterior.active)this.casinoInterior.look(dx,dy);else if(this.homeInterior.active)this.homeInterior.look(dx,dy);else if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
     c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6&&!this.classicInterior.entering)this.interactAt(e.clientX,e.clientY);this.drag=null});
     c.addEventListener('pointercancel',()=>{this.drag=null});
-    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active||this.casinoInterior.entering)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,['neighborhood','downtown'].includes(this.location)?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
+    c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active||this.casinoInterior.entering)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='downtown'?.28:this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
     c.addEventListener('keydown',e=>{if(this.casinoInterior.active||this.casinoInterior.entering||this.homeInterior.active||this.classicInterior.active||this.classicInterior.entering)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();this.rotate(e.key==='ArrowLeft'?-.16:.16)}if(e.key==='Escape')this.onBack();if(e.key==='Enter')this.onSelect()});
   }
   clearTraffic(){for(const a of this.people.values())disposeGroup(a.group);this.people.clear();this.arrivals=[];this.queue=[];}

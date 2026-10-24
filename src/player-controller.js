@@ -58,6 +58,7 @@ export class PlayerController{
     this.publish();
   }
   setEnabled(enabled){
+    this.world.storeFocus=false;
     enabled=enabled&&!!WALKING_AREAS[this.world.location];
     if(this.world.container.closest('#ll-app')?.querySelector('#modal.show'))return;
     if(enabled){

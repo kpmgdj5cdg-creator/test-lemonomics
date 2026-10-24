@@ -181,7 +181,7 @@ The Waterfront ocean now has a gently moving faceted surface and traveling foam.
 
 ### Downtown expansion and Maple Casino
 
-Downtown now has 32 buildings including the casino, with continuous frontage on both sides of the main street and side street. Shop fronts face their nearest road; front paths and longer sidewalks connect the lots. The Bookstore retains its approach, while Maple Market's entrance follows its street-facing shop front on the side street. The original stand locations, transit entrance and customer routes remain clear. Downtown supports the same wider zoom-out range as the Neighborhood.
+Downtown now has 33 buildings including the casino and Shopster, with continuous frontage on both sides of the main street and side street. Shop fronts face their nearest road; front paths and longer sidewalks connect the lots. The Bookstore retains its approach, while Maple Market's entrance follows its street-facing shop front on the side street. The original stand locations, transit entrance and customer routes remain clear. Downtown supports the same wider zoom-out range as the Neighborhood.
 
 Maple Casino is the cream, red and gold building on the north side of the main road, west of the Bookstore. Walk to its double doors, then click them, press E or use Enter casino. The doors open and the avatar walks inside before the camera switches to first person. WASD/arrows, drag-to-look, touch arrows and Escape/Exit match the other interiors. The actual exterior weather and day/night lighting remain visible through the front glass. A saved casino viewpoint restores with that profile.
 
@@ -221,3 +221,14 @@ The sign uses individual warm bulbs on gold letters against a dark face with blu
 The casino is set back from the road to fit a front parking lot and a separate rear lot. Eight marked spaces hold six parked voxel cars, with a clear central entrance walk and a west access lane to the rear. Cars are solid movement obstacles and asphalt/walkways use the normal ground-height system. The building dimensions are unchanged and saved interior positions remain compatible.
 
 Doorway traffic uses an offset lane and nearby patrons are hidden only when they would clip the first-person camera. A portal hit test keeps the entrance clickable even while NPCs have the door leaves swung open. The normal door meshes still animate and the doorway does not create a new collision obstacle.
+
+
+### Shopster department store — exterior batch
+
+Shopster occupies the northwest downtown parcel, behind a large parking lot facing the main road. The former north-side Hotel and Records buildings now sit across the street, facing north toward that road. The cream shell, red facade and wrapping stripe, glass entrance, shopping-bag sign, rooftop HVAC, cart corral and back-left receiving dock follow the exterior reference. The downtown terrain, western sidewalk and walking bounds extend around the property.
+
+Select **Shopster** in the Downtown scene controls to frame the whole property. The standard Downtown and walking controls return to the normal world view. The lot has 32 yellow-lined bays, including two accessible spaces, 15 solid parked cars, planted islands, six lamp posts and a clear central pedestrian path. Night mode illuminates the store lettering, entrance and parking lot. The model and camera are also included in the existing offline HTML and ZIP downloads. No additional service, API calls or save migration is required.
+
+This batch builds the exterior only; the store doors do not enter an interior yet. The next batches will follow the supplied floor plan: back-left receiving, rear stockroom/restrooms/break room, departments around the central merchandise area, front checkouts and cart bays. Planned staffing is 20 shoppers (five pushing carts), two cashiers, five floor workers, one warehouse worker and one receiving worker. Those systems are deferred until the user selects the next interior portion.
+
+`tests/department-store.test.js` checks placement, relocated frontage, parking, collision clearance and day/night lighting. `tests/department-store.spec.js` covers desktop and phone views, saving without money changes, and standalone operation with HTTP requests blocked.
