@@ -1,3 +1,4 @@
+import {buildStoreRear} from './store-rear-model.js';
 import {buildStoreFront} from './store-front-model.js';
 import * as THREE from 'three';
 import {box,group,tree,batch} from './models.js';
@@ -17,7 +18,7 @@ export function buildDepartmentStore(parent){
  for(const side of [-1,1]){const x=side*3.25;box(body,x,.47,front+.4,3.4,.5,.18,'#bb303a');box(body,x,1.87,front+.45,3.35,2.4,.045,'#aac5c7').material=glass;for(const dx of [-1.68,0,1.68])box(body,x+dx,1.85,front+.5,.07,2.6,.08,'#c4343b');for(const y of [.64,3.12])box(body,x,y,front+.5,3.45,.08,.08,'#c4343b')}
  const doors=group(root),hinges=[];doors.name='shopster-double-doors';
  for(const side of [-1,1]){const hinge=group(doors,side*1.5,0,front+.5),leaf=group(hinge,-side*.75);for(const x of [-.73,.73])box(leaf,x,1.75,0,.07,2.9,.1,'#bd303a');for(const y of [.3,3.2])box(leaf,0,y,0,1.5,.09,.1,'#bd303a');box(leaf,0,1.75,0,1.36,2.8,.03,'#aac5c7').material=glass;box(leaf,-side*.53,1.55,.12,.06,.5,.09,'#e9c281');hinges.push(hinge)}
- const interior=buildStoreFront(root);
+ const interior=buildStoreFront(root);interior.rear=buildStoreRear(root);interior.lights.push(...interior.rear.lights);
  box(body,0,3.3,front+1.04,11.2,.22,1.7,'#b92e3b');box(body,0,3.44,front+1.04,11.5,.14,1.85,'#ece2cd');
  box(body,0,4.55,front+.55,11.9,2.1,.72,'#bc2937');box(body,0,5.7,front+.55,12.1,.18,.8,'#efe8d7');
  const sign=voxelText(body,'SHOPSTER',.75,4.6,front+.96,.95,'#fff0dc');const signMaterial=owned(new THREE.MeshStandardMaterial({color:'#fff3dc',emissive:'#ffdfb4',emissiveIntensity:.02,roughness:.6}));sign.traverse(o=>{if(o.isMesh)o.material=signMaterial});
@@ -30,8 +31,8 @@ export function buildDepartmentStore(parent){
  for(const [x,z]of [[-9,-5],[0,-6],[9,-4],[-8,3],[7,3]]){box(roof,x,D.height+.66,z,1.8,.65,1.25,'#aeb0a9');box(roof,x,D.height+1.02,z,1.95,.1,1.4,'#d0cdc1');for(let k=0;k<6;k++)box(roof,x-.65+k*.26,D.height+.7,z+.64,.12,.42,.035,'#6e7980')}
  for(const side of [-1,1])box(body,side*(D.width/2+.08),2.6,-7,.13,4.7,.13,'#b4b6af');
  // Receiving bay and back-of-house exterior only.
- box(body,-9,1.3,-front-.13,5.3,2.4,.25,'#727b80');for(let i=0;i<9;i++)box(body,-9,.35+i*.25,-front-.28,5.05,.025,.04,'#9caaa9');box(body,-9,.19,-front-1.25,6.2,.3,2.7,'#8e9592');
- for(const x of [-12.1,-5.9])box(body,x,.65,-front-1.4,.14,.95,.14,'#e6bc44');box(body,10,1.3,-front-.12,1.1,2.3,.18,'#65747a');
+ box(body,-11.2,1.3,-front-.13,5.3,2.4,.25,'#727b80');for(let i=0;i<9;i++)box(body,-11.2,.35+i*.25,-front-.28,5.05,.025,.04,'#9caaa9');box(body,-11.2,.19,-front-1.25,6.2,.3,2.7,'#8e9592');
+ for(const x of [-14.3,-8.1])box(body,x,.65,-front-1.4,.14,.95,.14,'#e6bc44');box(body,10,1.3,-front-.12,1.1,2.3,.18,'#65747a');
  const site=group(parent);site.name='shopster-site';box(site,D.x,.095,D.z+front+1.1,32,.18,2.3,'#d8d7c7');box(site,D.x,.06,D.z-front-2.6,32,.12,4.5,'#6c7779');
  for(let i=0;i<6;i++)box(site,D.x-4+i*1.6,.69,D.z+front+1.65,.2,1.05,.2,'#c33941');
  // Connected drive lanes flank the building and join a smaller rear lot.
@@ -56,4 +57,4 @@ export function buildDepartmentStore(parent){
 }
 
 // Preserve movable doors, articulated NPCs and collision meshes before batching.
-export function batchDepartmentStore(store){batch(store.body);batch(store.roof);batch(store.interior.fixtures);batch(store.interior.ceiling);for(const hinge of store.hinges)batch(hinge);}
+export function batchDepartmentStore(store){batch(store.body);batch(store.roof);batch(store.interior.fixtures);batch(store.interior.ceiling);batch(store.interior.rear.fixtures);batch(store.interior.rear.ceiling);for(const d of store.interior.rear.staffDoors)batch(d.hinge);for(const hinge of store.hinges)batch(hinge);}
