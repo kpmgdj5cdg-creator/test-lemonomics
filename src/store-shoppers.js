@@ -14,7 +14,7 @@ export class StoreShopperSchedule{
   for(const a of [...this.actors]){
    if((a.mode==='browsing'||a.mode==='checkout')&&this.time>=a.until){
     if(a.mode==='checkout'){a.mode='leaving';a.stop=null;a.path=[...storeShopperPath(a.position,entry,a.cart),{...outside}]}
-    else if(a.visits.length>=3&&(a.slot%3===0||a.visits.length>=5)){const lane=STORE_CHECKOUTS.filter(l=>l.staffed).find(l=>!this.actors.some(other=>other!==a&&other.checkoutLane===l.number));if(!lane){a.until=this.time+1;continue}const target={x:lane.x-1.45,z:6.05};a.path=storeShopperPath(a.position,target,a.cart);if(a.path.length){a.mode='to-checkout';a.checkout=true;a.checkoutLane=lane.number;a.stop=null}else a.until=this.time+1}
+    else if(a.visits.length>=3&&(a.slot%3===0||a.visits.length>=5)){const lane=STORE_CHECKOUTS.filter(l=>l.staffed).find(l=>!this.actors.some(other=>other!==a&&other.checkoutLane===l.number));if(!lane){a.until=this.time+1;continue}const target={x:lane.x-1.45,z:lane.z+.05};a.path=storeShopperPath(a.position,target,a.cart);if(a.path.length){a.mode='to-checkout';a.checkout=true;a.checkoutLane=lane.number;a.stop=null}else a.until=this.time+1}
     else{let options=this.options(a);if(!options.length){a.visits=[a.stop];options=this.options(a)}const target=options[Math.floor(this.random()*options.length)];if(target){a.path=storeShopperPath(a.position,target,a.cart);if(a.path.length){a.stop=target.id;a.mode='walking'}}}
    }
    if(a.path.length)this.travel(a,travelDt);

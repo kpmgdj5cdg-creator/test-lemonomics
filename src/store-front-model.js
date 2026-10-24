@@ -14,19 +14,17 @@ export function storeProducts(parent,x,z,width,depth,kind){
 function display(parent,f){if(f.kind==='sports'||f.kind==='grocery'){storeProducts(parent,f.x,f.z,f.width,f.depth,f.kind);return}if(f.kind==='seasonal'){const g=group(parent,f.x,0,f.z);g.rotation.y=Math.PI/2;storeProducts(g,0,0,f.depth,f.width,'seasonal');return}const g=group(parent,f.x,0,f.z);box(g,0,.48,0,f.width,.8,f.depth,'#aeb4b1');box(g,0,.92,0,f.width+.1,.12,f.depth+.1,'#e3ded0');for(let i=0;i<4;i++){const z=-f.depth/2+.28+i*(f.depth-.5)/3;if(f.kind==='decor'){box(g,0,1.14,z,.35,.35,.35,i%2?'#ccb481':'#93a599');box(g,0,1.41,z,.46,.18,.46,'#f1d8a9')}else{box(g,0,1.17,z,.58,.4,.32,colors[i]);box(g,0,1.2,z+.165,.23,.12,.012,'#f1e1b5')}}}
 export function buildStoreFront(root){
  const fixtures=group(root);fixtures.name='shopster-front-interior';const ceiling=group(root);ceiling.name='shopster-ceiling';
- box(fixtures,0,.2,5.15,29.7,.16,10.5,'#d5d0bf');for(let x=-14;x<15;x+=1)for(let z=.25;z<10.5;z+=1)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
- for(const x of [-14.83,14.83]){box(fixtures,x,2.9,5.15,.12,5.5,10.4,'#e7e0d1');box(fixtures,x,4.7,5.15,.14,.75,10.4,'#bc3038');box(fixtures,x,.43,5.15,.13,.25,10.4,'#8c928e')}
+ box(fixtures,0,.2,0,29.7,.16,21,'#d5d0bf');for(let x=-14;x<15;x+=1)for(let z=-10.25;z<10.5;z+=1)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
+ for(const x of [-14.83,14.83]){box(fixtures,x,2.9,0,.12,5.5,21,'#e7e0d1');box(fixtures,x,4.7,0,.14,.75,21,'#bc3038');box(fixtures,x,.43,0,.13,.25,21,'#8c928e')}
  for(const f of STORE_FIXTURES.filter(f=>!['checkout','carts'].includes(f.kind)))display(fixtures,f);
- const departments=[['SPORTS',-11.65,3.15,3.9],['SEASONAL',-5.2,3.35,3.3],['GENERAL',.4,3.35,3.3],['HOME DECOR',6.4,3.35,3.4],['GROCERY',11.65,3.15,3.9]];
- for(const [text,x,z,w]of departments){box(fixtures,x,3.22,z,w,.62,.1,'#b62e3a');voxelText(fixtures,text,x,3.23,z+.075,text==='HOME DECOR'?.32:.36,'#fff0d8')}
  for(const lane of STORE_CHECKOUTS){const g=group(fixtures,lane.x,0,lane.z);g.name='shopster-checkout-'+lane.number;box(g,0,.66,0,1.2,.96,1.6,'#bc2939');box(g,0,.23,0,1.25,.16,1.65,'#747c7c');box(g,0,1.2,0,1.3,.14,1.72,'#c7c9bc');box(g,0,1.29,-.4,1.04,.055,.65,'#424e54');box(g,-.2,1.48,.37,.45,.32,.1,'#333e48');box(g,-.2,1.48,.43,.34,.22,.025,'#689395');box(g,.24,1.3,.35,.3,.045,.22,'#545d5e');box(g,.4,2.5,.1,.07,2.45,.07,'#657477');box(g,.4,3.8,.1,.56,1.1,.2,'#bd2c3a');voxelText(g,String(lane.number),.4,3.85,.23,.55,'#fff4da');const reverse=voxelText(g,String(lane.number),.4,3.85,-.03,.55,'#fff4da');reverse.rotation.y=Math.PI;
  // Candy/endcap rack on the aisle-facing side.
  for(const y of [.55,.85]){box(g,0,y,.86,1.12,.065,.22,'#b2b9b2');for(let k=0;k<5;k++)box(g,-.42+k*.21,y+.12,.86,.15,.18,.16,colors[k])}}
- for(const x of [-10.8,10.8]){box(fixtures,x,.36,9.55,4.3,.1,.95,'#a4aeaa');for(const dx of [-2.08,2.08])box(fixtures,x+dx,.64,9.55,.055,.65,.95,'#a7b1af');for(let i=0;i<6;i++)storeCart(fixtures,x-1.5+i*.6,9.55);voxelText(fixtures,'CARTS',x,2.15,10.26,.37,'#bc2c39')}
+ for(const x of [-10.8,10.8]){box(fixtures,x,.36,9.55,4.3,.1,.95,'#a4aeaa');for(const dx of [-2.08,2.08])box(fixtures,x+dx,.64,9.55,.055,.65,.95,'#a7b1af');for(let i=0;i<6;i++)storeCart(fixtures,x-1.5+i*.6,9.55)}
  for(const {x,z} of STORE_COLUMNS){box(fixtures,x,2.95,z,.28,5.3,.28,'#e0dacd');box(fixtures,x,5.55,z,.58,.2,.58,'#dfd9cc')}
- box(ceiling,0,5.78,5.2,29.6,.14,10.5,'#b9b4ab');const glow=new THREE.MeshStandardMaterial({color:'#fff9e9',emissive:'#fff4d7',emissiveIntensity:.9,roughness:.6});glow.userData.owned=true;
- for(let x=-12;x<=12;x+=4)for(const z of [1.3,4.8,8.3]){box(ceiling,x,5.66,z,1.4,.12,1.1,'#d8d3c5');box(ceiling,x,5.58,z,1.25,.045,.95,'#fff9e9').material=glow}
- const lights=[];for(const x of [-10,0,10])for(const z of [2.5,8]){const light=new THREE.PointLight('#fff0d6',20,13,1.6);light.position.set(x,4.65,z);light.visible=false;root.add(light);lights.push(light)}
+ box(ceiling,0,5.78,0,29.6,.14,21,'#b9b4ab');const glow=new THREE.MeshStandardMaterial({color:'#fff9e9',emissive:'#fff4d7',emissiveIntensity:.9,roughness:.6});glow.userData.owned=true;
+ for(let x=-12;x<=12;x+=4)for(const z of [8.3,3.3,-1.7,-6.7]){box(ceiling,x,5.66,z,1.4,.12,1.1,'#d8d3c5');box(ceiling,x,5.58,z,1.25,.045,.95,'#fff9e9').material=glow}
+ const lights=[];for(const x of [-10,0,10])for(const z of [5,-5]){const light=new THREE.PointLight('#fff0d6',28,18,1.6);light.position.set(x,4.65,z);light.visible=false;root.add(light);lights.push(light)}
  return {fixtures,ceiling,lights};
 }
 export function storeStaff(parent,index,cashier=false){const rig=character(parent,index,{type:index%2?'female':'male',shirt:'#bd303e',pants:'#b4a181',shoes:'#3b4247'});rig.group.name=cashier?'shopster-cashier':'shopster-floor-worker';rig.group.scale.setScalar(1.15);box(rig.slots.body,.09,.82,.154,.11,.07,.025,'#fff0c8');rig.cup.removeFromParent();for(const part of Object.values(rig.slots).flat())if(part?.isObject3D)batch(part);return rig;}

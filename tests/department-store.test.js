@@ -19,7 +19,11 @@ test('exterior lights switch with night mode; parked cars are solid and the entr
 test('side drive lanes connect the street to the rear parking aisle without physical obstructions',()=>{
  const parent=new THREE.Group();buildDepartmentStore(parent);const obstacles=sceneColliders(parent),bounds=WALKING_AREAS.downtown.bounds;
  for(const lane of STORE_SIDE_LANES)for(let z=lane.minZ;z<=lane.maxZ;z+=.4)for(const dx of [-1.1,0,1.1])assert.equal(blocked(lane.x+dx,z,obstacles,bounds,.65),false,`side lane obstructed at ${lane.x+dx},${z}`);
- for(let x=STORE_SIDE_LANES[0].x;x<=STORE_SIDE_LANES[1].x;x+=.4)assert.equal(blocked(x,-54.7,obstacles,bounds,.65),false,`rear aisle obstructed at ${x}`);
+ for(let x=STORE_SIDE_LANES[0].x;x<=STORE_SIDE_LANES[1].x;x+=.4)assert.equal(blocked(x,-75.7,obstacles,bounds,.65),false,`rear aisle obstructed at ${x}`);
  assert.equal(STORE_REAR_SPACES.length,8);assert.ok(STORE_PARKED_SPACES.some(s=>s.rear));
  assert.ok(B.maxX< -45,'store must have a substantial setback from the casino');
+});
+
+test('store depth doubles rearward while the street entrance and front parking stay anchored',()=>{
+ assert.equal(D.depth,42);assert.equal(B.maxZ,-28.5);assert.equal(B.maxZ-B.minZ,42);assert.ok(STORE_REAR_BOUNDS.maxZ<B.minZ);assert.ok(STORE_SIDE_LANES.every(l=>l.minZ<STORE_REAR_BOUNDS.maxZ));assert.ok(STORE_REAR_BOUNDS.minZ>WALKING_AREAS.downtown.bounds.minZ);
 });

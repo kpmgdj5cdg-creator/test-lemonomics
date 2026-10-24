@@ -3,12 +3,12 @@ import {buildStoreFront} from './store-front-model.js';
 import * as THREE from 'three';
 import {box,group,tree,batch} from './models.js';
 import {voxelText} from './voxel-text.js';
-import {DEPARTMENT_STORE as D,STORE_SPACES,STORE_PARKED_SPACES,STORE_PARKING_BOUNDS as LOT,STORE_REAR_BOUNDS as REAR,STORE_SIDE_LANES as LANES} from './department-store-layout.js';
+import {DEPARTMENT_STORE as D,STORE_FRONT_Z,STORE_BACK_Z,STORE_BODY_Z,STORE_SPACES,STORE_PARKED_SPACES,STORE_PARKING_BOUNDS as LOT,STORE_REAR_BOUNDS as REAR,STORE_SIDE_LANES as LANES} from './department-store-layout.js';
 const owned=m=>{m.userData.owned=true;return m};
 function car(parent,x,z,color,angle=0){const g=group(parent,x,.095,z);g.rotation.y=angle;g.name='shopster-parked-car';box(g,0,.4,0,1.48,.54,2.85,color);box(g,0,.87,-.04,1.23,.48,1.5,color);box(g,0,.88,.73,1.08,.32,.035,'#6193a1');box(g,0,.88,-.81,1.08,.32,.035,'#416c7d');for(const side of [-1,1]){box(g,side*.63,.89,0,.035,.3,1.3,'#416c7d');for(const z of [-.92,.92])box(g,side*.73,.26,z,.21,.48,.45,'#26313b');box(g,side*.48,.45,1.45,.25,.15,.035,'#f3dda0');box(g,side*.48,.45,-1.45,.25,.15,.035,'#ba3c43')}return g}
 function cart(parent,x,z){const g=group(parent,x,.2,z);box(g,0,.25,0,.52,.055,.7,'#707c80');for(const side of [-1,1]){box(g,side*.25,.59,0,.04,.44,.66,'#adada3');for(const zz of [-.23,.23])box(g,side*.23,.09,zz,.1,.15,.13,'#303b42')}box(g,0,.59,-.33,.52,.44,.04,'#9ca6a3');for(const zz of [-.23,-.05,.13,.31])box(g,0,.61,zz,.52,.025,.025,'#c3c4b6');box(g,0,.84,-.48,.62,.075,.09,'#b82e39');return g}
 export function buildDepartmentStore(parent){
- const X=offset=>D.x+offset;const root=group(parent,D.x,.12,D.z);root.name='shopster-exterior';const body=group(root),roof=group(root),front=D.depth/2;
+ const X=offset=>D.x+offset;const root=group(parent,D.x,.12,D.z);root.name='shopster-exterior';const body=group(root,0,0,STORE_BODY_Z),roof=group(root,0,0,STORE_BODY_Z),front=D.depth/2;
  // Cream big-box facade, red wraparound stripe, tall parapet and service side.
  box(body,0,.1,0,D.width+.35,.2,D.depth+.35,'#b6b4a6');for(const side of [-1,1])box(body,side*(D.width/2-.1),D.height/2+.2,0,.2,D.height,D.depth,'#d9d4c6');box(body,0,D.height/2+.2,-front,D.width,D.height,.2,'#d9d4c6');for(const x of [-10,10])box(body,x,D.height/2+.2,front,10,D.height,.2,'#d9d4c6');box(body,0,4.7,front,10,2.6,.2,'#d9d4c6');
  for(const side of [-1,1]){box(body,side*(D.width/2+.035),1.55,0,.09,.3,D.depth,'#bb303c');box(body,side*(D.width/2+.045),.75,0,.1,1.18,D.depth,'#a9a89d')}
@@ -17,7 +17,7 @@ export function buildDepartmentStore(parent){
  for(const x of [-5.1,5.1])box(body,x,2.75,front+.16,.26,5.25,.5,'#c42e3c');box(body,0,3.45,front+.16,10.6,.3,.5,'#c42e3c');
  for(const side of [-1,1]){const x=side*3.25;box(body,x,.47,front+.4,3.4,.5,.18,'#bb303a');box(body,x,1.87,front+.45,3.35,2.4,.045,'#aac5c7').material=glass;for(const dx of [-1.68,0,1.68])box(body,x+dx,1.85,front+.5,.07,2.6,.08,'#c4343b');for(const y of [.64,3.12])box(body,x,y,front+.5,3.45,.08,.08,'#c4343b')}
  const doors=group(root),hinges=[];doors.name='shopster-double-doors';
- for(const side of [-1,1]){const hinge=group(doors,side*1.5,0,front+.5),leaf=group(hinge,-side*.75);for(const x of [-.73,.73])box(leaf,x,1.75,0,.07,2.9,.1,'#bd303a');for(const y of [.3,3.2])box(leaf,0,y,0,1.5,.09,.1,'#bd303a');box(leaf,0,1.75,0,1.36,2.8,.03,'#aac5c7').material=glass;box(leaf,-side*.53,1.55,.12,.06,.5,.09,'#e9c281');hinges.push(hinge)}
+ for(const side of [-1,1]){const hinge=group(doors,side*1.5,0,STORE_FRONT_Z+.5),leaf=group(hinge,-side*.75);for(const x of [-.73,.73])box(leaf,x,1.75,0,.07,2.9,.1,'#bd303a');for(const y of [.3,3.2])box(leaf,0,y,0,1.5,.09,.1,'#bd303a');box(leaf,0,1.75,0,1.36,2.8,.03,'#aac5c7').material=glass;box(leaf,-side*.53,1.55,.12,.06,.5,.09,'#e9c281');hinges.push(hinge)}
  const interior=buildStoreFront(root);interior.rear=buildStoreRear(root);interior.lights.push(...interior.rear.lights);
  box(body,0,3.3,front+1.04,11.2,.22,1.7,'#b92e3b');box(body,0,3.44,front+1.04,11.5,.14,1.85,'#ece2cd');
  box(body,0,4.55,front+.55,11.9,2.1,.72,'#bc2937');box(body,0,5.7,front+.55,12.1,.18,.8,'#efe8d7');
@@ -33,24 +33,24 @@ export function buildDepartmentStore(parent){
  // Receiving bay and back-of-house exterior only.
  box(body,-11.2,1.3,-front-.13,5.3,2.4,.25,'#727b80');for(let i=0;i<9;i++)box(body,-11.2,.35+i*.25,-front-.28,5.05,.025,.04,'#9caaa9');box(body,-11.2,.19,-front-1.25,6.2,.3,2.7,'#8e9592');
  for(const x of [-14.3,-8.1])box(body,x,.65,-front-1.4,.14,.95,.14,'#e6bc44');box(body,10,1.3,-front-.12,1.1,2.3,.18,'#65747a');
- const site=group(parent);site.name='shopster-site';box(site,D.x,.095,D.z+front+1.1,32,.18,2.3,'#d8d7c7');box(site,D.x,.06,D.z-front-2.6,32,.12,4.5,'#6c7779');
- for(let i=0;i<6;i++)box(site,D.x-4+i*1.6,.69,D.z+front+1.65,.2,1.05,.2,'#c33941');
+ const site=group(parent);site.name='shopster-site';box(site,D.x,.095,D.z+STORE_FRONT_Z+1.1,32,.18,2.3,'#d8d7c7');box(site,D.x,.06,D.z+STORE_BACK_Z-2.6,32,.12,4.5,'#6c7779');
+ for(let i=0;i<6;i++)box(site,D.x-4+i*1.6,.69,D.z+STORE_FRONT_Z+1.65,.2,1.05,.2,'#c33941');
  // Connected drive lanes flank the building and join a smaller rear lot.
  for(const lane of LANES)box(site,lane.x,.055,(lane.minZ+lane.maxZ)/2,lane.width,.12,lane.maxZ-lane.minZ,'#46505a');
  box(site,(REAR.minX+REAR.maxX)/2,.055,(REAR.minZ+REAR.maxZ)/2,REAR.maxX-REAR.minX,.12,REAR.maxZ-REAR.minZ,'#46505a');
- for(const lane of LANES)for(let z=-3;z>-53;z-=5)box(site,lane.x,.135,z,.08,.015,1.8,'#e5bf40');
+ for(const lane of LANES)for(let z=-3;z>LANES[0].minZ+4;z-=5)box(site,lane.x,.135,z,.08,.015,1.8,'#e5bf40');
  // Forty yellow-lined bays, accessible blue pads and an uninterrupted center walk.
  box(site,(LOT.minX+LOT.maxX)/2,.055,(LOT.minZ+LOT.maxZ)/2,LOT.maxX-LOT.minX,.12,LOT.maxZ-LOT.minZ,'#46505a');
  for(const s of STORE_SPACES){if(s.accessible)box(site,s.x,.122,s.z,2.75,.014,3.75,'#326d9f');for(const dx of [-1.35,1.35])box(site,s.x+dx,.135,s.z,.065,.015,3.85,'#e5bf40');box(site,s.x,.135,s.z-1.95,2.75,.015,.065,'#e5bf40');if(s.accessible){voxelText(site,'P',s.x,.145,s.z,.45,'#fff1c9').rotation.x=-Math.PI/2;box(site,s.x,.15,s.z-.65,.75,.02,.07,'#fff1c9')}}
  STORE_PARKED_SPACES.forEach((s,i)=>car(site,s.x,s.z,['#b9464b','#427d9e','#d6c8a2','#5b8b72','#a58552'][i%5],i%3===0?Math.PI:0));
  box(site,D.x,.135,-12.6,1.8,.17,27.6,'#d6d5c4');for(let i=0;i<6;i++)box(site,D.x-2.2+i*.86,.151,-24.4,.4,.02,2.3,'#f3e5bf');
  // Cart corral beside the doors and landscape islands between parking rows.
- const corralX=D.x+9;for(const x of [corralX-2,corralX+2])box(site,x,.65,D.z+front+1.35,.065,1,1.25,'#8c999a');box(site,corralX,.95,D.z+front+.8,4.1,.08,.07,'#bf3440');for(let i=0;i<7;i++)cart(site,corralX-1.6+i*.5,D.z+front+1.35);
+ const corralX=D.x+9;for(const x of [corralX-2,corralX+2])box(site,x,.65,D.z+STORE_FRONT_Z+1.35,.065,1,1.25,'#8c999a');box(site,corralX,.95,D.z+STORE_FRONT_Z+.8,4.1,.08,.07,'#bf3440');for(let i=0;i<7;i++)cart(site,corralX-1.6+i*.5,D.z+STORE_FRONT_Z+1.35);
  for(const x of [X(-16.3),X(14.7)])for(const z of [-4.8,-15,-24.3]){box(site,x,.18,z,1.65,.28,2,'#d0d4c3');box(site,x,.35,z,1.4,.1,1.75,'#5b7d4b');tree(site,x,z,.75,.9)}
  for(const [x,z]of [[X(-8),-12.6],[X(9),-12.6],[X(-8),-25],[X(9),-25]]){box(site,x,.21,z,2.2,.32,1.15,'#d5d8c9');box(site,x,.39,z,1.95,.08,.9,'#6a8955');tree(site,x,z,.65,.9)}
  const lampMaterial=owned(new THREE.MeshStandardMaterial({color:'#f1db9e',emissive:'#ffd48e',emissiveIntensity:0})),lights=[];
- for(const [x,z]of [[X(-13),-1],[X(14),-1],[X(-13),-13],[X(14),-13],[X(-11),-24.5],[X(12),-24.5],...[-1,1].flatMap(side=>[-8,-24,-40,-55].map(z=>[X(side*22.5),z])),[X(-11),-61.8],[X(11),-61.8]]){box(site,x,.26,z,.65,.38,.65,'#d5b14e');box(site,x,2.45,z,.14,4.4,.14,'#52606a');box(site,x,4.72,z,.62,.18,.62,'#4f5d62');box(site,x,4.58,z,.46,.12,.46,'#f1db9e').material=lampMaterial}
- const lightSites=[[X(-4),3.2,D.z+front+1.3,7,18],[X(4),3.2,D.z+front+1.3,7,18],[D.x,4.6,-12,30,24],...[-1,1].flatMap(side=>[-10,-30,-49].map(z=>[X(side*20.5),4.6,z,20,17])),[D.x,4.6,-57,26,23]];
+ for(const [x,z]of [[X(-13),-1],[X(14),-1],[X(-13),-13],[X(14),-13],[X(-11),-24.5],[X(12),-24.5],...[-1,1].flatMap(side=>[-8,-24,-40,-56,-72].map(z=>[X(side*22.5),z])),[X(-11),-82.8],[X(11),-82.8]]){box(site,x,.26,z,.65,.38,.65,'#d5b14e');box(site,x,2.45,z,.14,4.4,.14,'#52606a');box(site,x,4.72,z,.62,.18,.62,'#4f5d62');box(site,x,4.58,z,.46,.12,.46,'#f1db9e').material=lampMaterial}
+ const lightSites=[[X(-4),3.2,D.z+STORE_FRONT_Z+1.3,7,18],[X(4),3.2,D.z+STORE_FRONT_Z+1.3,7,18],[D.x,4.6,-12,30,24],...[-1,1].flatMap(side=>[-10,-32,-54,-73].map(z=>[X(side*20.5),4.6,z,20,17])),[D.x,4.6,-78,26,23]];
  for(const [x,y,z,power,range]of lightSites){const l=new THREE.PointLight('#ffdc9c',0,range,1.7);l.userData.nightPower=power;l.position.set(x,y,z);parent.add(l);lights.push(l)}
  let night=null;function setNight(value){if(value===night)return;night=value;signMaterial.emissiveIntensity=night?.9:.02;lampMaterial.emissiveIntensity=night?1.6:0;lights.forEach(l=>{l.intensity=night?l.userData.nightPower:0;l.visible=night})}setNight(false);
  return {root,body,roof,site,sign,signMaterial,lights,setNight,doors,hinges,interior,doorAmount:0,spaces:STORE_SPACES.length,cars:STORE_PARKED_SPACES.length};

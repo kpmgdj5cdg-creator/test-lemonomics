@@ -74,7 +74,7 @@ function signal(parent,x,z,angle=0){
 }
 export function buildDowntown(g,rival){
   // Same street anchors, entirely different urban architecture and public space.
-  box(g,0,-.23,0,280,.4,220,'#a6b6b3');box(g,0,.005,4,210,.07,4.6,'#304654');box(g,8,.006,-35,4.6,.07,76,'#304654');
+  box(g,0,-.23,0,280,.4,280,'#a6b6b3');box(g,0,.005,4,210,.07,4.6,'#304654');box(g,8,.006,-35,4.6,.07,76,'#304654');
   const paving=['#e0e5d9','#d2ded6','#e8eadd','#cbd8d1'];
   // A broad stone plaza backs onto the stand; nothing blocks the customer lane.
   for(let x=-24;x<25;x+=.8)for(let z=-4.8;z<1.3;z+=.8)if(x<5.65||x>10.35)box(g,x,.09,z,.78,.16,.78,paving[(Math.round((x+z)*5)+300)%4]);
