@@ -5,7 +5,7 @@ export const NEIGHBORHOOD_BOUNDS={minX:-49,maxX:55,minZ:-58,maxZ:29};
 export const WALKING_AREAS={
   neighborhood:{bounds:NEIGHBORHOOD_BOUNDS,barriers:[]},
   park:{bounds:{minX:-20,maxX:20,minZ:-17,maxZ:15},barriers:[{minX:-9,maxX:-1,minZ:-10.5,maxZ:-4.5}]},
-  downtown:{bounds:{minX:-72,maxX:58,minZ:-57,maxZ:28},barriers:[{minX:-15.2,maxX:-12.8,minZ:-14.3,maxZ:-10.7},{minX:-33.47,maxX:-25.53,minZ:-17.83,maxZ:-11.24}]},
+  downtown:{bounds:{minX:-92,maxX:58,minZ:-65,maxZ:28},barriers:[{minX:-15.2,maxX:-12.8,minZ:-14.3,maxZ:-10.7},{minX:-33.47,maxX:-25.53,minZ:-17.83,maxZ:-11.24}]},
   waterfront:{bounds:{minX:-24,maxX:24,minZ:-20,maxZ:23.6},barriers:[
     {minX:-100,maxX:6.1,minZ:4,maxZ:100},
     {minX:8.7,maxX:100,minZ:4,maxZ:100},

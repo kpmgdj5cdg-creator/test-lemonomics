@@ -163,7 +163,7 @@ export class Neighborhood{
       this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*16,13,Math.cos(this.angle)*16));
       this.desiredSpan=Math.max(10.5,11/Math.max(aspect,.7))/this.zoom;
     }else if(this.storeFocus&&this.location==='downtown'&&this.view==='neighborhood'){
-      this.desiredTarget.set(STORE_VIEW.x,1.8,STORE_VIEW.z);this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*60,46,Math.cos(this.angle)*60));this.desiredSpan=Math.max(51,68/Math.max(aspect,.7))/this.zoom;
+      this.desiredTarget.set(STORE_VIEW.x,1.8,STORE_VIEW.z);this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*60,46,Math.cos(this.angle)*60));this.desiredSpan=Math.max(64,83/Math.max(aspect,.7))/this.zoom;
     }else if(this.view==='neighborhood'){
       const downtown=this.location==='downtown',waterfront=this.location==='waterfront';
       this.desiredTarget.set(-1.2,downtown?1.7:waterfront?1:1.2,downtown?-1.8:waterfront?0:-1.2);this.desiredPosition.copy(this.desiredTarget).add(new THREE.Vector3(Math.sin(this.angle)*34,23,Math.cos(this.angle)*34));this.desiredSpan=Math.max(downtown||waterfront?18:15.8,26/Math.max(aspect,.9))/this.zoom;
