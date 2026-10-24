@@ -270,3 +270,12 @@ Public and staff collision/pathfinding cover the new dimensions. Twenty shopper 
 Receiving, warehouse/stockroom, restrooms and the break room now extend 5.81 world units from their unchanged doorway line, up from 3.5 units (a 66% increase). The sales floor and room entrances retain their layout. The rear wall, building shell, floor, ceiling, loading dock, rear parking and access lanes extend by the additional 2.31 units. The completed store is now 44.31 units deep.
 
 Furniture keeps its normal proportions: rear-wall lockers, counters, toilets and storage racks stay against the enlarged rear wall; the other furnishings are spread through the extra space. Receiving gains longer shelving and the break room gains a third table. Worker routes and collision bounds cover the new rooms. Saved store viewpoints record layout version 3 and older room viewpoints are mapped into the enlarged rooms before position validation. Public shopper routes remain on the sales floor.
+
+
+### Shopster ceiling-speaker music
+
+Inside Shopster, a quiet original 86 BPM elevator-synth arrangement plays automatically through the game sound system. Warm extended chords, soft electric-piano notes and a gentle bass line form a varied 32-bar loop. Ceiling speaker grilles are placed across the front and rear. A dedicated low-pass-filtered mix gives it a soft overhead-speaker sound beneath footsteps and other effects.
+
+The existing Sound toggle controls the music. Save/pause, hidden tabs, the bank/profile screen, exit and quit silence it; returning to the active store resumes the arrangement. The stand radio is muted in the store mix and restored on exit, keeping its station separate from the PA. The original score in `src/store-score.js` is synthesized locally: no extra audio download, streaming service, network request or simulation RNG is used, and offline play includes the same music.
+
+Unit tests cover the score, scheduler lifetime, gain, radio separation, mute/pause/exit and reset. Browser checks measure actual Web Audio samples, exercise Sound and Save controls, verify exit/quit silence and HTTP-blocked standalone playback, and retain casino ambience coverage.

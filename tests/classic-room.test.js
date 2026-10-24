@@ -30,7 +30,7 @@ test('all five prep machines sit separately on the rear counter, fridge is rear-
  }finally{globalThis.document=previous}
 });
 class Param{value=0;setValueAtTime(v){this.value=v}exponentialRampToValueAtTime(v){this.value=v}}
-class Node{gain=new Param();frequency=new Param();connect(target){assert.equal(typeof target,'object')}disconnect(){}start(){}stop(){}}
+class Node{gain=new Param();frequency=new Param();Q=new Param();connect(target){assert.equal(typeof target,'object')}disconnect(){}start(){}stop(){}}
 class AudioContextFake{currentTime=1;state='running';sampleRate=8000;destination={};createGain(){return new Node()}createAnalyser(){return new Node()}createOscillator(){return new Node()}createBufferSource(){return new Node()}createBiquadFilter(){return new Node()}createBuffer(_,size){return {getChannelData:()=>new Float32Array(size)}}async decodeAudioData(buffer){return {duration:buffer.byteLength===16?200:192}}async resume(){this.state='running'}}
 test('original sequencer schedules audio, respects mute and pause, and never consumes the simulation RNG',async()=>{
  const before=globalThis.AudioContext,random=Math.random;globalThis.AudioContext=AudioContextFake;

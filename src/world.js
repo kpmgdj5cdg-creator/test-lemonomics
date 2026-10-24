@@ -195,6 +195,7 @@ export class Neighborhood{
   }
   async toggleSpeaker(){if(!this.player?.speaker)return;await this.audio.toggleMusic();this.publishAudio();if(this.storeInterior.active||this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active)this.container.focus({preventScroll:true})}
   publishAudio(){
+    this.container.dataset.storeMusicPlaying=String(this.audio.storePlaying);this.container.dataset.storeMusicLevel=String(this.audio.storeLevel());this.container.dataset.storeMusicNotes=String(this.audio.storeNotes);
     const playing=!!this.audio.musicPlaying;
     this.soundButton.textContent=this.audio.muted?'Sound off':'Sound on';this.soundButton.setAttribute('aria-pressed',String(!this.audio.muted));
     const station=this.audio.stationInfo,next=this.audio.nextStationInfo;
@@ -268,7 +269,7 @@ export class Neighborhood{
   frame(){
     const elapsed=this.clock.getDelta(),dt=Math.min(elapsed,.05),moveDt=Math.min(elapsed,.2);this.time=performance.now()/1000;
     // The bank and title screen need no off-screen shadow-map rendering.
-    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.casino?.crowd?.pause();this.departmentStore?.crowd?.pause();this.audio.setAudible(false);this.container.dataset.casinoAmbience=String(this.audio.casinoPlaying);if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
+    if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.casino?.crowd?.pause();this.departmentStore?.crowd?.pause();this.audio.setAudible(false);this.container.dataset.casinoAmbience=String(this.audio.casinoPlaying);this.container.dataset.storeMusicPlaying=String(this.audio.storePlaying);this.container.dataset.storeMusicLevel=String(this.audio.storeLevel());if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
     const suspended=!!this.container.closest('#ll-app')?.querySelector('#modal.show')||document.hidden;this.audio.setAudible(!suspended);
     this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());this.homeInterior.update(moveDt,this.time);this.casinoInterior.update(moveDt,this.time);this.storeInterior.update(moveDt,this.time);
     this.player?.speaker?.update(reducedMotion()?0:this.audio.beat());this.publishAudio();

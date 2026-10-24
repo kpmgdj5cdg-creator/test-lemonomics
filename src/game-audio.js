@@ -1,10 +1,11 @@
+import {STORE_EIGHTH,STORE_SCORE_STEPS,storeScore,midiFrequency} from './store-score.js';
 const instrumentalUrl=new URL('./audio/afterglow-drive.mp3',import.meta.url).href;
 const jazzUrl=new URL('./audio/evening-current.mp3',import.meta.url).href;
 const stations=[null,{name:'Lemon FM',description:'techno',bpm:124},{name:'Neon Nights',title:'Afterglow Drive',description:'3:12 instrumental synthwave',bpm:100,url:instrumentalUrl},{name:'Velvet Jazz',title:'Evening Current',description:'3:20 modern lounge instrumental',bpm:96,url:jazzUrl}];
 // Original techno synthesis and two full bundled instrumental radio tracks.
 export class GameAudio{
  constructor(){
-  this.casinoVoices=new Set();this.casinoPlaying=false;this.casinoSeed=0x43415349;this.muted=false;try{this.muted=localStorage.getItem('lemonomics_sound_v1')==='off'}catch{}
+  this.storeVoices=new Set();this.storeActive=false;this.storePlaying=false;this.storeStep=0;this.storeNotes=0;this.casinoVoices=new Set();this.casinoPlaying=false;this.casinoSeed=0x43415349;this.muted=false;try{this.muted=localStorage.getItem('lemonomics_sound_v1')==='off'}catch{}
   this.musicPlaying=false;this.station=0;this.trackPromises=new Map();this.audible=true;this.voices=new Set();this.musicVoices=new Set();this.step=0;this.nextNote=0;this.noteCount=0;this.trackOffset=0;this.trackPlayCount=0;this.noiseSeed=0x1234567;
  }
  async unlock(){
@@ -13,6 +14,7 @@ export class GameAudio{
    if(!this.context){
     const c=this.context=new Context();this.master=c.createGain();this.master.gain.value=this.muted?0:.22;this.master.connect(c.destination);
     this.casinoBus=c.createGain();this.casinoBus.gain.value=0;this.casinoBus.connect(this.master);
+    this.storeBus=c.createGain();this.storeBus.gain.value=0;const storeFilter=c.createBiquadFilter();storeFilter.type='lowpass';storeFilter.frequency.value=2600;storeFilter.Q.value=.5;this.storeAnalyser=c.createAnalyser();this.storeAnalyser.fftSize=256;this.storeBus.connect(storeFilter);storeFilter.connect(this.storeAnalyser);this.storeAnalyser.connect(this.master);
     this.music=c.createGain();this.music.gain.value=0;this.music.connect(this.master);
     this.analyser=c.createAnalyser();this.analyser.fftSize=256;this.music.connect(this.analyser);
    }
@@ -24,13 +26,13 @@ export class GameAudio{
   const o=c.createOscillator(),v=c.createGain();o.type=type;o.frequency.setValueAtTime(frequency,start);
   if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,start+duration);
   v.gain.setValueAtTime(.0001,start);v.gain.exponentialRampToValueAtTime(gain,start+Math.min(.16,duration*.15));v.gain.exponentialRampToValueAtTime(.0001,start+duration);
-  o.connect(v);v.connect(target);o.start(start);o.stop(start+duration+.01);this.voices.add(o);if(target===this.music)this.musicVoices.add(o);if(target===this.casinoBus)this.casinoVoices.add(o);o.onended=()=>{o.disconnect();v.disconnect();this.voices.delete(o);this.musicVoices.delete(o);this.casinoVoices.delete(o)};this.noteCount++;
+  o.connect(v);v.connect(target);o.start(start);o.stop(start+duration+.01);this.voices.add(o);if(target===this.music)this.musicVoices.add(o);if(target===this.casinoBus)this.casinoVoices.add(o);if(target===this.storeBus)this.storeVoices.add(o);o.onended=()=>{o.disconnect();v.disconnect();this.voices.delete(o);this.musicVoices.delete(o);this.casinoVoices.delete(o);this.storeVoices.delete(o)};this.noteCount++;
  }
  noise(start,duration,gain,target=this.master){
   const c=this.context;if(!c)return;const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),d=buffer.getChannelData(0);
   for(let i=0;i<d.length;i++){let n=this.noiseSeed;n^=n<<13;n^=n>>>17;n^=n<<5;this.noiseSeed=n;d[i]=((n>>>0)/2147483648-1)*(1-i/d.length);}
   const source=c.createBufferSource(),v=c.createGain(),filter=c.createBiquadFilter();source.buffer=buffer;filter.type='highpass';filter.frequency.value=5000;v.gain.value=gain;
-  source.connect(filter);filter.connect(v);v.connect(target);source.start(start);this.voices.add(source);if(target===this.music)this.musicVoices.add(source);if(target===this.casinoBus)this.casinoVoices.add(source);source.onended=()=>{source.disconnect();filter.disconnect();v.disconnect();this.voices.delete(source);this.musicVoices.delete(source);this.casinoVoices.delete(source)};
+  source.connect(filter);filter.connect(v);v.connect(target);source.start(start);this.voices.add(source);if(target===this.music)this.musicVoices.add(source);if(target===this.casinoBus)this.casinoVoices.add(source);if(target===this.storeBus)this.storeVoices.add(source);source.onended=()=>{source.disconnect();filter.disconnect();v.disconnect();this.voices.delete(source);this.musicVoices.delete(source);this.casinoVoices.delete(source);this.storeVoices.delete(source)};
  }
  effect(name){
   if(this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;
@@ -51,7 +53,7 @@ export class GameAudio{
   if(next>=2){try{const buffer=await this.loadTrack(next);if(version===this.startVersion)this.trackBuffer=buffer;}catch{if(version===this.startVersion)this.stopMusic();return false}if(version!==this.startVersion)return false;}
   this.starting=false;if(this.muted)this.setMuted(false);
   this.musicPlaying=true;this.epoch=this.context.currentTime+.03;this.nextNote=this.epoch;this.step=0;
-  this.music.gain.setValueAtTime(this.audible?.42:0,this.context.currentTime);if(next>=2)this.startTrack();else{this.sequence();this.timer=setInterval(()=>this.sequence(),25)}return true;
+  this.applyRadioGain();if(next>=2)this.startTrack();else{this.sequence();this.timer=setInterval(()=>this.sequence(),25)}return true;
  }
  sequence(){
   const c=this.context;if(!c||!this.musicPlaying||!this.audible||this.station!==1)return;
@@ -87,15 +89,15 @@ export class GameAudio{
   const source=this.trackSource;if(!source)return;this.trackOffset=this.trackPosition;this.trackSource=null;this.musicVoices.delete(source);try{source.stop()}catch{}
  }
  stopMusic(){this.startVersion=(this.startVersion||0)+1;this.starting=false;clearInterval(this.timer);this.timer=null;this.pauseTrack();this.trackOffset=0;this.trackBuffer=null;this.musicPlaying=false;this.station=0;for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear();if(this.context&&this.music)this.music.gain.setValueAtTime(0,this.context.currentTime)}
- setMuted(value){this.muted=value;if(value){this.stopMusic();this.stopCasino()}if(this.master)this.master.gain.setValueAtTime(value?0:.22,this.context.currentTime);try{localStorage.setItem('lemonomics_sound_v1',value?'off':'on')}catch{}}
+ setMuted(value){this.muted=value;if(value){this.stopMusic();this.stopCasino();this.stopStore()}if(this.master)this.master.gain.setValueAtTime(value?0:.22,this.context.currentTime);try{localStorage.setItem('lemonomics_sound_v1',value?'off':'on')}catch{}}
  setAudible(value){
   if(value===this.audible)return;
-  if(!value){this.stopCasino();this.pauseTrack();for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}
+  if(!value){this.stopStore();this.stopCasino();this.pauseTrack();for(const voice of this.musicVoices){try{voice.stop()}catch{}}this.musicVoices.clear()}
   this.audible=value;
   if(value&&this.musicPlaying&&this.context){
    if(this.station>=2)this.startTrack();else{this.epoch=this.context.currentTime+.02;this.nextNote=this.epoch;this.step=0}
   }
-  if(this.music&&this.context)this.music.gain.setValueAtTime(value&&this.musicPlaying?.42:0,this.context.currentTime);
+  this.applyRadioGain();
  }
  level(){if(!this.musicPlaying||!this.audible||!this.analyser?.getFloatTimeDomainData)return 0;this.samples??=new Float32Array(256);this.analyser.getFloatTimeDomainData(this.samples);let sum=0;for(const value of this.samples)sum+=value*value;return Math.sqrt(sum/this.samples.length)}
  beat(){if(!this.musicPlaying||!this.audible||!this.context)return 0;const period=60/(this.stationInfo?.bpm||124),phase=((this.context.currentTime-this.epoch)%period+period)%period;return Math.exp(-phase*17)}
@@ -116,6 +118,11 @@ export class GameAudio{
   else if(kind===2){for(let i=0;i<7;i++)this.tone(330-i*22,t+i*.06,.025,'triangle',.04,bus)}
   else{this.noise(t,.08,.035,bus);this.tone(660,t+.12,.07,'triangle',.055,bus);this.tone(880,t+.27,.10,'triangle',.04,bus)}
  }
- reset(){this.stopCasino();this.stopMusic()}
+ applyRadioGain(){if(this.music&&this.context)this.music.gain.setValueAtTime(this.audible&&this.musicPlaying&&!this.storeActive?.42:0,this.context.currentTime)}
+ stopStore(reset=false){clearInterval(this.storeTimer);this.storeTimer=null;for(const voice of this.storeVoices){try{voice.stop()}catch{}}this.storeVoices.clear();this.storePlaying=false;if(reset)this.storeStep=0;if(this.storeBus)this.storeBus.gain.setValueAtTime(0,this.context.currentTime)}
+ updateStore(active){if(this.storeActive!==active){this.storeActive=active;if(!active)this.storeStep=0;this.applyRadioGain()}if(!active||this.muted||!this.audible||this.context?.state!=='running'){if(this.storePlaying)this.stopStore(!active);return}if(this.storePlaying)return;this.storePlaying=true;this.nextStoreNote=this.context.currentTime+.03;this.storeBus.gain.setValueAtTime(.26,this.context.currentTime);this.sequenceStore();this.storeTimer=setInterval(()=>this.sequenceStore(),50)}
+ sequenceStore(){if(!this.storePlaying||!this.storeActive||this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;if(this.nextStoreNote<t-.15)this.nextStoreNote=t+.02;while(this.nextStoreNote<t+.15){for(const note of storeScore(this.storeStep)){this.tone(midiFrequency(note.midi),this.nextStoreNote,note.duration,note.type,note.gain,this.storeBus);this.storeNotes++}this.storeStep=(this.storeStep+1)%STORE_SCORE_STEPS;this.nextStoreNote+=STORE_EIGHTH}}
+ storeLevel(){if(!this.storePlaying||!this.audible||!this.storeAnalyser?.getFloatTimeDomainData)return 0;this.storeSamples??=new Float32Array(256);this.storeAnalyser.getFloatTimeDomainData(this.storeSamples);let sum=0;for(const sample of this.storeSamples)sum+=sample*sample;return Math.sqrt(sum/this.storeSamples.length)}
+ reset(){this.storeActive=false;this.stopStore(true);this.stopCasino();this.stopMusic()}
 }
 export const gameAudio=new GameAudio();

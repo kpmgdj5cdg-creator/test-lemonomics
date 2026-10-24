@@ -1,7 +1,7 @@
 import {STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION as EXT,employeeRoomZ} from './department-store-layout.js';
 import * as THREE from 'three';
 import {box,group} from './models.js';
-import {storeProducts} from './store-front-model.js';
+import {storeProducts,storeCeilingSpeaker} from './store-front-model.js';
 import {STORE_REAR_FIXTURES,STORE_BACKROOM_FIXTURES,STORE_ROOM_WALLS,STORE_STAFF_ROOMS,STORE_STAFF_DOORS} from './store-floorplan.js';
 const palette=['#d6544e','#e2b95b','#72a4b4','#ab83ae','#7caa7c'];
 function rack(parent,f){const g=group(parent,f.x,0,f.z);if(f.kind==='electronics'||f.kind==='shoes')g.rotation.y=Math.PI/2;const w=['electronics','shoes'].includes(f.kind)?f.depth:f.width,d=['electronics','shoes'].includes(f.kind)?f.width:f.depth;storeProducts(g,0,0,w,d,f.kind);if(f.kind==='electronics')for(let i=0;i<3;i++){const x=-w/2+.45+i*(w-.9)/2;box(g,x,1.9,0,.62,.4,.14,'#313e47');box(g,x,1.9,d/2+.02,.51,.29,.025,'#83a8b1')}}
@@ -37,6 +37,7 @@ export function buildStoreRear(root){
  const vending=group(backProps,14.45,0,propZ(-9.25));vending.rotation.y=-Math.PI/2;box(vending,0,1.35,0,.6,2,.48,'#bb303c');box(vending,0,1.52,.26,.45,1.2,.025,'#4c6d7a');for(let i=0;i<8;i++)box(vending,-.12+(i%2)*.24,1.1+Math.floor(i/2)*.26,.285,.12,.17,.04,palette[i%5]);
  backBox(9.98,.75,-7.45,.48,.9,.45,'#dedbcf');backBox(9.98,1.45,-7.45,.34,.5,.32,'#86b6c4');
  box(ceiling,0,5.78,-21-EXT/2,29.6,.14,21+EXT,'#b9b4ab');const glow=new THREE.MeshStandardMaterial({color:'#fff9e9',emissive:'#fff4d7',emissiveIntensity:.9});glow.userData.owned=true;for(let x=-12;x<=12;x+=4)for(const z of [-11.7,-16.7,-21.7,-26.7,-30-EXT]){box(ceiling,x,5.66,z,1.4,.12,1.1,'#d8d3c5');box(ceiling,x,5.58,z,1.25,.045,.95,'#fff9e9').material=glow}
+ for(const x of [-12,12])for(const z of [-18,-30])storeCeilingSpeaker(ceiling,x,z);
  const lights=[];for(const x of [-10,0,10])for(const z of [-16,employeeRoomZ(-29)]){const l=new THREE.PointLight('#fff0d6',26,18,1.6);l.position.set(x,4.65,z);l.visible=false;root.add(l);lights.push(l)}
  return {fixtures,ceiling,lights,staffDoors};
 }
