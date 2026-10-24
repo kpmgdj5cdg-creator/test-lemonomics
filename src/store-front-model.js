@@ -1,3 +1,4 @@
+import {storeFloorTiles} from './store-floor-finish.js';
 import * as THREE from 'three';
 import {box,group,batch,character} from './models.js';
 import {voxelText,glyphs} from './voxel-text.js';
@@ -16,7 +17,7 @@ function display(parent,f){if(f.kind==='sports'||f.kind==='grocery'){storeProduc
 export function storeCeilingSpeaker(parent,x,z){const g=group(parent,x,6.925,z);g.name='shopster-ceiling-speaker';box(g,0,0,0,.62,.14,.54,'#d6d4c8');box(g,0,-.085,0,.46,.035,.39,'#677675');for(let i=0;i<6;i++)box(g,-.19+i*.076,-.11,0,.025,.02,.34,'#39494d');return g;}
 export function buildStoreFront(root){
  const fixtures=group(root);fixtures.name='shopster-front-interior';const ceiling=group(root);ceiling.name='shopster-ceiling';
- box(fixtures,0,.2,0,38.7,.16,21,'#d5d0bf');for(let x=-19;x<20;x+=1)for(let z=-10.25;z<10.5;z+=1)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
+ const floorTile=storeFloorTiles(fixtures);box(fixtures,0,.2,0,38.7,.16,21,'#d5d0bf');for(let x=-19;x<20;x+=1)for(let z=-10.25;z<10.5;z+=1)floorTile(x,z,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
  for(const x of [-19.33,19.33]){box(fixtures,x,3.625,0,.12,6.95,21,'#e7e0d1');box(fixtures,x,6.145,0,.14,.75,21,'#bc3038');box(fixtures,x,.43,0,.13,.25,21,'#8c928e')}
  for(const f of STORE_FIXTURES.filter(f=>!['checkout','carts'].includes(f.kind)))display(fixtures,f);
  for(const f of STORE_ENDCAPS.filter(f=>f.z>=-10.5))storeEndcap(fixtures,f);

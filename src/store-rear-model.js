@@ -1,3 +1,4 @@
+import {storeFloorTiles} from './store-floor-finish.js';
 import {STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION as EXT,employeeRoomZ,storePlanZ} from './department-store-layout.js';
 import * as THREE from 'three';
 import {box,group} from './models.js';
@@ -20,7 +21,7 @@ function employeeFixture(parent,f){const g=group(parent,f.x,0,f.z);switch(f.kind
  }}
 export function buildStoreRear(root){
  const rearDepth=-10.5-STORE_BACK_Z,rearCenter=(-10.5+STORE_BACK_Z)/2;const fixtures=group(root),ceiling=group(root);fixtures.name='shopster-rear-interior';ceiling.name='shopster-rear-ceiling';
- box(fixtures,0,.2,rearCenter,38.7,.16,rearDepth,'#d5d0bf');for(let x=-19;x<20;x++)for(let z=STORE_BACK_Z+.25;z< -10.5;z++)box(fixtures,x,.287,z,.985,.012,.985,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
+ const floorTile=storeFloorTiles(fixtures);box(fixtures,0,.2,rearCenter,38.7,.16,rearDepth,'#d5d0bf');for(let x=-19;x<20;x++)for(let z=STORE_BACK_Z+.25;z< -10.5;z++)floorTile(x,z,(Math.round(x+z*4)%3===0)?'#d7d1c4':'#e5ded0');
  for(const x of [-19.33,19.33]){box(fixtures,x,3.625,rearCenter,.12,6.95,rearDepth,'#e7e0d1');box(fixtures,x,6.145,rearCenter,.14,.75,rearDepth,'#bc3038');box(fixtures,x,.43,rearCenter,.13,.25,rearDepth,'#8c928e')}
  box(fixtures,0,3.625,STORE_BACK_Z+.15,38.7,6.95,.12,'#e7e0d1');box(fixtures,0,6.145,STORE_BACK_Z+.24,38.6,.75,.08,'#bc3038');
  for(const w of STORE_ROOM_WALLS){box(fixtures,(w.minX+w.maxX)/2,3.675,(w.minZ+w.maxZ)/2,w.maxX-w.minX,6.95,w.maxZ-w.minZ,'#e3ddcf');box(fixtures,(w.minX+w.maxX)/2,6.145,(w.minZ+w.maxZ)/2,w.maxX-w.minX+.015,.75,w.maxZ-w.minZ+.015,'#bb303c')}

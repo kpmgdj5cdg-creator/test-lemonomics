@@ -287,3 +287,7 @@ Sales-floor gondolas have twice their former thickness, six stocked levels inste
 The shell is 39 units wide and 52.71 units deep. Shelf centers spread across the wider floor and along the sales floor, preserving at least the previous parallel-aisle and cross-aisle clearances. Both wall passages admit a shopping cart past the full endcap projection. The ceiling and exterior shell rise 25 percent, with lights, speaker grilles, columns and wall bands lifted accordingly. Side lanes, rear parking, the loading dock, overview target and walking/weather bounds follow the larger shell. The entrance, street and front parking stay anchored.
 
 Store viewpoints now save layout version 4. Earlier positions migrate into the expanded floor, with a safe entrance fallback if a new fixture occupies the translated position. The existing shopper/cart population, employee routes, doors and quiet PA music continue to work. Validation includes cart routes down both wall passages, nonoverlapping fixtures, main-aisle clearances, an hour of customer turnover, browser movement/save restoration and standalone offline play.
+
+### Shopster polished tile floors
+
+The front sales floor, rear aisles and employee rooms use dedicated polished tile materials with low roughness and a clear coat. Existing ceiling lights produce soft specular highlights while the tile colors and narrow grout lines remain visible. Tile materials are shared within each floor section for batching; this finish uses the existing lighting and adds no reflection render pass or external assets.
