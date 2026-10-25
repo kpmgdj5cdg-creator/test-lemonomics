@@ -294,6 +294,8 @@ The front sales floor, rear aisles and employee rooms use dedicated polished til
 
 ### Front-left Shopster electronics department
 
-The three front-left gondolas are now half-height electronics shelves, with low endcaps and sample laptops. The left entrance cart corral is removed; low shelves attach to the front and side walls in its place. The right cart corral remains. Matching fixture bounds keep the new shelving solid while preserving cart routes and the main aisles.
+The electronics department is an addition in the open front-left entrance corner. The three original tall sports gondolas and their stocked endcaps remain in their original positions and heights. Three low wall units with sample laptops sit along the entrance-side left wall under the TVs; a low shelf also remains on the front wall. The left entrance cart corral is removed as originally requested. The right cart corral remains. Matching fixture bounds keep the new shelving solid while preserving cart routes and the main aisles.
 
 Three wall-mounted televisions show the same original animated voxel soccer match. A small independent Three.js scene renders the field, goals, crowd, players and moving ball once at up to 12 frames per second into one shared 512×288 texture. All screens share that broadcast. It runs only while inside the active store and pauses for save menus, hidden tabs and leaving the store. It uses no external video, network stream, autoplay permission or simulation randomness. Render targets are released when changing locations or destroying the world. The store PA music remains the audio source.
+
+Electronics placement correction: all three TVs and their low shelves are on the entrance side of the left wall (local z = 2.1, 5.4, 8.7). No existing sales-floor racks are replaced. The original tall rows, cross-aisles and wall passages remain intact.

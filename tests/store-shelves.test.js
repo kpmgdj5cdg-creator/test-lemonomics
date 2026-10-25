@@ -6,7 +6,7 @@ import {STORE_FIXTURES,STORE_REAR_FIXTURES,STORE_ENDCAPS,validStorePosition,stor
 import {storeProducts,storeEndcap} from '../src/store-front-model.js';
 
 test('stocked gondolas double thickness and height while endcaps remain solid and disjoint',()=>{
- const shelves=[...STORE_FIXTURES,...STORE_REAR_FIXTURES].filter(f=>['front-electronics','sports','grocery','seasonal','toys','household','homegoods','beauty','electronics','shoes'].includes(f.kind));
+ const shelves=[...STORE_FIXTURES,...STORE_REAR_FIXTURES].filter(f=>['front-electronics','sports','grocery','seasonal','toys','household','homegoods','beauty','electronics','shoes'].includes(f.kind)&&!f.wallMounted);
  assert.equal(STORE_ENDCAPS.length,shelves.length*2);
  for(const f of shelves)assert.equal(['seasonal','electronics','shoes'].includes(f.kind)?f.width:f.depth,['seasonal','electronics','shoes'].includes(f.kind)?1.4:1.3);
  const all=[...STORE_FIXTURES,...STORE_REAR_FIXTURES,...STORE_ENDCAPS];

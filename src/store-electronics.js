@@ -28,6 +28,6 @@ export class StoreSportsBroadcast{
 }
 export function buildStoreElectronics(parent){
  const broadcast=new StoreSportsBroadcast(),screens=[];
- for(const z of [-1.95,-5.85,-9.75]){const tv=group(parent,-19.17,3.55,z);tv.rotation.y=Math.PI/2;tv.name='shopster-sports-tv';box(tv,0,0,0,2.85,1.68,.12,'#25333e');box(tv,0,-.89,-.02,.8,.08,.14,'#434e55');const screen=new THREE.Mesh(new THREE.PlaneGeometry(2.66,1.496),broadcast.material);screen.position.z=.067;tv.add(screen);box(tv,1.27,-.75,.07,.04,.035,.02,'#77c4b6');screens.push(screen)}
+ for(const z of [2.1,5.4,8.7]){const tv=group(parent,-19.17,3.55,z);tv.rotation.y=Math.PI/2;tv.name='shopster-sports-tv';box(tv,0,0,0,2.85,1.68,.12,'#25333e');box(tv,0,-.89,-.02,.8,.08,.14,'#434e55');const screen=new THREE.Mesh(new THREE.PlaneGeometry(2.66,1.496),broadcast.material);screen.position.z=.067;tv.add(screen);box(tv,1.27,-.75,.07,.04,.035,.02,'#77c4b6');screens.push(screen)}
  return {broadcast,screens};
 }
