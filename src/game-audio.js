@@ -21,11 +21,11 @@ export class GameAudio{
    if(this.context.state==='suspended')await this.context.resume();return this.context.state==='running';
   }catch{return false}
  }
- tone(frequency,start,duration=.08,type='sine',gain=.15,target=this.master,endFrequency){
+ tone(frequency,start,duration=.08,type='sine',gain=.15,target=this.master,endFrequency,attack){
   const c=this.context;if(!c||!target)return;
   const o=c.createOscillator(),v=c.createGain();o.type=type;o.frequency.setValueAtTime(frequency,start);
   if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,start+duration);
-  v.gain.setValueAtTime(.0001,start);v.gain.exponentialRampToValueAtTime(gain,start+Math.min(.16,duration*.15));v.gain.exponentialRampToValueAtTime(.0001,start+duration);
+  v.gain.setValueAtTime(.0001,start);v.gain.exponentialRampToValueAtTime(gain,start+Math.min(attack??.16,duration*.15));v.gain.exponentialRampToValueAtTime(.0001,start+duration);
   o.connect(v);v.connect(target);o.start(start);o.stop(start+duration+.01);this.voices.add(o);if(target===this.music)this.musicVoices.add(o);if(target===this.casinoBus)this.casinoVoices.add(o);if(target===this.storeBus)this.storeVoices.add(o);o.onended=()=>{o.disconnect();v.disconnect();this.voices.delete(o);this.musicVoices.delete(o);this.casinoVoices.delete(o);this.storeVoices.delete(o)};this.noteCount++;
  }
  noise(start,duration,gain,target=this.master){
@@ -121,7 +121,7 @@ export class GameAudio{
  applyRadioGain(){if(this.music&&this.context)this.music.gain.setValueAtTime(this.audible&&this.musicPlaying&&!this.storeActive?.42:0,this.context.currentTime)}
  stopStore(reset=false){clearInterval(this.storeTimer);this.storeTimer=null;for(const voice of this.storeVoices){try{voice.stop()}catch{}}this.storeVoices.clear();this.storePlaying=false;if(reset)this.storeStep=0;if(this.storeBus)this.storeBus.gain.setValueAtTime(0,this.context.currentTime)}
  updateStore(active){if(this.storeActive!==active){this.storeActive=active;if(!active)this.storeStep=0;this.applyRadioGain()}if(!active||this.muted||!this.audible||this.context?.state!=='running'){if(this.storePlaying)this.stopStore(!active);return}if(this.storePlaying)return;this.storePlaying=true;this.nextStoreNote=this.context.currentTime+.03;this.storeBus.gain.setValueAtTime(.26,this.context.currentTime);this.sequenceStore();this.storeTimer=setInterval(()=>this.sequenceStore(),50)}
- sequenceStore(){if(!this.storePlaying||!this.storeActive||this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;if(this.nextStoreNote<t-.15)this.nextStoreNote=t+.02;while(this.nextStoreNote<t+.15){for(const note of storeScore(this.storeStep)){this.tone(midiFrequency(note.midi),this.nextStoreNote,note.duration,note.type,note.gain,this.storeBus);this.storeNotes++}this.storeStep=(this.storeStep+1)%STORE_SCORE_STEPS;this.nextStoreNote+=STORE_EIGHTH}}
+ sequenceStore(){if(!this.storePlaying||!this.storeActive||this.muted||!this.audible||this.context?.state!=='running')return;const t=this.context.currentTime;if(this.nextStoreNote<t-.15)this.nextStoreNote=t+.02;while(this.nextStoreNote<t+.15){for(const note of storeScore(this.storeStep)){const start=this.nextStoreNote+(note.delay||0),frequency=midiFrequency(note.midi);if(note.drum==='kick')this.tone(95,start,.17,'sine',note.gain,this.storeBus,43,.006);else if(note.drum){this.noise(start,note.duration,note.gain,this.storeBus);if(note.drum==='snare')this.tone(175,start,.07,'sine',.022,this.storeBus,100,.004)}else if(note.voice==='guitar'){for(const [multiple,gain]of [[1,1],[2,.38],[3,.13]])this.tone(frequency*multiple,start,note.duration/(multiple===3?1.6:1),'sine',note.gain*gain,this.storeBus,undefined,.006)}else this.tone(frequency,start,note.duration,note.type,note.gain,this.storeBus,undefined,note.voice==='keys'?.012:undefined);this.storeNotes++}this.storeStep=(this.storeStep+1)%STORE_SCORE_STEPS;this.nextStoreNote+=STORE_EIGHTH}}
  storeLevel(){if(!this.storePlaying||!this.audible||!this.storeAnalyser?.getFloatTimeDomainData)return 0;this.storeSamples??=new Float32Array(256);this.storeAnalyser.getFloatTimeDomainData(this.storeSamples);let sum=0;for(const sample of this.storeSamples)sum+=sample*sample;return Math.sqrt(sum/this.storeSamples.length)}
  reset(){this.storeActive=false;this.stopStore(true);this.stopCasino();this.stopMusic()}
 }

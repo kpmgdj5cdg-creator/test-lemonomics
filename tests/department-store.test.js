@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
-import {DEPARTMENT_STORE as D,STORE_EMPLOYEE_EXTENSION,STORE_SALES_EXTENSION,STORE_EMPLOYEE_FRONT,STORE_BACK_Z,STORE_BUILDING_BOUNDS as B,STORE_PARKING_BOUNDS as P,STORE_SPACES,STORE_PARKED_SPACES,STORE_ENTRY,STORE_SIDE_LANES,STORE_REAR_BOUNDS,STORE_REAR_SPACES} from '../src/department-store-layout.js';
+import {DEPARTMENT_STORE as D,STORE_EMPLOYEE_EXTENSION,STORE_SALES_EXTENSION,STORE_WAREHOUSE_EXTENSION,STORE_EMPLOYEE_FRONT,STORE_BACK_Z,STORE_BUILDING_BOUNDS as B,STORE_PARKING_BOUNDS as P,STORE_SPACES,STORE_PARKED_SPACES,STORE_ENTRY,STORE_SIDE_LANES,STORE_REAR_BOUNDS,STORE_REAR_SPACES} from '../src/department-store-layout.js';
 import {DOWNTOWN_LOTS,lotBounds} from '../src/downtown-layout.js';import {CASINO_PARKING} from '../src/casino-parking.js';import {buildDepartmentStore} from '../src/department-store.js';import {sceneColliders,sceneGround} from '../src/player-controller.js';import {blocked,WALKING_AREAS} from '../src/player-movement.js';
-const EXT=STORE_EMPLOYEE_EXTENSION+STORE_SALES_EXTENSION;
+const EXT=STORE_EMPLOYEE_EXTENSION+STORE_SALES_EXTENSION+STORE_WAREHOUSE_EXTENSION;
 const separate=(a,b)=>a.maxX<=b.minX||a.minX>=b.maxX||a.maxZ<=b.minZ||a.minZ>=b.maxZ;
 test('northwest department-store parcel clears city buildings and casino lots; relocated shops face across the road',()=>{
  for(const lot of DOWNTOWN_LOTS)for(const area of [B,P,STORE_REAR_BOUNDS])assert.ok(separate(area,lotBounds(lot)),`${lot.shop} overlaps department-store parcel`);
@@ -26,5 +26,5 @@ test('side drive lanes connect the street to the rear parking aisle without phys
 });
 
 test('expanded sales floor grows rearward while the street entrance and front parking stay anchored',()=>{
- assert.equal(D.depth,42+EXT);assert.equal(B.maxZ,-28.5);assert.ok(Math.abs(B.maxZ-B.minZ-(42+EXT))<1e-8);assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)/3.5-1.66)<1e-8);assert.ok(STORE_REAR_BOUNDS.maxZ<B.minZ);assert.ok(STORE_SIDE_LANES.every(l=>l.minZ<STORE_REAR_BOUNDS.maxZ));assert.ok(STORE_REAR_BOUNDS.minZ>WALKING_AREAS.downtown.bounds.minZ);
+ assert.ok(Math.abs(D.depth-(42+EXT))<1e-8);assert.equal(B.maxZ,-28.5);assert.ok(Math.abs(B.maxZ-B.minZ-(42+EXT))<1e-8);assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)/3.5-1.66*2)<1e-8);assert.ok(STORE_REAR_BOUNDS.maxZ<B.minZ);assert.ok(STORE_SIDE_LANES.every(l=>l.minZ<STORE_REAR_BOUNDS.maxZ));assert.ok(STORE_REAR_BOUNDS.minZ>WALKING_AREAS.downtown.bounds.minZ);
 });

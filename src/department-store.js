@@ -3,16 +3,16 @@ import {buildStoreFront} from './store-front-model.js';
 import * as THREE from 'three';
 import {box,group,tree,batch} from './models.js';
 import {voxelText} from './voxel-text.js';
-import {DEPARTMENT_STORE as D,STORE_FRONT_Z,STORE_BACK_Z,STORE_BODY_Z,STORE_EMPLOYEE_EXTENSION,STORE_SALES_EXTENSION,STORE_SPACES,STORE_PARKED_SPACES,STORE_PARKING_BOUNDS as LOT,STORE_REAR_BOUNDS as REAR,STORE_SIDE_LANES as LANES} from './department-store-layout.js';
-const EXT=STORE_EMPLOYEE_EXTENSION+STORE_SALES_EXTENSION;
+import {DEPARTMENT_STORE as D,STORE_FRONT_Z,STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION,STORE_SALES_EXTENSION,STORE_WAREHOUSE_EXTENSION,STORE_DOCK_HEIGHT,STORE_SPACES,STORE_PARKED_SPACES,STORE_PARKING_BOUNDS as LOT,STORE_REAR_BOUNDS as REAR,STORE_SIDE_LANES as LANES} from './department-store-layout.js';
+const EXT=STORE_EMPLOYEE_EXTENSION+STORE_SALES_EXTENSION+STORE_WAREHOUSE_EXTENSION;
 const owned=m=>{m.userData.owned=true;return m};
 function car(parent,x,z,color,angle=0){const g=group(parent,x,.095,z);g.rotation.y=angle;g.name='shopster-parked-car';box(g,0,.4,0,1.48,.54,2.85,color);box(g,0,.87,-.04,1.23,.48,1.5,color);box(g,0,.88,.73,1.08,.32,.035,'#6193a1');box(g,0,.88,-.81,1.08,.32,.035,'#416c7d');for(const side of [-1,1]){box(g,side*.63,.89,0,.035,.3,1.3,'#416c7d');for(const z of [-.92,.92])box(g,side*.73,.26,z,.21,.48,.45,'#26313b');box(g,side*.48,.45,1.45,.25,.15,.035,'#f3dda0');box(g,side*.48,.45,-1.45,.25,.15,.035,'#ba3c43')}return g}
 function cart(parent,x,z){const g=group(parent,x,.2,z);box(g,0,.25,0,.52,.055,.7,'#707c80');for(const side of [-1,1]){box(g,side*.25,.59,0,.04,.44,.66,'#adada3');for(const zz of [-.23,.23])box(g,side*.23,.09,zz,.1,.15,.13,'#303b42')}box(g,0,.59,-.33,.52,.44,.04,'#9ca6a3');for(const zz of [-.23,-.05,.13,.31])box(g,0,.61,zz,.52,.025,.025,'#c3c4b6');box(g,0,.84,-.48,.62,.075,.09,'#b82e39');return g}
 export function buildDepartmentStore(parent){
- const X=offset=>D.x+offset;const root=group(parent,D.x,.12,D.z);root.name='shopster-exterior';const body=group(root,0,0,STORE_BODY_Z),roof=group(root,0,0,STORE_BODY_Z),front=D.depth/2;
+ const X=offset=>D.x+offset;const root=group(parent,D.x,.12,D.z);root.name='shopster-exterior';const shellDepth=D.depth-STORE_WAREHOUSE_EXTENSION,shellCenter=STORE_FRONT_Z-shellDepth/2;const body=group(root,0,0,shellCenter),roof=group(root,0,0,shellCenter),front=shellDepth/2;
  // Cream big-box facade, red wraparound stripe, tall parapet and service side.
- box(body,0,.1,0,D.width+.35,.2,D.depth+.35,'#b6b4a6');for(const side of [-1,1])box(body,side*(D.width/2-.1),D.height/2+.2,0,.2,D.height,D.depth,'#d9d4c6');box(body,0,D.height/2+.2,-front,D.width,D.height,.2,'#d9d4c6');for(const x of [-12.25,12.25])box(body,x,D.height/2+.2,front,14.5,D.height,.2,'#d9d4c6');box(body,0,5.425,front,10,4.05,.2,'#d9d4c6');
- for(const side of [-1,1]){box(body,side*(D.width/2+.035),1.55,0,.09,.3,D.depth,'#bb303c');box(body,side*(D.width/2+.045),.75,0,.1,1.18,D.depth,'#a9a89d')}
+ box(body,0,.1,0,D.width+.35,.2,shellDepth+.35,'#b6b4a6');for(const side of [-1,1])box(body,side*(D.width/2-.1),D.height/2+.2,0,.2,D.height,shellDepth,'#d9d4c6');box(body,13.65,D.height/2+.2,-front,11.7,D.height,.2,'#d9d4c6');for(const x of [-12.25,12.25])box(body,x,D.height/2+.2,front,14.5,D.height,.2,'#d9d4c6');box(body,0,5.425,front,10,4.05,.2,'#d9d4c6');
+ for(const side of [-1,1]){box(body,side*(D.width/2+.035),1.55,0,.09,.3,shellDepth,'#bb303c');box(body,side*(D.width/2+.045),.75,0,.1,1.18,shellDepth,'#a9a89d')}
  // Actual front glazing and openable double doors share the exterior world.
  const glass=owned(new THREE.MeshStandardMaterial({color:'#aac5c7',transparent:true,opacity:.12,depthWrite:false,roughness:.25}));
  for(const x of [-5.1,5.1])box(body,x,2.75,front+.16,.26,5.25,.5,'#c42e3c');box(body,0,3.45,front+.16,10.6,.3,.5,'#c42e3c');
@@ -28,12 +28,17 @@ export function buildDepartmentStore(parent){
  for(const x of [-8.2,8.2]){box(body,x,3.45,front+.11,2,4.8,.2,'#eee5d5');const words=x<0?['HOME','STYLE','TECH','MORE']:['GOOD','BRIGHT','DAYS'];words.forEach((word,i)=>voxelText(body,word,x,4.85-i*.52,front+.24,.27,'#b6323e'))}
  for(const side of [-1,1])for(let i=0;i<4;i++)box(body,side*12,2.8+i*.75,front+.15,.12,.4,.04,'#d5b688');
  // Low-slope roof, raised coping, drainage and voxel HVAC equipment.
- box(roof,0,D.height+.25,0,D.width+.3,.25,D.depth+.3,'#ded9cd');for(const z of [-front,front])box(roof,0,D.height+.52,z,D.width+.45,.42,.2,'#efe9dc');for(const x of [-D.width/2,D.width/2])box(roof,x,D.height+.52,0,.2,.42,D.depth,'#efe9dc');
+ box(roof,0,D.height+.25,0,D.width+.3,.25,shellDepth+.3,'#ded9cd');for(const z of [-front,front])box(roof,0,D.height+.52,z,D.width+.45,.42,.2,'#efe9dc');for(const x of [-D.width/2,D.width/2])box(roof,x,D.height+.52,0,.2,.42,shellDepth,'#efe9dc');
  for(const [x,z]of [[-9,-5],[0,-6],[9,-4],[-8,3],[7,3]]){box(roof,x,D.height+.66,z,1.8,.65,1.25,'#aeb0a9');box(roof,x,D.height+1.02,z,1.95,.1,1.4,'#d0cdc1');for(let k=0;k<6;k++)box(roof,x-.65+k*.26,D.height+.7,z+.64,.12,.42,.035,'#6e7980')}
  for(const side of [-1,1])box(body,side*(D.width/2+.08),2.6,-7,.13,4.7,.13,'#b4b6af');
- // Receiving bay and back-of-house exterior only.
- box(body,-14.56,1.3,-front-.13,5.3,2.4,.25,'#727b80');for(let i=0;i<9;i++)box(body,-14.56,.35+i*.25,-front-.28,5.05,.025,.04,'#9caaa9');box(body,-14.56,.19,-front-1.25,6.2,.3,2.7,'#8e9592');
- for(const x of [-17.66,-11.46])box(body,x,.65,-front-1.4,.14,.95,.14,'#e6bc44');box(body,10,1.3,-front-.12,1.1,2.3,.18,'#65747a');
+ // The rear loading wing doubles the receiving/warehouse depth only.
+ const wing=group(body,0,0,-front-STORE_WAREHOUSE_EXTENSION/2),wingRoof=group(roof,0,0,-front-STORE_WAREHOUSE_EXTENSION/2);
+ box(wing,-5.85,.1,0,27.6,.2,STORE_WAREHOUSE_EXTENSION+.2,'#b6b4a6');
+ for(const x of [-19.4,7.8]){box(wing,x,D.height/2+.2,0,.2,D.height,STORE_WAREHOUSE_EXTENSION,'#d9d4c6');box(wing,x,1.55,0,.22,.3,STORE_WAREHOUSE_EXTENSION,'#bb303c')}
+ for(const [x,width]of [[-18.355,2.29],[-2.055,19.71]])box(wing,x,D.height/2+.2,-STORE_WAREHOUSE_EXTENSION/2,width,D.height,.2,'#d9d4c6');
+ const doorTop=.35+STORE_DOCK_HEIGHT;box(wing,-14.56,(doorTop+D.height+.2)/2,-STORE_WAREHOUSE_EXTENSION/2,5.3,D.height+.2-doorTop,.2,'#d9d4c6');
+ box(wingRoof,-5.85,D.height+.25,0,27.6,.25,STORE_WAREHOUSE_EXTENSION+.25,'#ded9cd');box(wingRoof,-5.85,D.height+.52,-STORE_WAREHOUSE_EXTENSION/2,27.6,.42,.2,'#efe9dc');for(const x of [-19.5,7.8])box(wingRoof,x,D.height+.52,0,.2,.42,STORE_WAREHOUSE_EXTENSION,'#efe9dc');
+ box(body,-14.56,.19,-front-STORE_WAREHOUSE_EXTENSION-1.25,6.2,.3,2.7,'#8e9592');for(const x of [-17.66,-11.46])box(body,x,.65,-front-STORE_WAREHOUSE_EXTENSION-1.4,.14,.95,.14,'#e6bc44');box(body,10,1.3,-front-.12,1.1,2.3,.18,'#65747a');
  const site=group(parent);site.name='shopster-site';box(site,D.x,.095,D.z+STORE_FRONT_Z+1.1,41,.18,2.3,'#d8d7c7');box(site,D.x,.06,D.z+STORE_BACK_Z-2.6,41,.12,4.5,'#6c7779');
  for(let i=0;i<6;i++)box(site,D.x-4+i*1.6,.69,D.z+STORE_FRONT_Z+1.65,.2,1.05,.2,'#c33941');
  // Connected drive lanes flank the building and join a smaller rear lot.

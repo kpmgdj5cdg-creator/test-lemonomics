@@ -1,4 +1,4 @@
-import {employeeRoomZ,STORE_BACK_Z,STORE_EMPLOYEE_FRONT,storePlanPosition,storePlanZ} from '../src/department-store-layout.js';
+import {employeeRoomZ,STORE_BACK_Z,STORE_BACKROOM_BASE_Z,STORE_EMPLOYEE_FRONT,storePlanPosition,storePlanZ} from '../src/department-store-layout.js';
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
 import {STORE_BROWSE_STOPS as stops,STORE_ROOM_BOUNDS,STORE_REAR_FIXTURES,STORE_STAFF_ROOMS,STORE_BACK_WORKERS,STORE_COLUMNS,STORE_CHECKOUTS,STORE_FIXTURES,validStorePosition,restoredStorePosition,moveInStore,storeShopperPath} from '../src/store-floorplan.js';
 import {StoreShopperSchedule,validShopperPosition} from '../src/store-shoppers.js';import {buildDepartmentStore,batchDepartmentStore} from '../src/department-store.js';
@@ -14,7 +14,7 @@ test('one hour of shopper traffic retains population/cart caps, browses multiple
  assert.ok(moved);assert.ok(checkout);assert.ok(maxVisits>=3);assert.ok(s.departures>100);assert.ok(s.serial>100);
 });
 test('store batching preserves independent door hinges, visible room fixtures and switchable lighting',()=>{
- const scene=new THREE.Group(),store=buildDepartmentStore(scene);batchDepartmentStore(store);assert.equal(store.hinges.length,2);for(const hinge of store.hinges){assert.ok(hinge.children.some(c=>c.isMesh));hinge.rotation.y=1;assert.equal(hinge.rotation.y,1)}assert.ok(store.interior.fixtures.children.some(c=>c.isMesh));assert.ok(store.interior.lights.every(l=>!l.visible));store.setNight(true);assert.ok(store.lights.every(l=>l.visible));assert.equal(store.interior.lights.length,12);
+ const scene=new THREE.Group(),store=buildDepartmentStore(scene);batchDepartmentStore(store);assert.equal(store.hinges.length,2);for(const hinge of store.hinges){assert.ok(hinge.children.some(c=>c.isMesh));hinge.rotation.y=1;assert.equal(hinge.rotation.y,1)}assert.ok(store.interior.fixtures.children.some(c=>c.isMesh));assert.ok(store.interior.lights.every(l=>!l.visible));store.setNight(true);assert.ok(store.lights.every(l=>l.visible));assert.equal(store.interior.lights.length,14);
 });
 
 test('complete rear sales floor connects to every employee room while shopper routes stay public',()=>{
@@ -31,6 +31,6 @@ test('expanded store restores legacy employee room viewpoints and preserves vers
 });
 
 test('all four employee rooms gain 66 percent depth with clear routes to their enlarged rear areas',()=>{
- assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACK_Z)-3.5*1.66)<1e-9);
+ assert.ok(Math.abs((STORE_EMPLOYEE_FRONT-STORE_BACKROOM_BASE_Z)-3.5*1.66)<1e-9);
  for(const [x,z]of [[-10.2,-32],[-2,-32],[7.8,-31.5],[11.9,-30.8]]){const p=storePlanPosition({x,z}),start=storePlanPosition({x,z:-27});assert.ok(validStorePosition(p));assert.ok(storeShopperPath(start,p,false,true).length);assert.equal(storeShopperPath(start,p).length,0)}
 });

@@ -1,4 +1,4 @@
-import {DEPARTMENT_STORE as D,STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION,employeeRoomZ,storePlanPosition,storePlanZ} from './department-store-layout.js';
+import {DEPARTMENT_STORE as D,STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION,employeeRoomZ,storePlanPosition,storePlanZ,STORE_BACKROOM_BASE_Z,STORE_WING_MAX_X} from './department-store-layout.js';
 import {blocked} from './player-movement.js';
 export const STORE_ROOM_BOUNDS={minX:-19.25,maxX:19.25,minZ:STORE_BACK_Z+.4,maxZ:10.05};
 export const STORE_CHECKOUTS=[-8.5,-5.1,-1.7,1.7,5.1,8.5].map((x,i)=>({x,z:3,number:i+1,staffed:i<2})).map(storePlanPosition);
@@ -29,7 +29,14 @@ export const STORE_STAFF_ROOMS=[
  {id:'breakroom',name:'BREAK ROOM',minX:9.6,maxX:14.7,doorX:11.9}
 ].map(r=>({...r,minX:r.minX*1.3,maxX:r.maxX*1.3,doorX:r.doorX*1.3}));
 export const STORE_STAFF_DOORS=STORE_STAFF_ROOMS.map(r=>({id:r.id,x:r.doorX,z:storePlanZ(-28),width:1.8}));
-export const STORE_ROOM_WALLS=[...STORE_STAFF_ROOMS.flatMap(r=>[{minX:r.minX,maxX:r.doorX-.9,minZ:storePlanZ(-28)-.1,maxZ:storePlanZ(-28)+.1},{minX:r.doorX+.9,maxX:r.maxX,minZ:storePlanZ(-28)-.1,maxZ:storePlanZ(-28)+.1}]),...[-8,6,9.6].map(x=>({minX:x*1.3-.1,maxX:x*1.3+.1,minZ:STORE_BACK_Z+.1,maxZ:storePlanZ(-28)}))];
+export const STORE_CONNECTING_DOOR={id:'receiving-stockroom',x:-10.4,z:-39.625,width:1.8,sideways:true};
+export const STORE_ROOM_WALLS=[
+ ...STORE_STAFF_ROOMS.flatMap(r=>[{minX:r.minX,maxX:r.doorX-.9,minZ:storePlanZ(-28)-.1,maxZ:storePlanZ(-28)+.1},{minX:r.doorX+.9,maxX:r.maxX,minZ:storePlanZ(-28)-.1,maxZ:storePlanZ(-28)+.1}]),
+ ...[STORE_BACK_Z+.1,STORE_CONNECTING_DOOR.z+.9].map((z,i)=>({minX:-10.5,maxX:-10.3,minZ:z,maxZ:i?storePlanZ(-28):STORE_CONNECTING_DOOR.z-.9})),
+ {minX:7.7,maxX:7.9,minZ:STORE_BACK_Z+.1,maxZ:storePlanZ(-28)},
+ {minX:12.38,maxX:12.58,minZ:STORE_BACKROOM_BASE_Z+.1,maxZ:storePlanZ(-28)},
+ {minX:7.8,maxX:19.4,minZ:STORE_BACKROOM_BASE_Z-.05,maxZ:STORE_BACKROOM_BASE_Z+.15}
+];
 export const STORE_BACKROOM_FIXTURES=[
  {x:-14.2,z:-8.8,width:.65,depth:2.2,kind:'receiving-rack'},
  {x:-13,z:-7.9,width:1.5,depth:1.15,kind:'pallet'},
@@ -38,9 +45,8 @@ export const STORE_BACKROOM_FIXTURES=[
  {x:14.45,z:-9.25,width:.48,depth:.6,kind:'vending'},
  ...[-5,2].map(x=>({x,z:-9.85,width:5.6,depth:.65,kind:'stock-rack'})),
  ...[-5,2].map(x=>({x,z:-7.65,width:3.6,depth:.55,kind:'stock-rack'})),
- ...[6.85,8.75].map(x=>({x,z:-9.7,width:.7,depth:.85,kind:'toilet'})),
+ {x:7.8,z:-9.7,width:.7,depth:.85,kind:'toilet'},
  {x:6.35,z:-8,width:.55,depth:1,kind:'sink'},
- {x:7.8,z:-9.55,width:.08,depth:1.45,kind:'stall-wall'},
  {x:10.45,z:-9.92,width:1.35,depth:.6,kind:'lockers'},
  {x:13,z:-9.92,width:2.9,depth:.65,kind:'break-counter'},
  ...[10.65,13.3].map(x=>({x,z:-8.25,width:.85,depth:.7,kind:'break-table'})),
@@ -49,8 +55,16 @@ export const STORE_BACKROOM_FIXTURES=[
 // A third dining table uses the added break-room floor space.
 STORE_BACKROOM_FIXTURES.push({x:11.9,z:-31.6,width:.85,depth:.7,kind:'break-table'},...[-.7,.7].map(dx=>({x:11.9+dx,z:-31.6,width:.42,depth:.5,kind:'chair'})));
 for(const f of STORE_BACKROOM_FIXTURES)Object.assign(f,storePlanPosition(f));
+// Park the pallet jack beside the loading bay, clear of the connecting doorway.
+Object.assign(STORE_BACKROOM_FIXTURES.find(f=>f.kind==='pallet-jack'),{x:-17,z:-44.6});
+// Close rack rows with 1.6-unit clear aisles; a wide center aisle joins the staff entrance.
+for(let i=STORE_BACKROOM_FIXTURES.length-1;i>=0;i--)if(STORE_BACKROOM_FIXTURES[i].kind==='stock-rack')STORE_BACKROOM_FIXTURES.splice(i,1);
+for(const z of [-38.5,-40.75,-43,-45.25])for(const [x,width]of [[-6.3,5.4],[3.3,6.2]])STORE_BACKROOM_FIXTURES.push({x,z,width,depth:.65,kind:'stock-rack',tall:true});
+const tables=STORE_BACKROOM_FIXTURES.filter(f=>f.kind==='break-table');
+for(const chair of STORE_BACKROOM_FIXTURES.filter(f=>f.kind==='chair')){const nearest=tables.reduce((a,b)=>Math.hypot(a.x-chair.x,a.z-chair.z)<Math.hypot(b.x-chair.x,b.z-chair.z)?a:b);chair.yaw=Math.atan2(nearest.x-chair.x,nearest.z-chair.z);if(Math.abs(Math.sin(chair.yaw))>.7){chair.width=.5;chair.depth=.44;}}
+
 export const STORE_COLUMNS=[-8.3,8.3].flatMap(x=>[9.8,.2,-9.8,-19.6].map(z=>storePlanPosition({x,z})));
-export const STORE_ROOM_SOLIDS=[...STORE_COLUMNS.map(p=>({minX:p.x-.14,maxX:p.x+.14,minZ:p.z-.14,maxZ:p.z+.14})),...STORE_ROOM_WALLS,...[...STORE_FIXTURES,...STORE_REAR_FIXTURES,...STORE_ENDCAPS,...STORE_BACKROOM_FIXTURES].map(f=>({minX:f.x-f.width/2,maxX:f.x+f.width/2,minZ:f.z-f.depth/2,maxZ:f.z+f.depth/2}))];
+export const STORE_ROOM_SOLIDS=[...STORE_COLUMNS.map(p=>({minX:p.x-.14,maxX:p.x+.14,minZ:p.z-.14,maxZ:p.z+.14})),...STORE_ROOM_WALLS,{minX:STORE_WING_MAX_X,maxX:19.5,minZ:STORE_BACK_Z,maxZ:STORE_BACKROOM_BASE_Z},...[...STORE_FIXTURES,...STORE_REAR_FIXTURES,...STORE_ENDCAPS,...STORE_BACKROOM_FIXTURES].map(f=>({minX:f.x-f.width/2,maxX:f.x+f.width/2,minZ:f.z-f.depth/2,maxZ:f.z+f.depth/2}))];
 export const storeWorld=(x,z)=>({x:D.x+x,z:D.z+z});
 export const validStorePosition=(p,radius=.23)=>!!p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&!blocked(p.x,p.z,STORE_ROOM_SOLIDS,STORE_ROOM_BOUNDS,radius);
 export function moveInStore(p,input,yaw,dt){const length=Math.hypot(input.x,input.z);if(!length)return {...p};const distance=3.3*Math.min(.05,dt)/length,result={...p};for(const [axis,delta]of [['x',(input.x*Math.cos(yaw)+input.z*Math.sin(yaw))*distance],['z',(-input.x*Math.sin(yaw)+input.z*Math.cos(yaw))*distance]]){const next={...result,[axis]:result[axis]+delta};if(validStorePosition(next))result[axis]=next[axis]}return result;}
