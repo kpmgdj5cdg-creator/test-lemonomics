@@ -41,3 +41,5 @@ The front-left Shopster corner now includes electronics: half-height wall shelve
 Placement correction: the TVs and low shelving move toward the front-left entrance wall. Original tall gondolas and endcaps are restored in place; electronics is an addition to the existing store.
 
 Shopster backstage update: the receiving/warehouse wing is twice as deep, with taller storage racks, closer aisles and a connecting swinging door. The taller dock door has an overhead rolling mechanism and stays closed until the future employment system. The bathroom is single-toilet unisex, break-room chairs face their tables, shelf-top electronics laptops are removed, and the store PA plays three original instrumental soft-rock tracks.
+
+The electronics area now includes three freestanding cream-topped display tables: laptops, smartphones and game consoles with controllers. Existing shelves and TVs stay in place, with clear routes around the new tables.
