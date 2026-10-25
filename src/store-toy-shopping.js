@@ -23,10 +23,10 @@ export class StoreToyShopping{
   this.button.hidden=!this.interior.active;this.panel.hidden=!this.interior.active||!this.open;this.rig.visible=this.interior.active&&cart.items.length>0;
   if(this.rig.visible){this.rig.position.copy(new THREE.Vector3(.6,-1.3,-1.3).applyMatrix4(this.interior.camera.matrixWorld));this.rig.quaternion.copy(this.interior.camera.quaternion)}
   if(!this.interior.active||performance.now()>(this.messageUntil||0))this.status.hidden=true;
-  const hint=this.interior.panel?.querySelector('span');if(hint){this.baseHint??=hint.textContent;const p=this.interior.position,f=TOY_SHELF_1,near=p.z<f.z-f.depth/2&&p.z>f.z-4&&Math.abs(p.x-f.x)<f.width/2+1.3;hint.textContent=near?'Toy aisle 1a · Click a game to add to cart · WASD / arrows · Drag to look · Esc: exit':this.baseHint;}
+  const hint=this.interior.panel?.querySelector('span');if(hint){this.baseHint??=hint.textContent;const p=this.interior.position,f=TOY_SHELF_1,near=p.z>f.z+f.depth/2&&p.z<f.z+4&&Math.abs(p.x-f.x)<f.width/2+1.3;hint.textContent=near?'Toy aisle 1a · Click a game to add to cart · WASD / arrows · Drag to look · Esc: exit':this.baseHint;}
   this.world.container.dataset.storeShoppingCart=JSON.stringify(cart.items);this.world.container.dataset.toy1aInStock=String(GAME_SLOTS.filter(s=>s.initialStock&&!cart.items.includes(s.id)).length);
  }
- pick(raycaster){const f=TOY_SHELF_1,p=this.interior.position;if(p.z>=f.z-f.depth/2||Math.abs(p.x-f.x)>f.width/2+3)return false;
+ pick(raycaster){const f=TOY_SHELF_1,p=this.interior.position;if(p.z<=f.z+f.depth/2||Math.abs(p.x-f.x)>f.width/2+3)return false;
   const games=this.world.departmentStore.interior.toyGames,hit=raycaster.intersectObjects(games.targets,false)[0];if(!hit||hit.distance>3.2)return false;
   const visible=o=>{for(let p=o;p;p=p.parent)if(!p.visible)return false;return true};
   const blocker=raycaster.intersectObject(this.world.departmentStore.root,true).find(h=>visible(h.object)&&h.object.material?.visible!==false&&!(h.object.material?.transparent&&h.object.material.opacity<.5));if(blocker&&blocker.distance<hit.distance-.035)return false;

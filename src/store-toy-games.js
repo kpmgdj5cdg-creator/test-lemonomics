@@ -14,7 +14,7 @@ function coverTexture(index,message=null){const w=40,h=60,data=new Uint8Array(w*
  const texture=new THREE.DataTexture(data,w,h,THREE.RGBAFormat);texture.colorSpace=THREE.LinearSRGBColorSpace;texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;return texture;
 }
 export function buildToyGameShelf(parent){
- const f=TOY_SHELF_1,root=group(parent,f.x,0,f.z);root.name='shopster-toy-aisle-1a';const matrix=new THREE.Matrix4(),rotation=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI),zero=new THREE.Vector3(0,0,0);
+ const f=TOY_SHELF_1,root=group(parent,f.x,0,f.z);root.name='shopster-toy-aisle-1a';root.rotation.y=Math.PI;const matrix=new THREE.Matrix4(),rotation=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI),zero=new THREE.Vector3(0,0,0);
  const material=new THREE.MeshStandardMaterial({color:'#e4e6de',roughness:.6});material.userData.owned=true;
  const bodies=new THREE.InstancedMesh(new THREE.BoxGeometry(.27,.42,.085),material,GAME_SLOTS.length);bodies.name='toy-game-cases';bodies.instanceMatrix.setUsage(THREE.DynamicDrawUsage);bodies.userData.gameSlots=GAME_SLOTS.map(s=>s.id);root.add(bodies);
  const meshes=[];for(let i=0;i<GAME_TITLES.length+2;i++){const selected=GAME_SLOTS.filter(s=>i<GAME_TITLES.length?s.game===i:true),map=coverTexture(i%GAME_TITLES.length,i===GAME_TITLES.length?'OUT OF STOCK':i===GAME_TITLES.length+1?'IN CART':null),m=new THREE.MeshBasicMaterial({map});m.userData.owned=true;

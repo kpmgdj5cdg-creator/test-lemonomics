@@ -316,7 +316,7 @@ Each table has a matching solid navigation footprint. Cart routes remain open al
 
 ### Toy department: aisle 1a game selection
 
-Toy shelf numbering follows the four endcaps in the supplied view. Standing at a numbered end and looking along +X, the left face is `a` (-Z) and the right is `b` (+Z). `src/store-toy-catalog.js` records shelves 1–4. Only shelf 1a is merchandised in this step; the original geometry, 1b stock, endcaps and other shelves remain unchanged.
+Toy shelf numbering follows the four endcaps in the supplied view. Face `a` points toward the electronics department (+Z); face `b` points into the neighboring aisle (-Z). `src/store-toy-catalog.js` records shelves 1–4. Only shelf 1a is merchandised in this step; the original geometry, 1b stock, endcaps and other shelves remain unchanged.
 
 Face 1a has three color-coded platform bays with 90 individual slots across the existing six shelf levels. Original pixel-art covers and console-platform headings are generated locally. Deterministic empty slots have visible out-of-stock cards; there is no glass. Cases are instanced for efficient rendering and removed from their exact physical slots when reserved. Picking is restricted to the active 1a side, within reach and with no opaque shelf or character blocking the ray.
 

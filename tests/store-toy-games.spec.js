@@ -1,10 +1,10 @@
 import {test,expect} from '@playwright/test';import * as THREE from 'three';import {readFile} from 'node:fs/promises';
 import {enterGame} from './fixtures/profile-ui.js';import {gameWithChecking} from './fixtures/market.js';
 import {DEPARTMENT_STORE as D} from '../src/department-store-layout.js';import {GAME_SLOTS,TOY_SHELF_1 as F} from '../src/store-toy-catalog.js';
-const pose={x:F.x,z:-4.85},yaw=Math.PI,pitch=-.1;
+const pose={x:F.x,z:.3},yaw=0,pitch=-.1;
 const available=GAME_SLOTS.find(s=>s.bay===1&&s.row===2&&s.initialStock),empty=GAME_SLOTS.find(s=>s.bay===1&&s.row>0&&s.row<4&&!s.initialStock),initial=GAME_SLOTS.filter(s=>s.initialStock).length;
 function fixture(position=pose,rotation=yaw){return Object.assign(gameWithChecking(100),{location:'square',cash:125,upgrades:['classic'],playerView:{location:'downtown',sceneView:'store',walking:false,storeInterior:{layoutVersion:4,position,yaw:rotation,pitch}}})}
-async function point(w,slot){const b=await w.boundingBox(),camera=new THREE.PerspectiveCamera(80,b.width/b.height,.035,220);camera.position.set(D.x+pose.x,1.92,D.z+pose.z);camera.rotation.set(pitch,yaw,0,'YXZ');camera.updateMatrixWorld(true);const p=new THREE.Vector3(D.x+F.x+slot.x,.12+slot.y+(slot.initialStock?0:-.1),D.z+F.z+slot.z).project(camera);return {x:b.x+(p.x+1)/2*b.width,y:b.y+(1-p.y)/2*b.height}}
+async function point(w,slot){const b=await w.boundingBox(),camera=new THREE.PerspectiveCamera(80,b.width/b.height,.035,220);camera.position.set(D.x+pose.x,1.92,D.z+pose.z);camera.rotation.set(pitch,yaw,0,'YXZ');camera.updateMatrixWorld(true);const p=new THREE.Vector3(D.x+F.x-slot.x,.12+slot.y+(slot.initialStock?0:-.1),D.z+F.z-slot.z).project(camera);return {x:b.x+(p.x+1)/2*b.width,y:b.y+(1-p.y)/2*b.height}}
 async function start(page,s=fixture()){const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(s=>localStorage.setItem('lemonadeLane_bank_v3',JSON.stringify(s)),s);await page.goto('/');await enterGame(page);return {w:page.locator('#world3d'),errors}}
 test('1a game cases add to a saved unpaid cart, stock gaps cannot be selected, and returning restores the case',async({page})=>{
  const {w,errors}=await start(page);await expect(w).toHaveAttribute('data-toy1a-in-stock',String(initial));await page.locator('#scene').screenshot({path:'artifacts/shopster-toy-aisle-1a.png'});

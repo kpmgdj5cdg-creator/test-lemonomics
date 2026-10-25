@@ -1,6 +1,6 @@
-// Numbering follows the left-hand endcaps in the supplied view. Facing +X,
-// the left face is -Z (a), and the right face is +Z (b). Only 1a is merchandised.
-export const TOY_AISLES=[-1.5*1.3,-4.5*1.3,-7.5*1.3,-12*1.3].map((z,i)=>({number:i+1,x:-11.65*1.3,z,width:4.5,depth:1.3,a:-1,b:1}));
+// Numbering follows the supplied endcap view. Face a points toward electronics
+// (+Z); face b points into the next aisle (-Z). Only 1a is merchandised.
+export const TOY_AISLES=[-1.5*1.3,-4.5*1.3,-7.5*1.3,-12*1.3].map((z,i)=>({number:i+1,x:-11.65*1.3,z,width:4.5,depth:1.3,a:1,b:-1}));
 export const TOY_SHELF_1=TOY_AISLES[0];
 export const isToyGameShelf=f=>Math.abs(f.x-TOY_SHELF_1.x)<1e-8&&Math.abs(f.z-TOY_SHELF_1.z)<1e-8;
 export const GAME_PLATFORMS=[{name:'PlayStation',color:'#3267b0'},{name:'Nintendo',color:'#ce3d48'},{name:'Xbox',color:'#4b9b60'}];
