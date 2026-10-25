@@ -39,3 +39,5 @@ Shopster tile floors now have a glossy polished finish, with light catching the 
 The front-left Shopster corner now includes electronics: half-height wall shelves occupy the former left cart area, and three synchronized TVs play an original animated voxel soccer match. The broadcast works offline and pauses when leaving or pausing the store.
 
 Placement correction: the TVs and low shelving move toward the front-left entrance wall. Original tall gondolas and endcaps are restored in place; electronics is an addition to the existing store.
+
+Shopster backstage update: the receiving/warehouse wing is twice as deep, with taller storage racks, closer aisles and a connecting swinging door. The taller dock door has an overhead rolling mechanism and stays closed until the future employment system. The bathroom is single-toilet unisex, break-room chairs face their tables, shelf-top electronics laptops are removed, and the store PA plays three original instrumental soft-rock tracks.
