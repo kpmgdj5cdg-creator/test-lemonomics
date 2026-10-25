@@ -35,3 +35,5 @@ Downtown now has 32 street-facing buildings and a walk-in Maple Casino west of t
 Shopster now has double-thickness, double-height gondola shelves with stocked endcaps at both ends and a ceiling raised by 25%. The larger store layout preserves cart access around the endcaps, wall passages and main aisles. Existing interior saves migrate safely, and the quiet synth PA music remains included offline.
 
 Shopster tile floors now have a glossy polished finish, with light catching the surface throughout the sales floor and employee rooms.
+
+The front-left Shopster corner is now electronics: half-height gondolas and wall shelves replace the left cart corral, and three synchronized TVs play an original animated voxel soccer match. The broadcast works offline and pauses when leaving or pausing the store.
