@@ -36,4 +36,6 @@ Shopster now has double-thickness, double-height gondola shelves with stocked en
 
 Shopster tile floors now have a glossy polished finish, with light catching the surface throughout the sales floor and employee rooms.
 
-The front-left Shopster corner is now electronics: half-height gondolas and wall shelves replace the left cart corral, and three synchronized TVs play an original animated voxel soccer match. The broadcast works offline and pauses when leaving or pausing the store.
+The front-left Shopster corner now includes electronics: half-height wall shelves occupy the former left cart area, and three synchronized TVs play an original animated voxel soccer match. The broadcast works offline and pauses when leaving or pausing the store.
+
+Placement correction: the TVs and low shelving move toward the front-left entrance wall. Original tall gondolas and endcaps are restored in place; electronics is an addition to the existing store.
