@@ -291,3 +291,9 @@ Store viewpoints now save layout version 4. Earlier positions migrate into the e
 ### Shopster polished tile floors
 
 The front sales floor, rear aisles and employee rooms use dedicated polished tile materials with low roughness and a clear coat. Existing ceiling lights produce soft specular highlights while the tile colors and narrow grout lines remain visible. Tile materials are shared within each floor section for batching; this finish uses the existing lighting and adds no reflection render pass or external assets.
+
+### Front-left Shopster electronics department
+
+The three front-left gondolas are now half-height electronics shelves, with low endcaps and sample laptops. The left entrance cart corral is removed; low shelves attach to the front and side walls in its place. The right cart corral remains. Matching fixture bounds keep the new shelving solid while preserving cart routes and the main aisles.
+
+Three wall-mounted televisions show the same original animated voxel soccer match. A small independent Three.js scene renders the field, goals, crowd, players and moving ball once at up to 12 frames per second into one shared 512×288 texture. All screens share that broadcast. It runs only while inside the active store and pauses for save menus, hidden tabs and leaving the store. It uses no external video, network stream, autoplay permission or simulation randomness. Render targets are released when changing locations or destroying the world. The store PA music remains the audio source.

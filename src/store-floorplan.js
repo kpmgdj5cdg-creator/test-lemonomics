@@ -2,14 +2,15 @@ import {DEPARTMENT_STORE as D,STORE_BACK_Z,STORE_EMPLOYEE_EXTENSION,employeeRoom
 import {blocked} from './player-movement.js';
 export const STORE_ROOM_BOUNDS={minX:-19.25,maxX:19.25,minZ:STORE_BACK_Z+.4,maxZ:10.05};
 export const STORE_CHECKOUTS=[-8.5,-5.1,-1.7,1.7,5.1,8.5].map((x,i)=>({x,z:3,number:i+1,staffed:i<2})).map(storePlanPosition);
-function widenShelf(f){if(['sports','grocery','toys','household','homegoods','beauty'].includes(f.kind))return {...f,depth:f.depth*2};if(['seasonal','electronics','shoes'].includes(f.kind))return {...f,width:f.width*2};return f;}
+function widenShelf(f){if(['front-electronics','sports','grocery','toys','household','homegoods','beauty'].includes(f.kind))return {...f,depth:f.depth*2};if(['seasonal','electronics','shoes'].includes(f.kind))return {...f,width:f.width*2};return f;}
 export const STORE_FIXTURES=[
- ...[-11.65,11.65].flatMap(x=>[-1.5,-4.5,-7.5].map(z=>({x,z,width:4.5,depth:.65,kind:x<0?'sports':'grocery'}))),
+ ...[-11.65,11.65].flatMap(x=>[-1.5,-4.5,-7.5].map(z=>({x,z,width:4.5,depth:.65,kind:x<0?'front-electronics':'grocery',half:x<0}))),
  ...[-6.4,-4].flatMap(x=>[-3.5,-8].map(z=>({x,z,width:.7,depth:3.2,kind:'seasonal'}))),
  ...[-.7,1.5].flatMap(x=>[-3.5,-8].map(z=>({x,z,width:1.3,depth:2.4,kind:'general'}))),
  ...[5.3,7.5].flatMap(x=>[-3.5,-8].map(z=>({x,z,width:1.2,depth:2.8,kind:'decor'}))),
- ...[-10.8,10.8].map(x=>({x,z:9.55,width:4.2,depth:.8,kind:'carts'}))
+ ...[10.8].map(x=>({x,z:9.55,width:4.2,depth:.8,kind:'carts'}))
 ].map(storePlanPosition).map(widenShelf);
+STORE_FIXTURES.push({x:-14.04,z:9.75,width:5.8,depth:.6,kind:'electronics-wall',half:true},{x:-18.95,z:5.7,width:.6,depth:5.6,kind:'electronics-wall',half:true,vertical:true});
 STORE_FIXTURES.push(...STORE_CHECKOUTS.map(s=>({...s,width:1.25,depth:1.6,kind:'checkout'})));
 export const STORE_REAR_FIXTURES=[
  ...[-12,-15,-18].flatMap(z=>[-11.65,11.65].map(x=>({x,z,width:4.5,depth:.65,kind:x<0?'toys':'household'}))),
@@ -19,7 +20,7 @@ export const STORE_REAR_FIXTURES=[
  ...[5.3,7.5].flatMap(x=>[-15,-22].map(z=>({x,z,width:.7,depth:5.4,kind:'shoes'})))
 ].map(storePlanPosition).map(widenShelf);
 // Each endcap has its own collision box; aisle planning includes its full projection.
-export const STORE_ENDCAPS=[...STORE_FIXTURES,...STORE_REAR_FIXTURES].filter(f=>['sports','grocery','seasonal','toys','household','homegoods','beauty','electronics','shoes'].includes(f.kind)).flatMap(f=>[-1,1].map(side=>{const vertical=['seasonal','electronics','shoes'].includes(f.kind);return {kind:'endcap',x:f.x+(vertical?0:side*(f.width/2+.25)),z:f.z+(vertical?side*(f.depth/2+.25):0),width:vertical?f.width:.5,depth:vertical?.5:f.depth,vertical,side}}));
+export const STORE_ENDCAPS=[...STORE_FIXTURES,...STORE_REAR_FIXTURES].filter(f=>['front-electronics','sports','grocery','seasonal','toys','household','homegoods','beauty','electronics','shoes'].includes(f.kind)).flatMap(f=>[-1,1].map(side=>{const vertical=['seasonal','electronics','shoes'].includes(f.kind);return {kind:'endcap',half:f.half||false,x:f.x+(vertical?0:side*(f.width/2+.25)),z:f.z+(vertical?side*(f.depth/2+.25):0),width:vertical?f.width:.5,depth:vertical?.5:f.depth,vertical,side}}));
 export const STORE_STAFF_ROOMS=[
  {id:'receiving',name:'RECEIVING',minX:-14.7,maxX:-8,doorX:-10.2},
  {id:'stockroom',name:'STOCK ROOM',minX:-8,maxX:6,doorX:-2},
