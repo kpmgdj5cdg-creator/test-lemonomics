@@ -115,14 +115,14 @@ export class PlayerController{
   nearShop(){const p=this.avatar.group.position;const shops=this.world.location==='neighborhood'?[{id:'market',name:'Maple Market',x:-10,z:-3.15}]:this.world.location==='downtown'?[{id:'bookstore',name:'Bookstore',x:-9.55,z:-3.65},{id:'market',name:'Maple Market',x:4.5,z:-16}]:[];return shops.find(shop=>Math.hypot(p.x-shop.x,p.z-shop.z)<1.15)}
   visitStand(){if(this.enabled&&this.world.storeInterior?.near()){this.world.storeInterior.beginEntry();return}if(this.enabled&&this.world.casinoInterior?.near()){this.world.casinoInterior.beginEntry();return}if(this.enabled&&this.world.homeInterior?.near()){if(this.world.homeInterior.owned())this.world.homeInterior.enter();else this.world.onHouseDetails();return}const shop=this.nearShop();if(this.enabled&&shop)this.world.onShop(shop.id);else if(this.enabled&&nearStand(this.avatar.group.position))this.world.onSelect()}
   update(dt,time,reducedMotion){
-    if(!this.enabled)return;
+    if(!this.enabled){if(this.avatar.group.visible)this.avatar.animate(time,false,reducedMotion);return;}
     const root=this.world.container.closest('#ll-app');if(this.world.paused||root?.hidden||root?.querySelector('#modal.show')||root?.querySelector('#phaseLabel')?.dataset.closed==='true'){this.keys.clear();this.touch.clear();return}
     const input={x:0,z:0};for(const code of new Set([...this.keys,...this.touch])){input.x+=directions[code][0];input.z+=directions[code][1]}
     const p=this.avatar.group.position,obstacles=this.obstacles(),bounds=WALKING_AREAS[this.world.location].bounds;
     // Upgrades can enlarge the stand while walking. Restore a clear approach if needed.
     if(blocked(p.x,p.z,obstacles,bounds))p.set(-3,.16,1.25);
     const next=movePlayer(p,input,this.world.angle,dt,obstacles,bounds),moving=Math.hypot(next.x-p.x,next.z-p.z)>.0001;
-    if(moving)this.avatar.group.rotation.y=Math.atan2(next.x-p.x,next.z-p.z);
+    if(moving)this.avatar.rig.turnTo(Math.atan2(next.x-p.x,next.z-p.z),dt);
     p.set(next.x,groundElevation(this.world.sceneGround,next.x,next.z),next.z);
     if(moving&&time-(this.lastStep||0)>.31){this.world.audio?.effect('step');this.lastStep=time}
     this.avatar.animate(time,moving,reducedMotion);const shop=this.nearShop();const home=this.world.homeInterior?.near();const casino=this.world.casinoInterior?.near();const store=this.world.storeInterior?.near();this.interact.hidden=!store&&!casino&&!home&&!shop&&!nearStand(p);this.interact.textContent=store?'Enter Shopster · E':casino?'Enter casino · E':home?(this.world.homeInterior.owned()?'Enter my house · E':'House for sale · E'):shop?'Visit '+shop.name+' · E':'Visit my stand · E';if(shop&&this.lastShop!==shop.id){this.lastShop=shop.id;this.keys.clear();this.touch.clear();this.world.onShop(shop.id)}else if(!shop)this.lastShop=null;

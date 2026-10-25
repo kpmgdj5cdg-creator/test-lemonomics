@@ -29,13 +29,13 @@ test('appearance changes rebuild the rig while retaining movement transform and 
   const old=avatar.rig;avatar.setAppearance({shirt:'#123abc',skin:'#aabbcc',pants:'invalid'});
   assert.equal(avatar.appearance.shirt,'#123abc');assert.equal(avatar.appearance.pants,'#275b85');assert.notEqual(avatar.rig,old);
   assert.equal(avatar.group.position.x,2);assert.equal(avatar.group.rotation.y,.8);assert.ok(avatar.slots.hair);assert.equal(avatar.slots.arms.length,2);
-  assert.equal(avatar.slots.body.children[0].material.color.getHexString(),'123abc');avatar.dispose();
+  const col=avatar.slots.body.children[0].geometry.getAttribute('color');assert.ok(Math.abs(col.getX(0)-new THREE.Color('#123abc').r)<1e-6);avatar.dispose();
 });
 test('male and female avatars share a playable rig but have distinct persistent appearance',()=>{
  const a=new PlayerAvatar(new THREE.Group(),appearanceFor('female'));
- assert.equal(a.appearance.type,'female');assert.equal(a.rig.legs.length,2);assert.equal(a.rig.arms.length,2);assert.ok(a.slots.hair.children.length>1);
+ assert.equal(a.appearance.type,'female');assert.equal(a.rig.legs.length,2);assert.equal(a.rig.arms.length,2);assert.equal(a.rig.appearance.hairStyle,'long');
  a.group.position.set(3,.16,7);a.animate(.3,true,false);assert.notEqual(a.rig.legs[0].rotation.x,0);
- a.setAppearance(appearanceFor('male'));assert.equal(a.appearance.type,'male');assert.equal(a.slots.hair.children.length,1);assert.equal(a.group.position.z,7);a.dispose();
+ a.setAppearance(appearanceFor('male'));assert.equal(a.appearance.type,'male');assert.equal(a.rig.appearance.hairStyle,'short');assert.equal(a.group.position.z,7);a.dispose();
 });
 
 test('park pond and downtown subway entrance block walking below the solid capture height',()=>{

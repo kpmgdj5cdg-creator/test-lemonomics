@@ -1,3 +1,4 @@
+import {CharacterShowcase} from './character-showcase.js';
 import {StoreInterior} from './store-interior.js';
 import {batchDepartmentStore} from './department-store.js';
 import * as THREE from 'three';
@@ -38,7 +39,7 @@ export class Neighborhood{
     this.sun=new THREE.DirectionalLight('#fff4d4',3.2);this.sun.position.set(-15,22,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:22,bottom:-22,near:1,far:70});this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.00015;this.sun.shadow.radius=3;this.scene.add(this.sun);
     this.environment=group(this.scene);this.location='neighborhood';this.buildNeighborhood();this.sceneObstacles=sceneColliders(this.environment);this.sceneGround=sceneGround(this.environment);this.batchScenery();this.weatherEffects=new WeatherEffects(this.scene);this.arrivals=[];
     this.actorRoot=group(this.scene);this.hitbox=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,3.4),new THREE.MeshBasicMaterial({visible:false}));this.hitbox.position.copy(PLAYER).add(new THREE.Vector3(0,1.7,0));this.scene.add(this.hitbox);
-    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.casinoInterior=new CasinoInterior(this);this.storeInterior=new StoreInterior(this);this.installAudioControls();this.lighting=new SceneLighting(this);this.installDepartmentStoreControl();
+    this.avatarController=new PlayerController(this);this.classicInterior=new ClassicInterior(this);this.homeInterior=new HomeInterior(this);this.casinoInterior=new CasinoInterior(this);this.storeInterior=new StoreInterior(this);this.characterShowcase=new CharacterShowcase(this);this.installAudioControls();this.lighting=new SceneLighting(this);this.installDepartmentStoreControl();
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.drag=null;this.installControls();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);this.resize();
     this.clock=new THREE.Clock();this.ready=true;this.frame=this.frame.bind(this);this.raf=requestAnimationFrame(this.frame);
@@ -204,8 +205,8 @@ export class Neighborhood{
     this.container.dataset.trackTitle=station?.title||'';this.container.dataset.trackDuration=String(this.audio.trackBuffer?.duration||0);this.container.dataset.trackPosition=String(+this.audio.trackPosition.toFixed(3));this.container.dataset.trackPlays=String(this.audio.trackPlayCount);
     this.container.dataset.musicPlaying=String(playing);this.container.dataset.audioState=this.audio.context?.state||'locked';this.container.dataset.audioNotes=String(this.audio.noteCount);this.container.dataset.audioLevel=String(+this.audio.level().toFixed(4));
   }
-  currentCamera(){if(this.storeInterior?.active)return this.storeInterior.camera;if(this.casinoInterior?.active)return this.casinoInterior.camera;if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}
-  interactAt(x,y){
+  currentCamera(){if(this.characterShowcase?.active)return this.characterShowcase.camera;if(this.storeInterior?.active)return this.storeInterior.camera;if(this.casinoInterior?.active)return this.casinoInterior.camera;if(this.homeInterior?.active)return this.homeInterior.camera;return this.classicInterior.active?this.classicInterior.camera:this.camera}
+  interactAt(x,y){if(this.characterShowcase?.active)return;
     if(this.paused||this.classicInterior.modalOpen())return;
     const visible=o=>{for(let p=o;p;p=p.parent)if(!p.visible)return false;return true};
     const r=this.container.getBoundingClientRect();this.pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.currentCamera());
@@ -226,7 +227,7 @@ export class Neighborhood{
   installControls(){
     const c=this.container;
     c.addEventListener('pointerdown',e=>{if(e.button!==0)return;c.focus({preventScroll:true});this.audio.unlock();this.drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:0};c.setPointerCapture(e.pointerId)});
-    c.addEventListener('pointermove',e=>{if(!this.drag)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.storeInterior.active)this.storeInterior.look(dx,dy);else if(this.casinoInterior.active)this.casinoInterior.look(dx,dy);else if(this.homeInterior.active)this.homeInterior.look(dx,dy);else if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
+    c.addEventListener('pointermove',e=>{if(!this.drag)return;if(this.characterShowcase?.active)return;const dx=e.clientX-this.drag.lastX,dy=e.clientY-this.drag.lastY;this.drag.lastX=e.clientX;this.drag.lastY=e.clientY;this.drag.moved=Math.hypot(e.clientX-this.drag.x,e.clientY-this.drag.y);if(this.drag.moved>5){if(this.storeInterior.active)this.storeInterior.look(dx,dy);else if(this.casinoInterior.active)this.casinoInterior.look(dx,dy);else if(this.homeInterior.active)this.homeInterior.look(dx,dy);else if(this.classicInterior.active)this.classicInterior.look(dx,dy);else if(!this.classicInterior.entering)this.rotate(-dx*.008)}});
     c.addEventListener('pointerup',e=>{if(!this.drag)return;if(this.drag.moved<6&&!this.classicInterior.entering)this.interactAt(e.clientX,e.clientY);this.drag=null});
     c.addEventListener('pointercancel',()=>{this.drag=null});
     c.addEventListener('wheel',e=>{if(!c.matches(':focus'))return;e.preventDefault();if(this.storeInterior.active||this.classicInterior.active||this.homeInterior.active||this.casinoInterior.active||this.casinoInterior.entering)return;this.zoom=THREE.MathUtils.clamp(this.zoom-e.deltaY*.001,this.location==='downtown'?.28:this.location==='neighborhood'?.4:.8,1.4);this.updateCameraGoal()},{passive:false});
@@ -245,7 +246,7 @@ export class Neighborhood{
     const entry=person&&this.arrivals.find(v=>v.person===person);
     if(entry)entry.spawned=true;
     const origin=start||(entry?new THREE.Vector3(entry.path.at(-1)[0],0,entry.path.at(-1)[1]):new THREE.Vector3(-23,0,.92));
-    const a={...character(this.actorRoot,id),id,mode:'arriving',destination:new THREE.Vector3(),born:this.time};a.group.position.copy(origin);this.people.set(id,a);return a;
+    const a={...character(this.actorRoot,'street-visitor-'+id),id,mode:'arriving',destination:new THREE.Vector3(),born:this.time};a.group.position.copy(origin);this.people.set(id,a);return a;
   }
   setQueue(queue){
     if(!this.ready)return;this.queue=queue;
@@ -272,6 +273,7 @@ export class Neighborhood{
     if(this.paused||!this.container.clientWidth||!this.container.clientHeight){this.casino?.crowd?.pause();this.departmentStore?.crowd?.pause();this.audio.setAudible(false);this.container.dataset.casinoAmbience=String(this.audio.casinoPlaying);this.container.dataset.storeMusicPlaying=String(this.audio.storePlaying);this.container.dataset.storeMusicLevel=String(this.audio.storeLevel());if(this.paused&&this.arrivalStart)this.arrivalStart+=elapsed;this.raf=requestAnimationFrame(this.frame);return;}
     const suspended=!!this.container.closest('#ll-app')?.querySelector('#modal.show')||document.hidden;this.audio.setAudible(!suspended);
     this.avatarController.update(dt,this.time,reducedMotion());this.classicInterior.update(moveDt,this.time,reducedMotion());this.homeInterior.update(moveDt,this.time);this.casinoInterior.update(moveDt,this.time);this.storeInterior.update(moveDt,this.time);
+    this.characterShowcase.update(this.time);
     this.player?.speaker?.update(reducedMotion()?0:this.audio.beat());this.publishAudio();
     const ease=1-Math.exp(-dt*7);this.camera.position.lerp(this.desiredPosition,ease);this.target.lerp(this.desiredTarget,ease);this.span=THREE.MathUtils.lerp(this.span,this.desiredSpan,ease);
     const aspect=this.container.clientWidth/Math.max(1,this.container.clientHeight);this.camera.left=-this.span*aspect/2;this.camera.right=this.span*aspect/2;this.camera.top=this.span/2;this.camera.bottom=-this.span/2;this.camera.updateProjectionMatrix();this.camera.lookAt(this.target);
@@ -282,6 +284,7 @@ export class Neighborhood{
       if(a?.arrival){const point=pointOnRoute(entry.path,(elapsed-entry.spawnAt)*entry.speed);a.group.position.set(point.x,walkElevation(this.location,point.x,point.z),point.z);a.group.rotation.y=point.angle;}
     }
     for(const [id,a] of this.people){
+      a.setExpression(a.mode==='sale'?'happy':a.mode==='upset'?'concerned':'neutral');a.update(this.time,{animateLimbs:false,reducedMotion:reducedMotion(),distance:a.group.position.distanceTo(this.currentCamera().position)});
       if(a.arrival){if(!reducedMotion())for(let i=0;i<2;i++){a.legs[i].rotation.x=Math.sin(this.time*13+id)*.45*(i?-1:1);a.arms[i].rotation.x=-a.legs[i].rotation.x;}continue;}
       const delta=a.destination.clone().sub(a.group.position);delta.y=0;const distance=delta.length(),walking=distance>.06;
       if(walking){a.group.position.addScaledVector(delta.normalize(),Math.min(distance,moveDt*5.4));a.group.rotation.y=Math.atan2(delta.x,delta.z);if(!reducedMotion())for(let i=0;i<2;i++){a.legs[i].rotation.x=Math.sin(this.time*13+id)*.45*(i?-1:1);a.arms[i].rotation.x=-a.legs[i].rotation.x}}
@@ -295,6 +298,6 @@ export class Neighborhood{
     if(this.player?.speaker){const p=this.player.speaker.group.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.55,.2)).project(camera);this.container.dataset.speakerScreen=JSON.stringify({x:(p.x+1)/2,y:(1-p.y)/2});this.container.dataset.speakerPulse=String(+this.player.speaker.cone.scale.z.toFixed(3));}
     this.renderer.render(this.scene,camera);this.raf=requestAnimationFrame(this.frame);
   }
-  dispose(){this.storeInterior?.dispose();this.casinoInterior?.dispose();this.lighting?.dispose();this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
+  dispose(){this.characterShowcase?.dispose();this.storeInterior?.dispose();this.casinoInterior?.dispose();this.lighting?.dispose();this.homeInterior?.dispose();this.classicInterior?.dispose();this.audioAbort?.abort();this.audio.reset();this.avatarController?.dispose();this.weatherEffects?.dispose();cancelAnimationFrame(this.raf);this.resizeObserver?.disconnect();for(const o of [...this.scene.children])disposeGroup(o);this.renderer?.dispose();this.renderer?.domElement.remove()}
 }
 function fmt(v){return Number(v.toFixed(1))}

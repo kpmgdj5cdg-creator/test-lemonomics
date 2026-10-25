@@ -47,3 +47,11 @@ The electronics area now includes three freestanding cream-topped display tables
 Toy aisle 1a now has open video-game shelving with original cover art, platform sections and visible out-of-stock gaps. Click or tap a game to reserve it in your saved shopping cart; use Cart to review or return it. Cart selection takes no money. Other shelf faces and endcaps remain unchanged.
 
 Aisle 1a correction: the game display faces the electronics department. The opposite shelf face is restored, and existing cart selections stay intact.
+
+Player avatars and NPCs now share more detailed adult voxel models: visible mouths,
+expressions and blinking, dimensional hairstyles, clothing shapes and accessories.
+Their body height, leg length, world scale and gameplay movement speeds are retained;
+saved avatar colours remain compatible. Inside Shopster, choose **Character showcase**
+to see twelve different neighbours, inspect your avatar, and preview expressions and
+walking. The new appearance/animation system is bundled offline and needs no external
+character service or paid API.

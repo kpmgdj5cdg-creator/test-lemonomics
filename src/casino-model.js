@@ -19,7 +19,7 @@ function slot(parent,x,z,angle,stake,index){
  const console=box(g,0,.91,.41,.96,.15,.52,'#a72641');console.rotation.x=.16;for(const dx of [-.27,0,.27])box(g,dx,1.01,.48,.15,.05,.17,'#f5d45a');box(g,0,.55,.3,.62,.19,.04,'#101c2a');seat(g,0,.92);
  batch(g);return {group:g,stake,panel,index};
 }
-function dealer(parent,x,z,female=false){const a=character(parent,2,{type:female?'female':'male',shirt:'#fff3da',pants:'#252936',hair:'#3b2d2a'});a.group.position.set(x,.2,z);a.group.scale.setScalar(1.35);a.group.name='casino-dealer';box(a.group,0,.74,.157,.28,.32,.04,'#222735');for(const dx of [-.06,.06])box(a.group,dx,.94,.174,.09,.06,.035,'#b6263c');box(a.group,0,.93,.2,.045,.05,.02,'#f5c759');batch(a.group);return a;}
+function dealer(parent,x,z,female=false){const a=character(parent,'casino-dealer-'+(female?'right':'left'),{clothing:'button-down',type:female?'female':'male',shirt:'#fff3da',pants:'#252936',hair:'#3b2d2a'});a.group.position.set(x,.2,z);a.group.scale.setScalar(1.35);a.group.name='casino-dealer';box(a.group,0,.74,.157,.28,.32,.04,'#222735');for(const dx of [-.06,.06])box(a.group,dx,.94,.174,.09,.06,.035,'#b6263c');box(a.group,0,.93,.2,.045,.05,.02,'#f5c759');batch(a.group);return a;}
 function table(parent,x,kind){const g=group(parent,x,0,-.3);g.name='casino-'+kind;
  box(g,0,.55,0,1.65,1.0,1.45,'#452b25');box(g,0,1.13,0,2.85,.22,2.0,'#6f4029');box(g,0,1.27,0,2.65,.10,1.8,kind==='holdem'?'#19725a':'#29674a');
  for(const dx of [-1.35,1.35])box(g,dx,1.33,0,.18,.16,2.04,'#2b292b');for(const dz of [-.96,.96])box(g,0,1.33,dz,2.75,.16,.16,'#2b292b');
@@ -61,8 +61,8 @@ export function buildCasino(parent){
  for(const x of [-3.6,-1.2,1.2,3.6])slots.push(slot(props,x,-4.45,0,5,index++));
  for(const machine of slots)targets.push({kind:'slots',stake:machine.stake,index:machine.index,object:machine.group});
  const holdem=table(props,-2.4,'holdem'),roulette=table(props,2.4,'roulette');holdem.scale.x=roulette.scale.x=.82;holdem.position.x=-2.25;roulette.position.x=2.25;targets.push({kind:'holdem',object:holdem},{kind:'roulette',object:roulette});
- dealer(props,-2.4,-1.88);dealer(props,2.4,-1.88,true);
+ const dealers=[dealer(props,-2.4,-1.88),dealer(props,2.4,-1.88,true)];
  const lighting=buildCasinoLighting(root,roof,body,sign);
  batch(body);batch(roof);
- return {root,body,roof,doors,hinges,targets,slots,roulette,doorAmount:0,...lighting,get chasePhase(){return lighting.chasePhase}};
+ return {root,body,roof,doors,hinges,targets,slots,roulette,dealers,doorAmount:0,...lighting,get chasePhase(){return lighting.chasePhase}};
 }

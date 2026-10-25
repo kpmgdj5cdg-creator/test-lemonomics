@@ -1,3 +1,4 @@
+import {createVoxelCharacter} from './voxel-character.js';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { voxelText } from './voxel-text.js';
@@ -24,11 +25,11 @@ export function label(parent,text,x,y,z,w,h,{background='#fff6cc',color='#385438
 /** Merge static cubes by material to keep draw calls low on integrated graphics. */
 export function batch(parent){
   parent.updateMatrixWorld(true);const inverse=parent.matrixWorld.clone().invert(),sets=new Map(),remove=[];
-  parent.traverse(o=>{if(o.isMesh&&o.geometry===cube){const g=cube.clone();g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld));if(!sets.has(o.material))sets.set(o.material,[]);sets.get(o.material).push(g);remove.push(o)}});
+  parent.traverse(o=>{if(o.isMesh&&o.geometry===cube&&!o.userData.characterDynamic){const g=cube.clone();g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld));if(!sets.has(o.material))sets.set(o.material,[]);sets.get(o.material).push(g);remove.push(o)}});
   remove.forEach(m=>m.removeFromParent());
   for(const [mat,parts] of sets){const mesh=new THREE.Mesh(mergeGeometries(parts),mat);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);parts.forEach(g=>g.dispose())}
 }
-export function disposeGroup(g){g.traverse(o=>{if(o.isMesh){if(o.geometry!==cube)o.geometry.dispose();if(o.material.map){o.material.map.dispose();o.material.dispose()}else if(o.material.userData.owned)o.material.dispose()}});g.removeFromParent()}
+export function disposeGroup(g){g.traverse(o=>{if(o.isMesh){if(o.geometry!==cube&&!o.geometry.userData.characterShared)o.geometry.dispose();if(o.material.map){o.material.map.dispose();o.material.dispose()}else if(o.material.userData.owned)o.material.dispose()}});g.removeFromParent()}
 
 export function tree(parent,x,z,scale=1,variant=0){
   const g=group(parent,x,.12,z);g.scale.setScalar(scale);
@@ -111,21 +112,4 @@ export function stand(parent,state,{rival=false}={}){
   return {group:g,roof,equipment,stock,price,width:w,style,avatarAnchor:{x:0,y:.75,z:.42},speaker};
 }
 
-export function character(parent,index=0,appearance={}){
-  const g=group(parent),skins=['#d4a078','#a66f51','#eac39c','#bd885f'],shirts=['#e6ae64','#749fad','#bb8191','#789b77','#edce75'];
-  const skin=appearance.skin||skins[index%4],shirt=appearance.shirt||shirts[index%5],hair=appearance.hair||(index%3?'#6b513b':'#b58b56'),pants=appearance.pants||'#586c6d',shoes=appearance.shoes||'#f0e8d0';
-  const slots={head:group(g),body:group(g),hair:group(g)};
-  box(slots.head,0,1.09,0,.36,.38,.35,skin);box(slots.hair,0,1.3,-.03,.39,.14,.37,hair);box(slots.body,0,.73,0,.42,.4,.28,shirt);
-  if(appearance.type==='female'){
-    // A long bob and a small tie distinguish the selectable female rig. The
-    // independent clothing slots and walking limbs stay compatible with wardrobes.
-    box(slots.hair,0,1.07,-.16,.41,.47,.15,hair);
-    for(const x of [-.19,.19])box(slots.hair,x,1.08,-.035,.08,.4,.3,hair);
-    box(slots.hair,.24,1.14,-.07,.08,.09,.11,'#f2cc4d');
-  }
-  const legs=[group(g,-.115,.5,0),group(g,.115,.5,0)];legs.forEach(l=>{box(l,0,-.22,0,.15,.43,.16,pants);box(l,0,-.43,.04,.17,.09,.25,shoes)});
-  const arms=[group(g,-.29,.89,0),group(g,.29,.89,0)];arms.forEach(a=>{box(a,0,-.15,0,.13,.27,.15,shirt);box(a,0,-.32,0,.13,.12,.15,skin)});
-  for(const x of [-.1,.1])box(g,x,1.12,.181,.04,.04,.015,'#3b4435');
-  const cup=box(g,.37,.66,.17,.14,.2,.14,'#f6e7a3');cup.visible=false;
-  return {group:g,legs,arms,cup,slots:{...slots,legs,arms}};
-}
+export const character=createVoxelCharacter;

@@ -323,3 +323,51 @@ Face 1a has three color-coded platform bays with 90 individual slots across the 
 Click or tap an available case to reserve it in the shopping cart. The Cart button reviews selections and returns individual cases to their original slots. A small first-person basket shows selected game boxes. Empty slots cannot add items, and a physical copy cannot be selected twice. The cart is stored per profile in `state.shopsterCart`, autosaved through the existing profile adapter, and retained across save/load and store visits. Adding to a cart does not buy the game or alter cash, bank balances, lemonade inventory or the ledger. No checkout/payment flow is added in this step.
 
 The case covers, stock gaps and cart work in the standalone build without HTTP requests. Tests cover preservation of the opposite shelf face, per-slot stock/return behavior, profile isolation and balance invariants, actual desktop/touch case selection, save/restore, keyboard focus after closing the cart and offline play.
+
+### Voxel characters (appearance version 2)
+
+All playable avatars, Shopster staff/customers, casino patrons/dealers and street
+customers use `createVoxelCharacter` through the existing `models.character` API.
+The original 0.5 hip pivot, 0.89 shoulder pivot, foot height, world scale and
+navigation speeds are retained. Hair volume varies naturally; legs/torso/head
+landmarks do not shrink. Existing male/female and five saved colour choices still
+load. No save migration or economic changes are required.
+
+`characterAppearance(stableId, overrides)` returns deterministic, serializable
+physical appearance data, independent of business RNG and emotional state. Role
+namespaces distinguish staff, visitors, dealers and the player. Existing transient
+visitor serials map reproducibly to appearances; future persistent people should
+supply their permanent ID or store the returned versioned appearance document.
+Configuration includes bounded build/shoulders, face/jaw/nose/eyes/brows, skin,
+hair colour/style, clothing and accessories. Eleven dimensional hair styles plus
+bald, twelve clothing variants, glasses, hats and facial hair use coloured voxel
+geometry. No downloaded textures, external services or recurring costs.
+
+The returned rig retains `group`, `slots`, `legs`, `arms`, `cup` and adds:
+
+- `setExpression('neutral'|'happy'|'sad'|'angry'|'surprised'|'concerned'|'talking')`
+- `setTalking(boolean)` for an existing/future dialogue or voice controller.
+- `setAnimation({expression, talking, gesture:'wave'|'explain'|'none', motion:'idle'|'sitting'})`
+- `update(time, {moving, reducedMotion, animateLimbs, distance})`. Existing crowd
+  controllers can keep their own limb poses with `animateLimbs:false`.
+
+Emotion/animation state never changes the deterministic physical configuration.
+Mouth geometry remains independently addressable for future phoneme animation.
+Occasional deterministic blinking and subtle breathing do not consume simulation
+randomness. Animated face features survive scenery batching. Each static body
+part merges its boxes into one vertex-coloured mesh; materials/primitive geometry
+are reused. Facial detail switches off beyond 24 world units; silhouettes remain.
+Character mesh disposal releases owned merged buffers without disposing shared
+primitive geometry/materials.
+
+Inside Shopster, **Character showcase** presents twelve distinct adults together,
+plus the player's actual configured avatar. Choose individuals and expressions,
+or preview walking in place. The view uses the real store scene and renderer;
+it does not change money, inventory, position, appearance or saved profiles.
+Close the showcase (or Escape) to continue walking from the same position.
+
+`setAnimation` also accepts bounded `gaze` (-0.3…0.3 radians) and `energy`
+(0.2…1) for a future emotional simulation to request a small head turn/tilt and
+subtler breathing. These are runtime tendencies, never tied to skin, build or
+other physical attributes. `turnTo(yaw, dt)` eases the shortest yaw change without
+altering any navigation path or gameplay speed.

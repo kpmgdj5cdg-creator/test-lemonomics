@@ -1,6 +1,6 @@
 import {CASINO_BOUNDS,CASINO_SOLIDS} from './casino-model.js';
 import {blocked} from './player-movement.js';
-import {character,group,batch} from './models.js';
+import {character,group,batch,disposeGroup} from './models.js';
 
 // Two permanent dealers + four visitors = six NPCs total. All money and
 // simulation randomness are independent of this cosmetic population.
@@ -47,13 +47,13 @@ export class CasinoPatronSchedule{
 export class CasinoCrowd{
  constructor(casino){this.casino=casino;this.root=group(casino.root);this.root.name='casino-patrons';this.schedule=new CasinoPatronSchedule(casinoMachineStops(casino.slots),{seed:(Date.now()>>>0)||1});this.rigs=new Map();this.update(0,0);this.pause()}
  update(dt,time,viewer=null){
-  const elapsed=this.lastTime===undefined?dt:Math.max(0,Math.min(2,time-this.lastTime));this.lastTime=time;this.schedule.step(elapsed,Math.min(.25,dt));
-  const ids=new Set(this.schedule.actors.map(a=>a.id));for(const [id,rig]of this.rigs)if(!ids.has(id)){rig.group.removeFromParent();rig.group.traverse(o=>{if(o.isMesh&&o.geometry.userData.patronBatch)o.geometry.dispose()});this.rigs.delete(id)}
-  for(const a of this.schedule.actors){let rig=this.rigs.get(a.id);if(!rig){rig=character(this.root,a.id,{type:a.id%2?'female':'male',pants:['#334158','#5a453d','#3e4c44'][a.id%3]});rig.group.name='casino-patron-'+a.id;rig.group.scale.setScalar(1.22);
+  const elapsed=this.lastTime===undefined?dt:Math.max(0,Math.min(2,time-this.lastTime));this.lastTime=time;this.schedule.step(elapsed,Math.min(.25,dt));this.casino.dealers?.forEach(r=>r.update(time,{animateLimbs:false}));
+  const ids=new Set(this.schedule.actors.map(a=>a.id));for(const [id,rig]of this.rigs)if(!ids.has(id)){disposeGroup(rig.group);this.rigs.delete(id)}
+  for(const a of this.schedule.actors){let rig=this.rigs.get(a.id);if(!rig){rig=character(this.root,'casino-visitor-'+a.id,{type:a.id%2?'female':'male',pants:['#334158','#5a453d','#3e4c44'][a.id%3]});rig.group.name='casino-patron-'+a.id;rig.group.scale.setScalar(1.22);
     // Batch each articulated part separately; preserve arms and legs for motion.
     for(const part of Object.values(rig.slots).flat())if(part?.isObject3D){batch(part);part.traverse(o=>{if(o.isMesh)o.geometry.userData.patronBatch=true})}
     this.rigs.set(a.id,rig)}
-   rig.group.visible=!viewer||Math.hypot(a.position.x-viewer.x,a.position.z-viewer.z)>.65;const walking=a.mode!=='playing';rig.group.position.set(a.position.x,.23,a.position.z);rig.group.rotation.y=a.facing;rig.legs.forEach((l,i)=>l.rotation.x=walking?Math.sin(time*8+i*Math.PI)*.42:0);rig.arms.forEach((arm,i)=>arm.rotation.x=walking?Math.sin(time*8+i*Math.PI)*-.3:i===1?-.55+Math.sin(time*2+a.id)*.10:0);
+   rig.update(time,{animateLimbs:false,distance:viewer?Math.hypot(a.position.x-viewer.x,a.position.z-viewer.z):30});rig.group.visible=!viewer||Math.hypot(a.position.x-viewer.x,a.position.z-viewer.z)>.65;const walking=a.mode!=='playing';rig.group.position.set(a.position.x,.23,a.position.z);if(rig.lastPoseTime===undefined)rig.group.rotation.y=a.facing;else rig.turnTo(a.facing,Math.max(0,time-rig.lastPoseTime));rig.lastPoseTime=time;rig.legs.forEach((l,i)=>l.rotation.x=walking?Math.sin(time*8+i*Math.PI)*.42:0);rig.arms.forEach((arm,i)=>arm.rotation.x=walking?Math.sin(time*8+i*Math.PI)*-.3:i===1?-.55+Math.sin(time*2+a.id)*.10:0);
    if(!walking&&this.schedule.time>=a.nextSpin){const machine=this.casino.slots.find(m=>m.index===a.machine);if(machine&&!machine.spin)machine.spin={time,reels:[a.id%5,(a.id+2)%5,(a.id+3)%5]};a.nextSpin=this.schedule.time+5+this.schedule.random()*9}
   }
  }

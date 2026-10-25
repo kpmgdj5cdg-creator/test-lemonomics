@@ -23,8 +23,8 @@ export function avatarPreview(type,appearance){
     const avatar=new PlayerAvatar(scene,profile);avatar.group.rotation.y=-.12;
     renderer.render(scene,camera);
     const url=renderer.domElement.toDataURL('image/png');previews.set(key,url);
-    // Geometry/materials in models.js are shared with the game; never dispose them here.
-    scene.clear();return url;
+    // Merged character parts own their buffers; primitive geometry/materials remain shared.
+    avatar.dispose();sun.shadow.map?.dispose();scene.clear();return url;
   }catch(error){console.warn('Avatar preview unavailable:',error.message);return '';}
 }
 export function avatarPortrait(type,appearance){
