@@ -313,3 +313,13 @@ The dock opening is 15 percent taller (2.875 units). Its segmented door runs up 
 Three freestanding display tables occupy the open front-left electronics area. Cream tops and gray pedestals match the existing merchandise tables. One table has four open demo laptops with keyboards and touchpads, one has six upright smartphones with app icons, and one has three different game consoles with controllers. The devices sit on these dedicated tables; the low wall shelving stays clear. All existing TV screens, tall gondolas, endcaps, checkout counters and wall units retain their positions.
 
 Each table has a matching solid navigation footprint. Cart routes remain open along both sides and between the tables, with a continuous passage beside the checkout lanes. Models are built locally and batched with the existing interior, including in standalone offline play. They are display props and do not add purchases or change account balances.
+
+### Toy department: aisle 1a game selection
+
+Toy shelf numbering follows the four endcaps in the supplied view. Standing at a numbered end and looking along +X, the left face is `a` (-Z) and the right is `b` (+Z). `src/store-toy-catalog.js` records shelves 1–4. Only shelf 1a is merchandised in this step; the original geometry, 1b stock, endcaps and other shelves remain unchanged.
+
+Face 1a has three color-coded platform bays with 90 individual slots across the existing six shelf levels. Original pixel-art covers and console-platform headings are generated locally. Deterministic empty slots have visible out-of-stock cards; there is no glass. Cases are instanced for efficient rendering and removed from their exact physical slots when reserved. Picking is restricted to the active 1a side, within reach and with no opaque shelf or character blocking the ray.
+
+Click or tap an available case to reserve it in the shopping cart. The Cart button reviews selections and returns individual cases to their original slots. A small first-person basket shows selected game boxes. Empty slots cannot add items, and a physical copy cannot be selected twice. The cart is stored per profile in `state.shopsterCart`, autosaved through the existing profile adapter, and retained across save/load and store visits. Adding to a cart does not buy the game or alter cash, bank balances, lemonade inventory or the ledger. No checkout/payment flow is added in this step.
+
+The case covers, stock gaps and cart work in the standalone build without HTTP requests. Tests cover preservation of the opposite shelf face, per-slot stock/return behavior, profile isolation and balance invariants, actual desktop/touch case selection, save/restore, keyboard focus after closing the cart and offline play.

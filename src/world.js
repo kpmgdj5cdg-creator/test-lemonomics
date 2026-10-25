@@ -25,8 +25,8 @@ const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Renderer consumes the game's state and events; it never creates sales or edits money. */
 export class Neighborhood{
-  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{},onFirstPerson=()=>{},onHome=()=>{},onHouseDetails=()=>{},onStore=()=>{},onCasino=()=>{},onCasinoGame=()=>{}}={}){
-    this.container=container;this.onStore=onStore;this.onCasino=onCasino;this.onCasinoGame=onCasinoGame;this.onHome=onHome;this.onHouseDetails=onHouseDetails;this.audio=gameAudio;this.onFirstPerson=onFirstPerson;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
+  constructor(container,{onSelect=()=>{},onBack=()=>{},onShop=()=>{},onFirstPerson=()=>{},onHome=()=>{},onHouseDetails=()=>{},onStore=()=>{},onStoreCart=()=>false,onCasino=()=>{},onCasinoGame=()=>{}}={}){
+    this.container=container;this.onStore=onStore;this.onStoreCart=onStoreCart;this.onCasino=onCasino;this.onCasinoGame=onCasinoGame;this.onHome=onHome;this.onHouseDetails=onHouseDetails;this.audio=gameAudio;this.onFirstPerson=onFirstPerson;this.onSelect=onSelect;this.onBack=onBack;this.onShop=onShop;this.view='neighborhood';this.angle=.55;this.zoom=1;this.people=new Map();this.personIds=new WeakMap();this.nextId=0;this.queue=[];this.time=0;this.signature='';this.stockSignature='';this.metrics={sales:0,upset:0,rival:0};this.ready=false;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#8bd8e0');
     this.scene.fog=new THREE.Fog('#92d8df',70,140);
     this.camera=new THREE.OrthographicCamera(-20,20,16,-16,.1,150);this.camera.position.set(25,30,34);this.target=new THREE.Vector3(0,0,0);
