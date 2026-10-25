@@ -12,6 +12,7 @@ export const STORE_FIXTURES=[
 ].map(storePlanPosition).map(widenShelf);
 // Add electronics to the open entrance corner; retain every original sales-floor gondola.
 STORE_FIXTURES.push(...[2.1,5.4,8.7].map(z=>({x:-18.95,z,width:.6,depth:2.7,kind:'front-electronics',half:true,vertical:true,wallMounted:true})),{x:-14.04,z:9.75,width:5.8,depth:.6,kind:'electronics-wall',half:true});
+STORE_FIXTURES.push(...['electronics-consoles','electronics-phones','electronics-laptops'].map((kind,i)=>({x:-15.15,z:1.3+i*3,width:3.6,depth:1.1,kind})));
 STORE_FIXTURES.push(...STORE_CHECKOUTS.map(s=>({...s,width:1.25,depth:1.6,kind:'checkout'})));
 export const STORE_REAR_FIXTURES=[
  ...[-12,-15,-18].flatMap(z=>[-11.65,11.65].map(x=>({x,z,width:4.5,depth:.65,kind:x<0?'toys':'household'}))),

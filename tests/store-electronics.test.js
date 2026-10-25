@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
+import {storeDeviceDisplay} from '../src/store-device-displays.js';
 import {buildStoreElectronics} from '../src/store-electronics.js';
 import {STORE_FIXTURES,validStorePosition,storeShopperPath} from '../src/store-floorplan.js';
 import {buildStoreFront} from '../src/store-front-model.js';
@@ -12,4 +13,10 @@ test('all sports TVs share one animated render target, respect frame cap and res
  const original={},renderer={target:original,shadowMap:{enabled:true},getRenderTarget(){return this.target},setRenderTarget(t){this.target=t},render(scene,camera){assert.equal(scene,b.scene);assert.equal(camera,b.camera);this.renders=(this.renders||0)+1}};
  b.update(renderer,.05);const first=b.ball.position.clone();b.update(renderer,.01);assert.equal(renderer.renders,1);b.update(renderer,.1);assert.equal(renderer.renders,2);assert.ok(first.distanceTo(b.ball.position)>.01);assert.equal(renderer.target,original);assert.equal(renderer.shadowMap.enabled,true);assert.ok(b.players.every(p=>p.legs.every(l=>l.children.length)));
  renderer.render=()=>{throw Error('context interrupted')};assert.throws(()=>b.update(renderer,.1));assert.equal(renderer.target,original);assert.equal(renderer.shadowMap.enabled,true);b.dispose();b.dispose();assert.ok(b.disposed);
+});
+
+test('three separate device display tables preserve cart passages and have distinct product models',()=>{
+ const tables=STORE_FIXTURES.filter(f=>['electronics-laptops','electronics-phones','electronics-consoles'].includes(f.kind));assert.equal(tables.length,3);const scene=new THREE.Group();for(const f of tables){assert.equal(validStorePosition(f),false);storeDeviceDisplay(scene,f);for(const dx of [-2.65,2.65])assert.ok(storeShopperPath({x:0,z:9.25},{x:f.x+dx,z:f.z},true).length,`cart passage blocked beside ${f.kind}`)}
+ for(const [name,count]of [['shopster-demo-laptop',4],['shopster-demo-smartphone',6],['shopster-demo-game-console',3]]){let actual=0;scene.traverse(o=>{if(o.name===name)actual++});assert.equal(actual,count)}
+ for(let z=.1;z<8.5;z+=.1)assert.ok(validStorePosition({x:-12.6,z},.62),'checkout-side passage must stay clear');
 });

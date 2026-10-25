@@ -307,3 +307,9 @@ The receiving/warehouse wing is 100 percent deeper (11.62 units), extending rear
 The single unisex bathroom has one toilet and a sink, with the obsolete divider removed. Break-room chairs face their closest table; their collision footprints follow the new orientation. Shelf-top sample laptops are removed from the front electronics units; the existing tall gondolas and synchronized sports TVs are preserved.
 
 The dock opening is 15 percent taller (2.875 units). Its segmented door runs up vertical tracks, around curved elbows and onto an overhead track below the ceiling. `buildStoreLoadingDoor().update(dt, {employed, workdayStarting})` is the future employment integration hook; both permissions must be true to open it. Normal gameplay passes neither flag, so it stays closed. The job, workday flow, semi-truck unloading, inventory/shelf placement and payroll are deferred to the requested next stage. External collision capture and interior dock boundaries still reflect the closed door and will need the future loading workflow to permit truck/player passage.
+
+### Electronics display islands
+
+Three freestanding display tables occupy the open front-left electronics area. Cream tops and gray pedestals match the existing merchandise tables. One table has four open demo laptops with keyboards and touchpads, one has six upright smartphones with app icons, and one has three different game consoles with controllers. The devices sit on these dedicated tables; the low wall shelving stays clear. All existing TV screens, tall gondolas, endcaps, checkout counters and wall units retain their positions.
+
+Each table has a matching solid navigation footprint. Cart routes remain open along both sides and between the tables, with a continuous passage beside the checkout lanes. Models are built locally and batched with the existing interior, including in standalone offline play. They are display props and do not add purchases or change account balances.
